@@ -1,0 +1,8 @@
+.profile-overview { display: grid; grid-template-columns: minmax(240px, .8fr) minmax(0, 1.8fr); gap: 22px; margin-bottom: 30px; }
+.profile-person { padding: 26px; border: 1px solid #dfe7f1; border-radius: 12px; background: linear-gradient(150deg, #f2f7fc, #fff 65%); }
+.profile-large-avatar { display: grid; place-items: center; width: 86px; height: 86px; margin-bottom: 18px; border: 5px solid #fff; border-radius: 50%; background: #dcebf7; color: var(--color-brand-blue); font-size: 30px; font-weight: 750; box-shadow: 0 0 0 1px #d8e4f0; }
+.profile-person h2 { margin: 0; color: var(--color-brand-navy); font-size: 23px; font-weight: 700; letter-spacing: -.03em; }
+.profile-person > p { margin: 8px 0 22px; color: var(--color-muted); font-size: 12px; line-height: 1.6; }
+.profile-person dl { display: grid; gap: 16px; margin: 0; padding-top: 18px; border-top: 1px solid #e4ebf3; }
+.profile-person dt { color: var(--color-muted); font-size: 11px; font-weight: 400; }
+.profile-person dd { margin: 5px 0 0; color: var(--color-brand-navy); font-size: 13px; overflow-wrap: anywhere; }

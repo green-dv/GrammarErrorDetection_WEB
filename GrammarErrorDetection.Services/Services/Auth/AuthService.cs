@@ -21,4 +21,10 @@ public sealed class AuthService(IApiClient apiClient) : IAuthService
 
     public Task<ApiResponse<AuthSessionResponse>?> VerifyTotpAsync(VerifyTotpLoginRequest request, CancellationToken cancellationToken = default)
         => apiClient.PostAsync<VerifyTotpLoginRequest, ApiResponse<AuthSessionResponse>>("api/Auth/Login/VerifyTotp", request, cancellationToken);
+
+    public Task<ApiResponse<TotpSetupResponse>?> SetupTotpAsync(CancellationToken cancellationToken = default)
+        => apiClient.PostAsync<object?, ApiResponse<TotpSetupResponse>>("api/Auth/Totp/Setup", null, cancellationToken);
+
+    public Task<ApiResponse<bool>?> ConfirmTotpAsync(TotpConfirmRequest request, CancellationToken cancellationToken = default)
+        => apiClient.PostAsync<TotpConfirmRequest, ApiResponse<bool>>("api/Auth/Totp/Confirm", request, cancellationToken);
 }

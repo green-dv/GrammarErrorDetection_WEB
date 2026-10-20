@@ -61,7 +61,7 @@ public partial class RegistrationVerification : IDisposable
                 status = "La API no devolvió la confirmación de la cuenta. Intenta iniciar sesión antes de repetir el registro.";
                 return;
             }
-            Session.SignIn(response.Data, request.Email);
+            Session.SignIn(response.Data, request.Email, false);
             completed = true;
             model.Code = string.Empty;
             Flow.Clear();

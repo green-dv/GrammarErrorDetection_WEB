@@ -1,4 +1,5 @@
 using GrammarErrorDetection.WEB;
+using GrammarErrorDetection.WEB.Storage;
 using GrammarErrorDetection.Infraestructure.ApiClients;
 using GrammarErrorDetection.Infraestructure.Interfaces;
 using GrammarErrorDetection.Services.Services.Auth;
@@ -30,5 +31,8 @@ builder.Services.AddScoped<LoginFlowState>();
 builder.Services.AddScoped<RegistrationFlowState>();
 builder.Services.AddScoped<LoginFlowService>();
 builder.Services.AddScoped<AuthSessionState>();
+builder.Services.AddScoped<IAuthSessionStorage, BrowserAuthSessionStorage>();
 
-await builder.Build().RunAsync();
+var host = builder.Build();
+host.Services.GetRequiredService<AuthSessionState>().Restore();
+await host.RunAsync();

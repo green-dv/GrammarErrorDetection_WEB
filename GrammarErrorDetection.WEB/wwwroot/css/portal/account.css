@@ -1,0 +1,15 @@
+.account-menu { position: relative; z-index: 45; flex-shrink: 0; margin: 0 10px 14px; padding-top: 12px; border-top: 1px solid #ffffff22; }
+.account-trigger { position: relative; z-index: 50; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 44px; padding: 5px; border: 0; border-radius: 9px; background: transparent; color: #fff; cursor: pointer; }
+.account-trigger:hover, .account-trigger[aria-expanded="true"] { background: #ffffff12; }
+.account-avatar { display: grid; place-items: center; width: 34px; height: 34px; flex-shrink: 0; border: 1px solid #91b8d766; border-radius: 50%; background: #d4e5f41c; color: #e9f5ff; font-size: 11px; font-weight: 700; }
+.account-name { flex: 1; min-width: 0; overflow: hidden; color: #fff; font-size: 13px; font-weight: 550; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+.account-name small { display: block; margin-top: 4px; color: #a9bfd9; font-size: 10px; font-weight: 400; }
+.account-chevron { color: #a9bfd9; font-size: 15px; }
+.account-dismiss { position: fixed; inset: 0; z-index: 48; border: 0; background: transparent; cursor: default; }
+.account-options { position: absolute; bottom: calc(100% + 8px); left: 0; z-index: 51; width: 218px; padding: 8px; border: 1px solid #dbe5ef; border-radius: 11px; background: #fff; box-shadow: 0 12px 40px #10173530; }
+.account-options > p { margin: 8px 10px; color: var(--color-muted); font-size: 9px; letter-spacing: .12em; }
+.account-options a, .account-options > button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 11px 10px; border: 0; border-radius: 7px; background: #fff; color: var(--color-brand-navy); font-size: 13px; text-align: left; text-decoration: none; cursor: pointer; }
+.account-options a:hover, .account-options > button:hover { background: #edf5fc; }
+.account-options > button { color: var(--color-brand-red); }
+.account-options svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.account-options :focus-visible { outline-color: var(--color-brand-blue); }

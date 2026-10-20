@@ -1,0 +1,19 @@
+@page "/materials"
+@page "/leaderboard"
+@page "/process"
+@page "/my-enrollments"
+@page "/my-courses"
+@page "/teaching-courses"
+@page "/users"
+@page "/courses"
+@page "/enrollments"
+@using GrammarErrorDetection.WEB.Navigation
+@inject NavigationManager Navigation
+
+<PageTitle>@Title | CETI La Paz</PageTitle>
+<header class="portal-heading"><p class="portal-eyebrow">CETI · PORTAL ACADÉMICO</p><h1>@Title</h1></header>
+<p class="portal-empty">Esta sección aún no está disponible.</p>
+
+@code {
+    private string Title => PortalNavigation.Options.FirstOrDefault(option => option.Path == Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0].Trim('/'))?.Label ?? "Portal académico";
+}
