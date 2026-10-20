@@ -6,9 +6,11 @@
 
 main {
     flex: 1;
+    min-width: 0;
 }
 
 .sidebar {
+    flex-shrink: 0;
     background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
 }
 

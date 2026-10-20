@@ -1,0 +1,43 @@
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<dialog class="ceti-modal" @ref="dialog" aria-labelledby="@titleId" aria-modal="true" @oncancel="RequestCloseAsync" @oncancel:preventDefault>
+    <header class="ceti-modal-heading"><h2 id="@titleId">@Title</h2><button type="button" class="data-table-icon-button" aria-label="Cerrar ventana" disabled="@Busy" @onclick="RequestCloseAsync">×</button></header>
+    @ChildContent
+</dialog>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    private readonly string titleId = $"modal-{Guid.NewGuid():N}";
+    private ElementReference dialog;
+    private IJSObjectReference? module;
+    private bool disposed;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        var imported = await JS.InvokeAsync<IJSObjectReference>("import", "./js/modal.js");
+        if (disposed) { await imported.DisposeAsync(); return; }
+        module = imported;
+        await module.InvokeVoidAsync("show", dialog);
+    }
+
+    public async Task RequestCloseAsync()
+    {
+        if (Busy || disposed) return;
+        if (module is not null) await module.InvokeVoidAsync("close", dialog);
+        await OnClose.InvokeAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (disposed) return;
+        disposed = true;
+        if (module is null) return;
+        try { await module.InvokeVoidAsync("close", dialog); await module.DisposeAsync(); }
+        catch (JSException) { /* El componente puede desmontarse durante una navegación. */ }
+    }
+}

@@ -1,0 +1,32 @@
+@using GrammarErrorDetection.WEB.Components.Dialogs
+
+<ModalDialog Title="Editar usuario" Busy="@saving" OnClose="OnClose">
+    <p class="ceti-modal-description">@User.FirstName @User.LastName</p>
+    <EditForm EditContext="editContext" OnSubmit="SaveAsync" novalidate>
+        <DataAnnotationsValidator />
+        <div class="ceti-modal-body">
+            @if (error is not null || validationErrors.Count > 0)
+            {
+                <div class="ceti-modal-errors" role="alert">
+                    @if (error is not null) { <p>@error</p> }
+                    @foreach (var validationError in validationErrors) { <p>@validationError</p> }
+                </div>
+            }
+            <fieldset disabled="@saving" class="users-edit-fields">
+                <div class="users-edit-grid">
+                    <label class="data-table-field"><span>Nombre</span><input @bind="model.FirstName" @bind:event="oninput" maxlength="50" autofocus /></label>
+                    <label class="data-table-field"><span>Apellido</span><input @bind="model.LastName" @bind:event="oninput" maxlength="50" /></label>
+                    <label class="data-table-field"><span>CI</span><input @bind="model.Ci" @bind:event="oninput" maxlength="15" /></label>
+                    <label class="data-table-field"><span>Correo</span><input type="email" @bind="model.Email" @bind:event="oninput" maxlength="100" /></label>
+                    <label class="data-table-field"><span>Teléfono</span><input type="tel" @bind="model.Phone" @bind:event="oninput" maxlength="12" /></label>
+                    <label class="data-table-field"><span>Rol</span><InputSelect @bind-Value="model.RoleId">
+                        @if (!Roles.Any(role => role.Id == User.RoleId)) { <option value="@User.RoleId">@User.RoleName (actual)</option> }
+                        @foreach (var role in Roles) { <option value="@role.Id">@role.Name</option> }
+                    </InputSelect></label>
+                </div>
+                <div class="users-edit-options"><label><InputCheckbox @bind-Value="model.Active" /> Usuario activo</label><label><InputCheckbox @bind-Value="model.ChangePassword" /> Solicitar cambio de contraseña</label></div>
+            </fieldset>
+        </div>
+        <footer class="ceti-modal-footer"><span role="status">@(saving ? "Guardando cambios…" : HasChanges ? "Hay cambios pendientes." : "No hay cambios para guardar.")</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">Cancelar</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@(saving || !HasChanges)">Guardar cambios</button></div></footer>
+    </EditForm>
+</ModalDialog>

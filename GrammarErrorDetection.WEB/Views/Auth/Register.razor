@@ -6,7 +6,7 @@
 <PageTitle>Crear cuenta | CETI La Paz</PageTitle>
 <AuthHeader Title="Crea tu cuenta" Subtitle="Completa tus datos y verifica tu correo." />
 
-<EditForm EditContext="editContext" OnValidSubmit="SubmitRegistrationAsync" OnInvalidSubmit="ShowValidationErrors" novalidate class="auth-register-form" aria-describedby="register-errors">
+<EditForm EditContext="editContext" OnValidSubmit="SubmitRegistrationAsync" OnInvalidSubmit="ShowValidationErrors" novalidate autocomplete="off" class="auth-register-form" aria-describedby="register-errors">
     <DataAnnotationsValidator />
     @if (!string.IsNullOrEmpty(status) || validationErrors.Count > 0)
     {
@@ -43,7 +43,7 @@
         </div>
         <div class="auth-register-email">
             <label for="register-email" class="auth-label">Correo electrónico</label>
-            <InputText id="register-email" type="email" @bind-Value="model.Email" autocomplete="email" placeholder="nombre@correo.com" class="auth-control px-4" />
+            <InputText id="register-email" name="signup-contact-email" type="email" @bind-Value="model.Email" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="nombre@correo.com" class="auth-control px-4" />
         </div>
         <AuthPasswordField Id="new-password" @bind-Value="model.Password" Autocomplete="new-password" Placeholder="Crea una contraseña" Required="false" />
         <AuthPasswordField Id="confirm-password" Label="Confirmar contraseña" @bind-Value="model.ConfirmPassword" Autocomplete="new-password" Placeholder="Repite tu contraseña" Required="false" />

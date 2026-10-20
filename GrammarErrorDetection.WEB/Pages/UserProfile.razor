@@ -1,0 +1,29 @@
+@page "/users/{UserId:guid}"
+@using GrammarErrorDetection.Services.Services.Auth
+@inject AuthSessionState Session
+@inject NavigationManager Navigation
+
+<PageTitle>Perfil de usuario | CETI La Paz</PageTitle>
+
+@if (Session.Current is not null)
+{
+    @if (Session.Roles.Contains("Coordinator", StringComparer.Ordinal))
+    {
+        <h1>Perfil de usuario</h1>
+        <p>Esta página aún está pendiente de implementación.</p>
+        <a href="users">Volver al listado de usuarios</a>
+    }
+    else
+    {
+        <h1>Acceso restringido</h1>
+        <p>Esta página está disponible para coordinadores.</p>
+    }
+}
+
+@code {
+    [Parameter] public Guid UserId { get; set; }
+    protected override void OnParametersSet()
+    {
+        if (Session.Current is null) Navigation.NavigateTo("/auth/login", replace: true);
+    }
+}
