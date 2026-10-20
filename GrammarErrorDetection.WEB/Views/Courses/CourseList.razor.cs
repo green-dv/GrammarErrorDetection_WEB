@@ -264,8 +264,8 @@ public partial class CourseList : IDisposable
         }
     }
     private IGrouping<Guid?, CourseSearchResponse>? TopTeacher => courses.Where(course => course.TeacherId.HasValue).GroupBy(course => course.TeacherId).OrderByDescending(group => group.Count()).FirstOrDefault();
-    private static string Display(string? value, string fallback) => string.IsNullOrWhiteSpace(value) ? fallback : value;
-    private static string Hour(string? value) => TimeOnly.TryParse(value?.TrimEnd('Z', 'z'), System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var time) ? time.ToString("HH:mm") : "—";
+    private static string Display(string? value, string fallback) => CourseDisplay.Text(value, fallback);
+    private static string Hour(string? value) => CourseDisplay.Hour(value);
     private static string Bimester(int value) => value switch { 1 => "I", 2 => "II", 3 => "III", 4 => "IV", 5 => "V", 6 => "VI", _ => value.ToString() };
 
     public void Dispose()

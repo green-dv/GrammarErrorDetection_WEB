@@ -30,4 +30,13 @@ public sealed class UserService(IApiClient apiClient) : IUserService
 
     public Task<ApiResponse<List<UserLookupOption>>?> GetModulesAsync(int pageNumber, CancellationToken cancellationToken = default)
         => apiClient.GetAsync<ApiResponse<List<UserLookupOption>>>($"api/ModuleName?PageNumber={pageNumber}&PageSize=100", cancellationToken);
+
+    public Task<ApiResponse<List<UserLookupOption>>?> SearchModulesAsync(string? name, int pageNumber, int pageSize, CancellationToken cancellationToken = default)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(pageNumber, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(pageSize, 1);
+        var query = $"api/ModuleName?PageNumber={pageNumber}&PageSize={pageSize}";
+        if (!string.IsNullOrWhiteSpace(name)) query += $"&Filter.Name={Uri.EscapeDataString(name.Trim())}";
+        return apiClient.GetAsync<ApiResponse<List<UserLookupOption>>>(query, cancellationToken);
+    }
 }

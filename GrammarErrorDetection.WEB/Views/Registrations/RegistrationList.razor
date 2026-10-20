@@ -1,0 +1,91 @@
+@using GrammarErrorDetection.Models.Registrations
+@using GrammarErrorDetection.Services.Services.Auth
+@using GrammarErrorDetection.WEB.Components.Dialogs
+@using static GrammarErrorDetection.WEB.Views.Registrations.RegistrationViewSupport
+
+@if (Allowed)
+{
+    <section class="users-page registrations-page" aria-labelledby="registrations-title">
+        <header class="users-heading"><div><p class="users-eyebrow">CETI · PORTAL ACADÉMICO</p><h1 id="registrations-title">@Title</h1><p>@(Mine ? "Consulta tus solicitudes y su estado de aprobación." : "Revisa y resuelve las solicitudes de inscripción de los estudiantes.")</p></div>
+            @if (Mine && !CoursesOnly)
+            {
+                <button type="button" class="data-table-button data-table-button-primary" disabled="@(loading || deciding)" @onclick="OpenApply" aria-haspopup="dialog">Solicitar / editar inscripción</button>
+            }
+        </header>
+        <div class="data-table-card">
+            <header class="data-table-heading"><div><h2>@(CoursesOnly ? "Cursos con inscripción activa" : "Solicitudes de inscripción")</h2><p>@(CoursesOnly ? "Las inscripciones rechazadas quedan fuera del curso." : Mine ? "Consulta tu historial de inscripciones y su estado." : "Consulta el historial por fecha, estudiante, módulo y estado.")</p></div></header>
+            @if (!Mine)
+            {
+            <EditForm Model="filters" OnValidSubmit="SearchAsync" novalidate>
+                <DataAnnotationsValidator />
+                <fieldset class="registration-filter-fields" disabled="@(loading || deciding)">
+                    <div class="data-table-toolbar registration-filters">
+                        <label class="data-table-field"><span>Fecha de inscripción</span><InputDate @bind-Value="filters.RegistrationDate" /></label>
+                        @if (!Mine) { <RegistrationFilterLookup Students="true" @bind-Value="filters.UserId" Disabled="@(loading || deciding)" /> }
+                        <RegistrationFilterLookup @bind-Value="filters.ModuleNameId" Disabled="@(loading || deciding)" />
+                        <label class="data-table-field"><span>Estado</span><InputSelect @bind-Value="filters.Status"><option value="">Todos</option><option value="Pending">Pendiente</option><option value="Approved">Aprobada</option><option value="Rejected">Rechazada</option></InputSelect></label>
+                    </div>
+                    <div class="registration-search-actions"><button type="submit" class="data-table-button data-table-button-primary">Buscar</button><button type="button" class="data-table-button" @onclick="ClearAsync">Limpiar filtros</button></div>
+                </fieldset>
+                <div class="data-table-error"><ValidationSummary /></div>
+            </EditForm>
+            }
+            @if (error is not null) { <div class="data-table-error" role="alert"><span>@error</span><button type="button" class="data-table-text-button" @onclick="RetryAsync" disabled="@loading">Reintentar</button></div> }
+            @if (message is not null) { <p class="data-table-message" role="status">@message</p> }
+            <p class="data-table-summary" role="status">@(loading ? "Cargando inscripciones…" : $"{entries.Count} inscripciones en esta página")</p>
+            <div class="data-table-scroll" role="region" aria-label="Listado de inscripciones" aria-busy="@loading.ToString().ToLowerInvariant()" tabindex="0">
+                <table class="data-table registrations-table">
+                    <caption class="data-table-sr-only">Fecha de inscripción, nombre, apellido, CIC y teléfono del estudiante, módulo, estado y actualización.</caption>
+                    <thead><tr><th scope="col">Fecha de inscripción</th><th scope="col">Nombre</th><th scope="col">Apellido</th><th scope="col">CIC</th><th scope="col">Teléfono</th><th scope="col">Módulo</th><th scope="col">Estado</th><th scope="col">Actualización</th></tr></thead>
+                    <tbody>
+                        @if (loading) { <tr><td colspan="@Columns" class="data-table-empty">Cargando inscripciones…</td></tr> }
+                        else
+                        {
+                            @foreach (var item in entries)
+                            {
+                                <tr @key="item">
+                                    <th scope="row">@(item.RegistrationDate?.ToString("dd/MM/yyyy") ?? "—")</th>
+                                    <td>@Text(item.FirstName)</td>
+                                    <td>@Text(item.LastName)</td>
+                                    <td>@Text(item.Ci)</td>
+                                    <td>@Text(item.Phone)</td>
+                                    <td>@Text(item.ModuleName)</td>
+                                    <td><span class="registration-status @StatusClass(item)">@Status(item)</span>
+                                        @if (!Mine && IsPending(item))
+                                        {
+                                            <div class="registration-decision-actions"><button type="button" class="data-table-button data-table-button-primary" disabled="@deciding" @onclick="() => Review(item, true)" aria-label="Aprobar inscripción de @item.FirstName @item.LastName" aria-haspopup="dialog">Aprobar</button><button type="button" class="data-table-button data-table-button-danger" disabled="@deciding" @onclick="() => Review(item, false)" aria-label="Rechazar inscripción de @item.FirstName @item.LastName" aria-haspopup="dialog">Rechazar</button></div>
+                                        }
+                                    </td>
+                                    <td>@(item.UpdatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "—")</td>
+                                </tr>
+                            }
+                            @if (entries.Count == 0 && error is null) { <tr><td colspan="@Columns" class="data-table-empty"><strong>No se encontraron inscripciones</strong><p>@(Mine ? "Puedes enviar una solicitud desde Mis inscripciones." : "Prueba con otros filtros.")</p></td></tr> }
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <footer class="data-table-footer">
+                <label class="data-table-page-size">Filas por página <select @bind="pageSize" @bind:after="ChangeSizeAsync" disabled="@(loading || deciding)"><option value="5">5</option><option value="20">20</option><option value="50">50</option></select></label>
+                <span>@entries.Count resultados en esta página</span>
+                <nav class="data-table-pagination" aria-label="Paginación de inscripciones"><button type="button" @onclick="PreviousAsync" disabled="@(loading || deciding || page <= 1)" aria-label="Página anterior">‹</button><span>Página <strong>@(page)</strong></span><button type="button" @onclick="NextAsync" disabled="@(loading || deciding || !hasNext)" aria-label="Página siguiente">›</button></nav>
+            </footer>
+        </div>
+    </section>
+    @if (reviewing is { } entry && !Mine)
+    {
+        <ModalDialog Title="@(approving ? "Aprobar inscripción" : "Rechazar inscripción")" Busy="deciding" OnClose="CloseReview">
+            <div class="ceti-modal-body"><p>Estudiante: <strong>@Text(entry.FirstName) @Text(entry.LastName)</strong></p><p>CIC: @Text(entry.Ci) · Teléfono: @Text(entry.Phone)</p><p>Módulo: <strong>@Text(entry.ModuleName)</strong></p>
+                <p>@(approving ? "Se comprobarán nuevamente la elegibilidad y el cupo. La aprobación bloquea nuevas solicitudes para el mismo periodo." : "La inscripción se desactivará. El estudiante dejará de pertenecer al curso y podrá enviar una nueva solicitud.")</p>
+                @if (decisionError is not null) { <p class="ceti-modal-errors" role="alert">@decisionError</p> }
+            </div>
+            <footer class="ceti-modal-footer"><span>@(deciding ? "Guardando decisión…" : "Confirma la decisión sobre esta solicitud.")</span><div><button type="button" class="data-table-button" disabled="@deciding" @onclick="CloseReview">Cancelar</button><button type="button" class="data-table-button @(approving ? "data-table-button-primary" : "data-table-button-danger")" disabled="@deciding" @onclick="ConfirmAsync">@(approving ? "Confirmar aprobación" : "Rechazar y desactivar")</button></div></footer>
+        </ModalDialog>
+    }
+    @if (applying && Mine && !CoursesOnly)
+    {
+        <ApplyRegistrationModal OnClose="CloseApply" OnSaved="AppliedAsync" />
+    }
+}
+
+
+

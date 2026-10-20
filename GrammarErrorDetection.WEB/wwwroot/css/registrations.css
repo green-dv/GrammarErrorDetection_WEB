@@ -1,0 +1,40 @@
+.registrations-page { max-width: 1440px; }
+.registrations-page .data-table-card { overflow: visible; }
+.registration-lookup { position: relative; flex: 1 1 220px; }
+.registration-lookup-control { display: flex; gap: 4px; }
+.registration-lookup-toggle { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 38px; padding: 8px 11px; border: 1px solid #dce4ee; border-radius: 7px; background: #fff; color: #182440; text-align: left; font: inherit; }
+.registration-lookup-toggle:disabled { opacity: .55; }
+.registration-lookup-toggle:focus-visible, .registration-lookup-clear:focus-visible, .registration-lookup-option:focus-visible { outline: 2px solid #285d8c; outline-offset: 2px; }
+.registration-lookup-clear { border: 0; border-radius: 6px; padding: 0 10px; background: #edf3f9; color: #445c78; font-size: 18px; }
+.registration-lookup-backdrop { position: fixed; inset: 0; z-index: 29; border: 0; background: transparent; cursor: default; }
+.registration-lookup-panel { position: absolute; top: 100%; left: 0; z-index: 30; display: grid; gap: 10px; width: max(100%, 340px); max-width: calc(100vw - 48px); margin-top: 5px; padding: 14px; border: 1px solid #dce4ee; border-radius: 10px; background: #fff; box-shadow: 0 10px 30px #18244025; }
+.registration-lookup-panel p { margin: 4px 0; font-size: 12px; color: #627187; }
+.registration-lookup-option { display: flex; flex-direction: column; gap: 5px; width: 100%; border: 0; border-radius: 6px; padding: 10px; background: #fff; color: #182440; text-align: left; font: inherit; }
+.registration-lookup-option:hover, .registration-lookup-option.active, .registration-lookup-option[aria-selected="true"] { background: #edf3f9; }
+.registration-lookup-option small { color: #627187; font-size: 11px; overflow-wrap: anywhere; }
+.registration-lookup-footer { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 11px; }
+.registration-filter-fields { min-width: 0; border: 0; padding: 0; margin: 0; }
+.registration-search-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 22px 16px; }
+.registration-course-pagination { margin-block: 18px; justify-content: center; }
+.registration-decision-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.registration-filters .data-table-field:first-child { flex: 1 1 260px; }
+.registration-filters select { min-width: 160px; }
+.registrations-table { min-width: 740px; }
+.registration-status { display: inline-flex; padding: 5px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.registration-status.pending { color: #805d13; background: #fff5d8; }
+.registration-status.approved { color: #27664c; background: #e9f5ee; }
+.registration-status.rejected { color: #a33740; background: #fcecef; }
+.registration-notice { margin: 0 0 18px; padding: 14px 18px; border-left: 3px solid #52769f; border-radius: 4px; color: #445c78; background: #edf3f9; font-size: 13px; line-height: 1.6; }
+.registration-course-options { display: grid; gap: 12px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.registration-course-options legend { margin-bottom: 12px; color: #182440; font-size: 14px; font-weight: 600; }
+.registration-course-option { display: flex; align-items: flex-start; gap: 12px; padding: 16px; border: 1px solid #dce4ee; border-radius: 10px; cursor: pointer; }
+.registration-course-option:hover, .registration-course-option.selected { border-color: #52769f; background: #f4f8fc; }
+.registration-course-option:focus-within { outline: 2px solid #285d8c; outline-offset: 3px; }
+.registration-course-option input { margin-top: 5px; accent-color: #213657; }
+.registration-course-option > span { display: flex; flex-direction: column; gap: 7px; }
+.registration-course-option strong { color: #182440; font-size: 14px; }
+.registration-course-option span span { color: #627187; font-size: 12px; }
+.registration-selection { margin: 18px 0 0; color: #445c78; font-size: 12px; }
+@media (max-width: 640px) {
+    .registrations-page .users-heading { flex-wrap: wrap; }
+}

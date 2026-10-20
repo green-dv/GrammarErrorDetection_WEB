@@ -1,0 +1,31 @@
+@using Microsoft.AspNetCore.Components.Web
+
+<div class="data-table-field registration-lookup" @onkeydown="HandleKeyAsync">
+    <span id="@(elementId + "-label")">@(Students ? "Estudiante" : "Módulo")</span>
+    <div class="registration-lookup-control">
+        <button type="button" class="registration-lookup-toggle" disabled="Disabled" aria-labelledby="@(elementId + "-label")" aria-expanded="@open.ToString().ToLowerInvariant()" aria-haspopup="listbox" @onclick="ToggleAsync">@(selectedLabel ?? (Students ? "Todos los estudiantes" : "Todos los módulos")) <span aria-hidden="true">⌄</span></button>
+        @if (Value is not null) { <button type="button" class="registration-lookup-clear" disabled="Disabled" @onclick="ClearAsync" aria-label="@(Students ? "Quitar filtro de estudiante" : "Quitar filtro de módulo")">×</button> }
+    </div>
+    @if (open && !Disabled)
+    {
+        <button type="button" class="registration-lookup-backdrop" aria-label="Cerrar selector" tabindex="-1" @onclick="Close"></button>
+        <div class="registration-lookup-panel">
+            @if (Students)
+            {
+                <label class="data-table-field"><span>Buscar por</span><select value="@searchField" @onchange="ChangeFieldAsync"><option value="FirstName">Nombre</option><option value="LastName">Apellido</option><option value="Ci">CIC</option><option value="Email">Correo</option><option value="Phone">Teléfono</option></select></label>
+            }
+            <label class="data-table-field"><span class="data-table-sr-only">@(Students ? "Buscar estudiante" : "Buscar módulo por nombre")</span><input @ref="searchInput" type="search" value="@term" @oninput="SearchChangedAsync" maxlength="@MaxLength" placeholder="@(Students ? "Escribe para buscar…" : "Nombre del módulo…")" role="combobox" aria-autocomplete="list" aria-expanded="true" aria-controls="@elementId" aria-activedescendant="@ActiveOptionId" autocomplete="off" /></label>
+            @if (loading) { <p role="status">Buscando…</p> }
+            @if (error is not null) { <p role="alert">@error</p><button type="button" class="data-table-text-button" @onclick="RetryAsync">Reintentar</button> }
+            <div id="@elementId" role="listbox" aria-label="@(Students ? "Estudiantes encontrados" : "Módulos encontrados")" aria-busy="@loading.ToString().ToLowerInvariant()">
+                @for (var index = 0; index < options.Count; index++)
+                {
+                    var option = options[index];
+                    <button id="@(elementId + "-" + index)" type="button" role="option" aria-selected="@(Value == option.Id.ToString("D") ? "true" : "false")" class="registration-lookup-option @(activeIndex == index ? "active" : "")" @onclick="() => SelectAsync(option)"><strong>@option.Label</strong>@if (option.Detail is not null) { <small>@option.Detail</small> }</button>
+                }
+            </div>
+            @if (!loading && error is null && options.Count == 0) { <p role="status">Sin resultados para esta búsqueda.</p> }
+            <div class="registration-lookup-footer"><button type="button" class="data-table-button" disabled="@(loading || page <= 1)" @onclick="PreviousAsync" aria-label="Opciones anteriores">‹</button><span>Página @(page) · hasta 5 opciones</span><button type="button" class="data-table-button" disabled="@(loading || !hasNext)" @onclick="NextAsync" aria-label="Opciones siguientes">›</button><button type="button" class="data-table-text-button" @onclick="Close">Cerrar</button></div>
+        </div>
+    }
+</div>
