@@ -1,0 +1,26 @@
+.generate-courses-dialog .ceti-modal-heading { padding-top: 22px; }
+.generate-courses-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 14px; }
+.generate-courses-period { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 22px; padding: 18px; border: 1px solid #dce8f2; border-radius: 10px; background: #f0f6fb; }
+.generate-courses-period div > span { display: block; margin-bottom: 6px; color: #627187; font-size: 11px; }
+.generate-courses-period strong { color: #285d8c; font-size: 13px; }
+.generate-courses-period > span { color: #738da7; font-size: 21px; }
+.generate-courses-note { margin: 16px 0 0; color: #627187; font-size: 12px; line-height: 1.7; }
+.generate-courses-result { padding-top: 10px; }
+.generate-courses-success { padding: 16px; border: 1px solid #d5e7dc; border-radius: 9px; background: #f1f8f4; color: #32624f; }
+.generate-courses-success strong { font-size: 15px; }
+.generate-courses-success p { margin: 6px 0 0; font-size: 12px; }
+.generate-courses-counts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 18px 0 0; }
+.generate-courses-counts div { padding: 16px; border: 1px solid #e3e9f1; border-radius: 9px; }
+.generate-courses-counts dt { color: #627187; font-size: 12px; font-weight: 400; }
+.generate-courses-counts dd { margin: 7px 0 0; color: #182440; font-size: 25px; font-weight: 700; }
+.generate-courses-skipped { margin-top: 18px; color: #627187; font-size: 12px; }
+.generate-courses-skipped summary { cursor: pointer; color: #285d8c; }
+.generate-courses-skipped ul { max-height: 180px; overflow-y: auto; list-style: none; padding: 0; margin: 12px 0 0; }
+.generate-courses-skipped li { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; padding: 10px 0; border-bottom: 1px solid #e6ebf2; line-height: 1.6; }
+.generate-courses-skipped li strong { flex-shrink: 0; color: #94651c; }
+@media (max-width: 500px) {
+    .generate-courses-fields { grid-template-columns: 1fr; }
+    .generate-courses-period { padding: 14px; gap: 10px; }
+    .generate-courses-period strong { font-size: 12px; }
+    .generate-courses-dialog .ceti-modal-footer > span { flex-basis: 100%; }
+}

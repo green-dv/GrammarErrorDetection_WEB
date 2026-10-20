@@ -36,6 +36,8 @@ public sealed record UserSearchFilter
     public bool? Active { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public Guid? CurrentModuleNameId { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Guid? ClassId { get; set; }
 
     public UserSearchFilter? Normalize()
     {

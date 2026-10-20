@@ -13,16 +13,17 @@ public static class PortalNavigation
         new("process", "Procesar", "<path d='M4 4h16v16H4ZM8 8h8m-8 4h8m-8 4h4'/>", [], "oraciones párrafos análisis"),
         new("my-enrollments", "Mis inscripciones", List, ["Student"]),
         new("my-courses", "Mis cursos", Book, ["Student"]),
-        new("teaching-courses", "Mis cursos", Book, ["Teacher"]),
         new("users", "Usuarios", "<circle cx='9' cy='8' r='3'/><path d='M3 20v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 4v2'/>", ["Coordinator"]),
-        new("courses", "Cursos", Book, ["Coordinator"]),
+        new("courses", "Cursos", Book, ["Coordinator", "Teacher"]),
         new("enrollments", "Inscripciones", List, ["Teacher", "Coordinator"])
     ];
 
     public static bool IsAuthPath(string path) => path is "" or "login" or "register" || path.StartsWith("auth/", StringComparison.OrdinalIgnoreCase);
     public static bool CanAccess(string path, IReadOnlyList<string> roles)
     {
-        var option = Options.FirstOrDefault(item => item.Path.Equals(path.Split('/')[0], StringComparison.OrdinalIgnoreCase));
+        var section = path.Split('/')[0];
+        if (section.Equals("teaching-courses", StringComparison.OrdinalIgnoreCase)) section = "courses";
+        var option = Options.FirstOrDefault(item => item.Path.Equals(section, StringComparison.OrdinalIgnoreCase));
         return option is null || option.Roles.Length == 0 || option.Roles.Any(role => roles.Contains(role, StringComparer.Ordinal));
     }
 }

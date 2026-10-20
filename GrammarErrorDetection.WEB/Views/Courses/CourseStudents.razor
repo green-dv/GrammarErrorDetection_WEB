@@ -1,0 +1,28 @@
+@using GrammarErrorDetection.WEB.Views.Users
+
+<section class="users-page course-detail" aria-labelledby="course-detail-title">
+    <div class="course-detail-toolbar"><a href="/courses">← Volver a cursos</a></div>
+    @if (loading)
+    {
+        <h1 id="course-detail-title">Estudiantes del curso</h1><p class="portal-empty" role="status">Cargando información del curso…</p>
+    }
+    else if (error is not null)
+    {
+        <h1 id="course-detail-title">Estudiantes del curso</h1><div class="course-detail-error" role="alert"><p>@error</p><button type="button" class="data-table-button" @onclick="LoadAsync">Reintentar</button></div>
+    }
+    else if (course is not null)
+    {
+        <header class="users-heading"><div><p class="users-eyebrow">CETI · DETALLE ACADÉMICO</p><h1 id="course-detail-title">Módulo @Text(course.ModuleName, "no informado")</h1><p>Paralelo @Text(course.Parallel, "—") · Bimestre @course.Bimester · @course.Year</p></div><span class="data-table-badge">@(course.Active ? "Curso activo" : "Curso inactivo")</span></header>
+        <article class="course-detail-info" aria-label="Datos del curso">
+            <div class="course-detail-teacher"><span class="data-table-avatar" aria-hidden="true">@TeacherInitials(course.TeacherName)</span><div><span>Profesor del curso</span><strong>@Text(course.TeacherName, "Sin profesor asignado")</strong></div></div>
+            <dl><div><dt>Nivel</dt><dd>@(course.ModuleLevel?.ToString() ?? "—")</dd></div><div><dt>Horario</dt><dd>@Hour(course.StartTime) – @Hour(course.EndTime)</dd></div><div><dt>Aula</dt><dd>@Text(course.ClassroomName, "Sin aula asignada")<small>Capacidad: @(course.ClassroomCapacity?.ToString() ?? "—")</small></dd></div><div><dt>Fechas</dt><dd>@(course.StartDate?.ToString("dd/MM/yyyy") ?? "—")<small>al @(course.EndDate?.ToString("dd/MM/yyyy") ?? "—")</small></dd></div></dl>
+        </article>
+        <div class="courses-stats course-detail-stats">
+            <article><div><p>Estudiantes inscritos</p><strong>@(course.StudentCount?.ToString() ?? "—")</strong><span>Total del curso</span></div></article>
+            <article><div><p>Promedio examen 1</p><strong>@(course.Exam1Average?.ToString("0.##") ?? "—")<small> / 100</small></strong><span>Primer examen</span></div></article>
+            <article><div><p>Promedio examen 2</p><strong>@(course.Exam2Average?.ToString("0.##") ?? "—")<small> / 100</small></strong><span>Segundo examen</span></div></article>
+            <article><div><p>Media de ambos exámenes</p><strong>@(ExamsMean?.ToString("0.##") ?? "—")<small> / 100</small></strong><span>Examen 1: 50 % · Examen 2: 50 %</span></div></article>
+        </div>
+        <UserList @key="course.Id" Course="course" />
+    }
+</section>
