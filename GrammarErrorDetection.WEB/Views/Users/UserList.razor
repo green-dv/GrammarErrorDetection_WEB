@@ -1,10 +1,13 @@
 @using GrammarErrorDetection.WEB.Components.Tables
 @using GrammarErrorDetection.WEB.Components.Dialogs
 
-<section class="users-page" aria-labelledby="users-title">
-    <header class="users-heading"><div><p class="users-eyebrow">CETI · COMUNIDAD ACADÉMICA</p><h1 id="users-title">Usuarios</h1><p>Datos de contacto y recorrido académico de los estudiantes.</p></div></header>
+<section class="users-page @(IsCourseList ? "course-students-list" : "")" aria-labelledby="@(IsCourseList ? null : "users-title")" aria-label="@(IsCourseList ? ListTitle : null)">
+    @if (!IsCourseList)
+    {
+        <header class="users-heading"><div><p class="users-eyebrow">CETI · COMUNIDAD ACADÉMICA</p><h1 id="users-title">Usuarios</h1><p>Datos de contacto y recorrido académico de los estudiantes.</p></div></header>
+    }
     <div class="data-table-card">
-        <header class="data-table-heading"><div><h2>Listado de usuarios</h2><p>Busca por uno o varios campos. Deja los filtros vacíos para consultar todos los usuarios.</p></div></header>
+        <header class="data-table-heading"><div><h2>@ListTitle</h2><p>@(IsCourseList ? "Datos de contacto, estado de inscripción y calificación del grupo." : "Busca por uno o varios campos. Deja los filtros vacíos para consultar todos los usuarios.")</p></div></header>
         <EditForm Model="filters" OnValidSubmit="SearchAsync" OnInvalidSubmit="ShowValidationErrors" novalidate>
             <DataAnnotationsValidator />
             <div class="data-table-toolbar users-filters">
@@ -14,9 +17,12 @@
                 <label class="data-table-field"><span>CI</span><InputText @bind-Value="filters.Ci" placeholder="Documento de identidad" maxlength="15" /></label>
                 <label class="data-table-field"><span>Teléfono</span><InputText @bind-Value="filters.Phone" placeholder="Teléfono" maxlength="12" /></label>
                 <label class="data-table-field"><span>Fecha de registro</span><InputDate @bind-Value="filters.CreatedAt" /></label>
-                <label class="data-table-field"><span>Rol</span><InputSelect @bind-Value="filters.RoleId" disabled="@(loadingCatalogs || roles.Count == 0)"><option value="">Todos los roles</option>@foreach (var role in roles) { <option value="@role.Id">@role.Name</option> }</InputSelect></label>
-                <label class="data-table-field"><span>Curso actual</span><InputSelect @bind-Value="filters.CurrentModuleNameId" disabled="@(loadingCatalogs || modules.Count == 0)"><option value="">Todos los módulos</option>@foreach (var module in modules) { <option value="@module.Id">@module.Name</option> }</InputSelect></label>
-                <label class="data-table-field"><span>Estado</span><InputSelect @bind-Value="filters.Active"><option value="">Todos</option><option value="true">Activo</option><option value="false">Inactivo</option></InputSelect></label>
+                @if (!IsCourseList)
+                {
+                    <label class="data-table-field"><span>Rol</span><InputSelect @bind-Value="filters.RoleId" disabled="@(loadingCatalogs || roles.Count == 0)"><option value="">Todos los roles</option>@foreach (var role in roles) { <option value="@role.Id">@role.Name</option> }</InputSelect></label>
+                    <label class="data-table-field"><span>Curso actual</span><InputSelect @bind-Value="filters.CurrentModuleNameId" disabled="@(loadingCatalogs || modules.Count == 0)"><option value="">Todos los módulos</option>@foreach (var module in modules) { <option value="@module.Id">@module.Name</option> }</InputSelect></label>
+                }
+                <label class="data-table-field"><span>@(IsCourseList ? "Estado de cuenta" : "Estado")</span><InputSelect @bind-Value="filters.Active"><option value="">Todos</option><option value="true">Activo</option><option value="false">Inactivo</option></InputSelect></label>
                 <div class="users-filter-actions"><button type="submit" class="data-table-button data-table-button-primary" disabled="@busy">Buscar</button><button type="button" class="data-table-button" @onclick="ClearFiltersAsync" disabled="@busy">Limpiar filtros</button></div>
             </div>
         </EditForm>
@@ -33,33 +39,41 @@
             <div class="data-table-error" role="alert"><span>@error</span><button type="button" class="data-table-text-button" @onclick="RetryAsync" disabled="@busy">Reintentar</button></div>
         }
         @if (status is not null) { <p class="data-table-message" role="status">@status</p> }
-        <p class="data-table-summary" role="status">@(busy ? "Cargando usuarios…" : error is not null ? "Consulta no disponible" : $"{users.Count} usuarios en esta página")</p>
+        <p class="data-table-summary" role="status">@(busy ? (IsCourseList ? "Cargando estudiantes…" : "Cargando usuarios…") : error is not null ? "Consulta no disponible" : $"{users.Count} {(IsCourseList ? "estudiantes" : "usuarios")} en esta página")</p>
 
-        <div class="data-table-scroll" role="region" aria-label="Listado de usuarios" aria-busy="@busy.ToString().ToLowerInvariant()" tabindex="0">
-            <table class="data-table users-table">
-                <caption class="data-table-sr-only">Contacto, curso anterior, curso actual, nota y acciones de los usuarios.</caption>
-                <thead><tr><th scope="col">Nombre y apellido</th><th scope="col">CI / Teléfono</th><th scope="col">Anterior curso</th><th scope="col">Curso actual</th><th scope="col">Nota actual</th><th scope="col" class="data-table-actions-heading">Acciones</th></tr></thead>
+        <div class="data-table-scroll" role="region" aria-label="@ListTitle" aria-busy="@busy.ToString().ToLowerInvariant()" tabindex="0">
+            <table class="data-table users-table @(IsCourseList ? "course-students-table" : "")">
+                <caption class="data-table-sr-only">@(IsCourseList ? "Estudiantes del curso seleccionado, contacto, inscripción y nota disponible." : "Contacto, curso anterior, curso actual, nota y acciones de los usuarios.")</caption>
+                <thead><tr><th scope="col">@(IsCourseList ? "Estudiante" : "Nombre y apellido")</th><th scope="col">CI / Teléfono</th>@if (IsCourseList) { <th scope="col">Inscripción</th><th scope="col">Nota del curso</th> } else { <th scope="col">Anterior curso</th><th scope="col">Curso actual</th><th scope="col">Nota actual</th><th scope="col" class="data-table-actions-heading">Acciones</th> }</tr></thead>
                 <tbody>
                     @if (busy)
                     {
-                        <tr><td colspan="6" class="data-table-empty">Cargando usuarios…</td></tr>
+                        <tr><td colspan="@ColumnCount" class="data-table-empty">@(IsCourseList ? "Cargando estudiantes…" : "Cargando usuarios…")</td></tr>
                     }
                     else
                     {
                         @foreach (var user in users)
                         {
                             <tr @key="user.Id">
-                                <th scope="row"><div class="data-table-identity"><span class="data-table-avatar" aria-hidden="true">@Initials(user)</span><div><span class="data-table-primary">@FullName(user) @if (!user.Active) { <span class="users-inactive">Inactivo</span> }</span><span class="data-table-secondary">@user.Email</span></div></div></th>
+                                <th scope="row"><div class="data-table-identity"><span class="data-table-avatar" aria-hidden="true">@Initials(user)</span><div><span class="data-table-primary">@FullName(user) @if (!IsCourseList) { <span class="users-role">@(string.IsNullOrWhiteSpace(user.RoleName) ? "Sin rol informado" : user.RoleName)</span> } @if (!user.Active) { <span class="users-inactive">@(IsCourseList ? "Cuenta inactiva" : "Inactivo")</span> }</span><span class="data-table-secondary">@user.Email</span></div></div></th>
                                 <td><span class="data-table-primary">@user.Ci</span><span class="data-table-secondary">@(user.Phone ?? "Sin teléfono")</span></td>
-                                <td><span class="data-table-chip">@PreviousCourse(user)</span></td>
-                                <td><span class="data-table-primary">@CurrentCourse(user)</span><span class="data-table-secondary">@Schedule(user)</span></td>
-                                <td><span class="data-table-grade">@(user.CurrentCourseFinalScore?.ToString("0.##") ?? "—")</span>@if (user.CurrentCourseFinalScore is not null) { <span class="data-table-grade-scale"> / 100</span> }</td>
-                                <td><RowActions Label="@FullName(user)" OnView="() => ViewProfile(user)" OnEdit="() => OpenEdit(user)" OnDelete="() => OpenStatus(user)" EditDisabled="@updatingStatus" DeleteDisabled="@updatingStatus" Restore="@(!user.Active)" DeleteTitle="@(user.Active ? "Desactivar" : "Reactivar")" /></td>
+                                @if (IsCourseList)
+                                {
+                                    <td><span class="data-table-chip">@RegistrationStatus(user)</span></td>
+                                    <td><span class="data-table-grade">@(CourseGrade(user)?.ToString("0.##") ?? "—")</span>@if (CourseGrade(user) is not null) { <span class="data-table-grade-scale"> / 100</span> }</td>
+                                }
+                                else
+                                {
+                                    <td><span class="data-table-chip">@PreviousCourse(user)</span></td>
+                                    <td><span class="data-table-primary">@CurrentCourse(user)</span><span class="data-table-secondary">@Schedule(user)</span></td>
+                                    <td><span class="data-table-grade">@(user.CurrentCourseFinalScore?.ToString("0.##") ?? "—")</span>@if (user.CurrentCourseFinalScore is not null) { <span class="data-table-grade-scale"> / 100</span> }</td>
+                                    <td><RowActions Label="@FullName(user)" OnView="() => ViewProfile(user)" OnEdit="() => OpenEdit(user)" OnDelete="() => OpenStatus(user)" EditDisabled="@updatingStatus" DeleteDisabled="@updatingStatus" Restore="@(!user.Active)" DeleteTitle="@(user.Active ? "Desactivar" : "Reactivar")" /></td>
+                                }
                             </tr>
                         }
                         @if (users.Count == 0 && error is null)
                         {
-                            <tr><td colspan="6" class="data-table-empty"><strong>No se encontraron usuarios</strong><p>Prueba con otros filtros.</p><button type="button" class="data-table-button" @onclick="ClearFiltersAsync">Limpiar filtros</button></td></tr>
+                            <tr><td colspan="@ColumnCount" class="data-table-empty"><strong>@(IsCourseList ? "No se encontraron estudiantes en este curso" : "No se encontraron usuarios")</strong><p>Prueba con otros filtros.</p><button type="button" class="data-table-button" @onclick="ClearFiltersAsync">Limpiar filtros</button></td></tr>
                         }
                     }
                 </tbody>
@@ -68,16 +82,16 @@
         <footer class="data-table-footer">
             <label class="data-table-page-size">Filas por página <select @bind="pageSize" @bind:after="ChangePageSizeAsync" disabled="@busy"><option value="5">5</option><option value="10">10</option><option value="20">20</option></select></label>
             <span>@(busy ? "Consultando…" : error is null ? ResultRange : "")</span>
-            <nav class="data-table-pagination" aria-label="Paginación de usuarios"><button type="button" @onclick="PreviousPageAsync" disabled="@(busy || page <= 1)" aria-label="Página anterior">‹</button><span>Página <strong>@(page)</strong></span><button type="button" @onclick="NextPageAsync" disabled="@(busy || !hasNext)" aria-label="Página siguiente">›</button></nav>
+            <nav class="data-table-pagination" aria-label="@(IsCourseList ? "Paginación de estudiantes" : "Paginación de usuarios")"><button type="button" @onclick="PreviousPageAsync" disabled="@(busy || page <= 1)" aria-label="Página anterior">‹</button><span>Página <strong>@(page)</strong></span><button type="button" @onclick="NextPageAsync" disabled="@(busy || !hasNext)" aria-label="Página siguiente">›</button></nav>
         </footer>
     </div>
 </section>
 
-@if (editingUser is not null)
+@if (CanManageUsers && editingUser is not null)
 {
     <UserEditModal @key="editingUser.Id" User="editingUser" Roles="roles" OnClose="CloseEdit" OnSaved="UserSavedAsync" />
 }
-@if (statusUser is not null)
+@if (CanManageUsers && statusUser is not null)
 {
     <ModalDialog Title="@(statusUser.Active ? "Desactivar usuario" : "Reactivar usuario")" Busy="@updatingStatus" OnClose="CloseStatus">
         <div class="ceti-modal-body">

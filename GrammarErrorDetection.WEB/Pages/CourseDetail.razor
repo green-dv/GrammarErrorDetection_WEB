@@ -1,0 +1,11 @@
+@page "/courses/{ClassId:guid}"
+@page "/teaching-courses/{ClassId:guid}"
+@using GrammarErrorDetection.WEB.Views.Courses
+
+<PageTitle>Estudiantes del curso | CETI La Paz</PageTitle>
+
+<CourseStudents @key="ClassId" ClassId="ClassId" />
+
+@code {
+    [Parameter] public Guid ClassId { get; set; }
+}

@@ -12,6 +12,7 @@ public sealed class UserService(IApiClient apiClient) : IUserService
         ArgumentNullException.ThrowIfNull(request);
         ArgumentOutOfRangeException.ThrowIfLessThan(request.PageNumber, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(request.PageSize, 1);
+        if (request.Filter?.ClassId == Guid.Empty) throw new ArgumentException("Selecciona un curso válido.", nameof(request));
         var normalized = new UserSearchRequest { PageNumber = request.PageNumber, PageSize = request.PageSize, Filter = request.Filter?.Normalize() };
         return apiClient.PostAsync<UserSearchRequest, ApiResponse<List<UserSearchResponse>>>("api/User/search", normalized, cancellationToken);
     }
