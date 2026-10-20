@@ -5,6 +5,7 @@ using GrammarErrorDetection.Infraestructure.Interfaces;
 using GrammarErrorDetection.Services.Services.Auth;
 using GrammarErrorDetection.Services.Interfaces;
 using GrammarErrorDetection.Services.Services.Users;
+using GrammarErrorDetection.Services.Services.Courses;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 
@@ -27,6 +28,7 @@ builder.Services.AddScoped<IApiClient>(provider =>
 });
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<LoginFlowState>();
 builder.Services.AddScoped<RegistrationFlowState>();
 builder.Services.AddScoped<LoginFlowService>();

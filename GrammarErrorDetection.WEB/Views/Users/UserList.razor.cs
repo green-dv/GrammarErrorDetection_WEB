@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using GrammarErrorDetection.Models.Responses;
 using GrammarErrorDetection.Models.Users;
+using GrammarErrorDetection.Models.Courses;
 using GrammarErrorDetection.Services.Interfaces;
 using GrammarErrorDetection.Services.Services.Auth;
 using Microsoft.AspNetCore.Components;
@@ -11,6 +12,11 @@ namespace GrammarErrorDetection.WEB.Views.Users;
 
 public partial class UserList : IDisposable
 {
+    [Parameter] public CourseSearchResponse? Course { get; set; }
+    private bool IsCourseList => Course is not null;
+    private bool CanManageUsers => !IsCourseList && Session.IsInRole("Coordinator");
+    private int ColumnCount => IsCourseList ? 4 : 6;
+    private string ListTitle => IsCourseList ? "Estudiantes del curso" : "Listado de usuarios";
     [Inject] private IUserService UserService { get; set; } = default!;
     [Inject] private AuthSessionState Session { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
@@ -32,7 +38,8 @@ public partial class UserList : IDisposable
     protected override async Task OnInitializedAsync()
     {
         if (!CheckSession()) return;
-        await Task.WhenAll(LoadAsync(1), LoadCatalogsAsync());
+        if (IsCourseList) await LoadAsync(1);
+        else await Task.WhenAll(LoadAsync(1), LoadCatalogsAsync());
     }
 
     private bool CheckSession()
@@ -42,9 +49,12 @@ public partial class UserList : IDisposable
             if (!redirected) { redirected = true; Navigation.NavigateTo("/auth/login", replace: true); }
             return false;
         }
-        if (!Session.Roles.Contains("Coordinator", StringComparer.Ordinal))
+        var isTeacher = Session.IsInRole("Teacher");
+        var courseAllowed = Course is { Id: var id } && id != Guid.Empty
+            && ((Session.IsInRole("Coordinator") && !isTeacher) || (isTeacher && Course.TeacherId == Session.Current?.User?.Id));
+        if ((IsCourseList && !courseAllowed) || (!IsCourseList && !Session.IsInRole("Coordinator")))
         {
-            error = "El listado de usuarios está disponible para coordinadores.";
+            error = IsCourseList ? "No tienes acceso a los estudiantes de este curso." : "El listado de usuarios está disponible para coordinadores.";
             return false;
         }
         return true;
@@ -84,7 +94,9 @@ public partial class UserList : IDisposable
         error = status = null;
         try
         {
-            var response = await UserService.SearchAsync(new UserSearchRequest { PageNumber = requestedPage, PageSize = requestedSize, Filter = appliedFilter }, cancellation.Token);
+            // El contexto del curso se impone en cada petición, incluso al limpiar o cambiar de página.
+            var requestFilter = IsCourseList ? (appliedFilter ?? new UserSearchFilter()) with { ClassId = Course!.Id, RoleId = null, CurrentModuleNameId = null } : appliedFilter;
+            var response = await UserService.SearchAsync(new UserSearchRequest { PageNumber = requestedPage, PageSize = requestedSize, Filter = requestFilter }, cancellation.Token);
             if (disposed || version != requestVersion) return;
             if (response?.Data is null || response.Error is { ErrorCode: not 0 })
                 throw new InvalidOperationException("No se pudo obtener el listado de usuarios. Inténtalo de nuevo.");
@@ -135,7 +147,7 @@ public partial class UserList : IDisposable
 
     private async Task LoadCatalogsAsync()
     {
-        if (disposed || loadingCatalogs || !CheckSession()) return;
+        if (disposed || loadingCatalogs || IsCourseList || !CheckSession()) return;
         loadingCatalogs = true;
         catalogError = null;
         try
@@ -194,21 +206,23 @@ public partial class UserList : IDisposable
     private static string PreviousCourse(UserSearchResponse user) => user.LastCourse?.ModuleName ?? "Sin curso anterior";
     private static string CurrentCourse(UserSearchResponse user) => user.CurrentCourse is { } course ? $"{course.ModuleName} · Paralelo {course.Parallel ?? "—"}" : "Sin curso actual";
     private static string Schedule(UserSearchResponse user) => user.CurrentCourse is { StartTime: { } start, EndTime: { } end } ? $"{start:HH:mm} – {end:HH:mm}" : "Sin horario asignado";
+    private decimal? CourseGrade(UserSearchResponse user) => user.CurrentCourse?.ClassId == Course?.Id ? user.CurrentCourseFinalScore : null;
+    private string RegistrationStatus(UserSearchResponse user) => user.CurrentCourse?.ClassId == Course?.Id ? user.CurrentCourse?.RegistrationStatus ?? "No informado" : "No informado";
     private void ViewProfile(UserSearchResponse user)
     {
-        if (CheckSession()) Navigation.NavigateTo($"/users/{user.Id:D}");
+        if (CanManageUsers && CheckSession()) Navigation.NavigateTo($"/users/{user.Id:D}");
     }
 
     private void OpenEdit(UserSearchResponse user)
     {
-        if (!busy && !updatingStatus && CheckSession()) editingUser = user;
+        if (CanManageUsers && !busy && !updatingStatus && CheckSession()) editingUser = user;
     }
 
     private void CloseEdit() => editingUser = null;
 
     private void OpenStatus(UserSearchResponse user)
     {
-        if (busy || updatingStatus || !CheckSession()) return;
+        if (!CanManageUsers || busy || updatingStatus || !CheckSession()) return;
         statusUser = user;
         statusError = null;
     }
@@ -230,7 +244,7 @@ public partial class UserList : IDisposable
 
     private async Task ConfirmStatusAsync()
     {
-        if (statusUser is null || updatingStatus || disposed || !CheckSession()) return;
+        if (!CanManageUsers || statusUser is null || updatingStatus || disposed || !CheckSession()) return;
         var user = statusUser;
         var active = !user.Active;
         updatingStatus = true;

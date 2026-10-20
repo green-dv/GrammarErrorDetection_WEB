@@ -12,6 +12,7 @@
 .users-table td:nth-child(2) { min-width: 130px; }
 .users-table td:nth-child(4) { min-width: 215px; }
 .users-inactive { display: inline-block; margin-left: 5px; padding: 2px 5px; border-radius: 4px; color: #7a6570; background: #f2edf0; font-size: 10px; font-weight: 500; }
+.users-role { display: inline-block; margin-left: 5px; padding: 2px 6px; border-radius: 4px; color: #49658a; background: #edf2f8; font-size: 10px; font-weight: 500; }
 .users-detail { margin: 0 22px 18px; padding: 18px; border: 1px solid #dfe7f0; border-radius: 9px; background: #fafbfd; }
 .users-detail h3 { margin: 0 0 16px; font-size: 16px; font-weight: 700; }
 .users-detail h3:focus { outline: none; }
