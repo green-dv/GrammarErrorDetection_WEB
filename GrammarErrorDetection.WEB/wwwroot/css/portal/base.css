@@ -1,0 +1,17 @@
+.ceti-shell { color: var(--color-ink); font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; }
+.ceti-shell h1 { color: var(--color-brand-navy); font-size: clamp(1.6rem, 3vw, 2.1rem); font-weight: 700; letter-spacing: -.035em; }
+.portal-heading { margin-bottom: 1.5rem; }
+.portal-heading h1 { margin: .375rem 0 .5rem; }
+.portal-heading > p:last-child { margin: 0; color: var(--color-muted); font-size: .875rem; line-height: 1.5; }
+.portal-eyebrow { margin: 0; color: var(--color-brand-blue); font-size: .6875rem; font-weight: 700; letter-spacing: .15em; }
+.portal-button { display: inline-flex; align-items: center; justify-content: center; min-height: 2.75rem; padding: .625rem 1.125rem; border: 1px solid var(--color-brand-blue); border-radius: .5rem; background: var(--color-brand-blue); color: #fff; font-size: .875rem; font-weight: 600; text-decoration: none; cursor: pointer; }
+.portal-button:hover { background: var(--color-brand-blue-dark); color: #fff; }
+.portal-button:disabled { opacity: .6; cursor: wait; }
+.portal-button-secondary { background: #fff; color: var(--color-brand-blue); }
+.portal-field { display: grid; gap: .5rem; font-size: .875rem; font-weight: 600; }
+.portal-field input { width: 100%; min-width: 0; height: 2.75rem; padding: .5rem .75rem; border: 1px solid var(--color-line); border-radius: .5rem; background: #fff; font-weight: 400; }
+.portal-field input:focus { outline: 2px solid #176b9f30; border-color: var(--color-brand-blue); }
+.portal-empty { padding: 2rem 0; color: var(--color-muted); line-height: 1.6; }
+.ceti-shell fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.ceti-shell :focus-visible { outline: 2px solid var(--color-brand-blue); outline-offset: 3px; }
+.ceti-shell h1[tabindex="-1"]:focus { outline: none; }

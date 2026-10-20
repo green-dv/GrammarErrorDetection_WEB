@@ -109,7 +109,7 @@ Contiene los modelos de datos compartidos entre las capas del frontend: DTOs, so
 
 En `/auth/register` se solicitan nombres, apellidos, CI, teléfono opcional, correo, contraseña y confirmación. El formulario utiliza validación propia, errores compactos y lógica de entrada en `Views/Auth/Register.razor.cs`. Envía únicamente `email`, `purpose: "signup"` y `password` a `POST /api/Auth/SendCode`; los datos personales y la confirmación de contraseña no se envían en esta etapa. La contraseña conserva su valor original y HTTPS protege el transporte.
 
-Al recibir una respuesta válida, abre `/auth/register/verification`. `RegistrationFlowState` conserva el desafío y una copia de los datos completos del usuario, incluida la contraseña, únicamente en memoria; no usa almacenamiento del navegador. Al pulsar «Verificar y crear cuenta», envía `firstName`, `lastName`, `ci`, `email`, `password`, `phone`, `challengeId` y `code` a `POST /api/Auth/Signup`. El backend valida el código antes de crear la cuenta, en la misma operación. Los errores permiten corregir el código y reintentar mientras el desafío siga vigente. El estado temporal se limpia al completar, cancelar o vencer el registro; recargar la página también pierde estos datos. Si la respuesta contiene una sesión válida, se conserva el JWT en memoria y se abre `/home`.
+Al recibir una respuesta válida, abre `/auth/register/verification`. `RegistrationFlowState` conserva el desafío y una copia de los datos completos del usuario, incluida la contraseña, únicamente en memoria; no usa almacenamiento del navegador. Al pulsar «Verificar y crear cuenta», envía `firstName`, `lastName`, `ci`, `email`, `password`, `phone`, `challengeId` y `code` a `POST /api/Auth/Signup`. El backend valida el código antes de crear la cuenta, en la misma operación. Los errores permiten corregir el código y reintentar mientras el desafío siga vigente. El estado temporal se limpia al completar, cancelar o vencer el registro; recargar la página también pierde estos datos. Si la respuesta contiene una sesión válida, se conserva la sesión en `sessionStorage` y se abre `/home`.
 
 Los estilos específicos están en `wwwroot/css/auth/register.css`. El layout compartido compacta el encabezado en pantallas pequeñas para dar espacio al formulario.
 
@@ -129,7 +129,7 @@ El flujo es `Login.razor → IAuthService → IApiClient → POST https://localh
 
 ### Sesión tras verificar
 
-Login por correo, TOTP y registro comparten `AuthSessionResponse` (`accessToken`, `tokenType`, `expiresAt`, `user`). `AuthSessionState` conserva la respuesta en memoria solo si contiene un token Bearer, una fecha vigente y el usuario esperado; no escribe tokens en almacenamiento del navegador. Al verificar correctamente, abre `/home`. Cerrar sesión, recargar la aplicación o vencer la sesión exige autenticarse de nuevo. El JWT queda disponible en `AuthSessionState.Current` para las siguientes integraciones con endpoints protegidos.
+Login por correo, TOTP y registro comparten `AuthSessionResponse` (`accessToken`, `tokenType`, `expiresAt`, `user`). `AuthSessionState` acepta la respuesta solo si contiene un token Bearer, una fecha vigente y el usuario esperado. La sesión se guarda en `sessionStorage` y se recupera antes de evaluar las rutas al recargar. Al verificar correctamente, abre `/home`. Cerrar sesión o vencer la sesión exige autenticarse de nuevo. El JWT queda disponible en `AuthSessionState.Current` para las siguientes integraciones con endpoints protegidos.
 
 En el backend actual, `Login/Verify` acepta desafíos `login_email`; `Signup` valida los desafíos `signup_email` y crea el usuario en la misma operación, devolviendo la misma estructura de sesión. El registro conserva este endpoint para no consumir un desafío de registro en una operación de login.
 
@@ -141,19 +141,39 @@ Se reutilizaron `Layout/AuthLayout.razor`, `Views/Auth/Components/AuthHeader.raz
 
 `Views/Auth/Login.razor` y `Views/Auth/SelectVerificationMethod.razor` adaptan esas vistas al contrato real de la API. `wwwroot/css/auth.css` importa cinco archivos en `wwwroot/css/auth/`: `theme.css` (colores), `layout.css` (estructura visual), `form.css` (campos y mensajes), `methods.css` (selección de verificación) y `register.css` (registro). Estos estilos recuperan las reglas necesarias de `Failed`; no hay estilos inline en `index.html`. No se importaron el registro, la verificación de códigos, el proveedor de autenticación de prueba ni los estilos de las otras páginas.
 
+### Sidebar, perfil y TOTP
+
+El sidebar recupera el diseño de `Failed`: navegación compacta o expandida, búsqueda, menú de cuenta y cierre de sesión. `Navigation/PortalNavigation.cs` centraliza estas reglas del JWT:
+
+| Rol | Opciones específicas |
+| --- | --- |
+| Student | Mis inscripciones, Mis cursos |
+| Teacher | Mis cursos, Inscripciones |
+| Coordinator | Usuarios, Cursos, Inscripciones |
+
+Inicio, material de apoyo, leaderboard, procesamiento y perfil están disponibles para las sesiones autenticadas. `PortalRouteView` también comprueba los permisos al introducir una URL directamente. Las secciones académicas todavía no implementadas muestran un aviso, sin datos simulados. La autorización de operaciones y la validación de la firma del JWT siguen a cargo de la API.
+
+En `/profile`, la pestaña «Configuración TOTP» ejecuta `POST /api/Auth/Totp/Setup` sin cuerpo y genera el QR localmente con [QRCoder](https://www.nuget.org/packages/QRCoder/1.8.1), a partir de `data.otpAuthUri`. También ofrece una clave manual. El URI, el QR y la clave no se guardan en almacenamiento del navegador ni se envían a generadores de QR externos.
+
+La confirmación usa `POST /api/Auth/Totp/Confirm` con únicamente `code`, conservando los ceros iniciales. Solo `data: true` sin error activa el estado visual de TOTP y elimina la clave y el QR temporales. Una respuesta `false` permite corregir el código y reintentar. Un `401` limpia la sesión y vuelve al login.
+
+`ApiAuthorizationHandler` agrega `Authorization: Bearer <accessToken>` únicamente a requests HTTPS del host y puerto de `Api:BaseUrl`. La API debe permitir el encabezado `Authorization` en CORS. Las llamadas a otros orígenes no reciben el JWT.
+
 ### HTTPS y contraseña
+
+La sesión autenticada (JWT, usuario, expiración y estado TOTP) se guarda en `sessionStorage` y se restaura antes de evaluar las rutas protegidas. Esto permite recargar la misma pestaña sin volver al login. Al cerrar sesión o detectar su expiración se elimina del almacenamiento. Los datos pendientes del registro, las contraseñas y los códigos permanecen únicamente en memoria. Si el navegador bloquea el almacenamiento, la sesión funciona solo en memoria.
 
 La configuración exige HTTPS para la API y utiliza la validación de certificados del navegador. El campo `password` se envía tal cual en el JSON, sin cifrar, hashear ni transformar en el frontend. La conexión HTTPS sigue protegiendo el transporte. No se guarda en almacenamiento del navegador, no se añade a URLs y se limpia del formulario al terminar la solicitud. Un cifrado adicional del campo requeriría acordar un protocolo de claves y descifrado con la API. Consultar la [guía de TLS de OWASP](https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html).
 
 ### CORS en el backend
 
-Como el frontend y la API usan puertos distintos, la API debe permitir el origen exacto `https://localhost:7178`. La comprobación actual de `OPTIONS /api/Auth/Login` devuelve `405` sin cabeceras CORS, por lo que el navegador bloquea la solicitud. Para habilitarla en el proyecto externo de la API, registrar antes de `builder.Build()`:
+Como el frontend y la API usan puertos distintos, la API debe permitir el origen exacto `https://localhost:7178`, los métodos utilizados y los encabezados `Content-Type` y `Authorization`. Si se necesita configurar una política en el proyecto externo de la API, registrar antes de `builder.Build()`:
 
 ```csharp
 builder.Services.AddCors(options => options.AddPolicy("CetiWeb", policy =>
     policy.WithOrigins("https://localhost:7178")
           .WithMethods("POST")
-          .WithHeaders("Content-Type")));
+          .WithHeaders("Content-Type", "Authorization")));
 ```
 
 Y agregar después de `app.UseHttpsRedirection()` y antes de autenticación/autorización:

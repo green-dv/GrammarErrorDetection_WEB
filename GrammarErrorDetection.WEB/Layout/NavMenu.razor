@@ -1,39 +1,79 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">GrammarErrorDetection.WEB</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-    </div>
-</div>
+@implements IDisposable
+@inject NavigationManager Navigation
+@inject GrammarErrorDetection.Services.Services.Auth.AuthSessionState Session
+@using GrammarErrorDetection.WEB.Navigation
+@using System.Globalization
+@using System.Text
 
-<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
-    <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
-    </nav>
-</div>
+@if (expanded)
+{
+    <button type="button" class="ceti-nav-backdrop" @onclick="Collapse" aria-label="Cerrar navegación"></button>
+}
+<aside class="ceti-sidebar @(expanded ? "is-expanded" : "")" aria-label="Menú CETI" @onkeydown="HandleKey">
+    <a class="ceti-brand" href="home" aria-label="CETI · Inicio">
+        <img src="images/ceti-logo.png" width="34" height="34" alt="" />
+        <span>CETI<span class="ceti-brand-dot">.</span></span>
+    </a>
+    <div class="ceti-nav-main" id="ceti-navigation">
+        @if (expanded)
+        {
+            <div class="ceti-search">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4 4" /></svg>
+                <label class="ceti-sr-only" for="ceti-menu-search">Buscar opciones</label>
+                <input id="ceti-menu-search" type="search" placeholder="Buscar opciones…" autocomplete="off" @bind="search" @bind:event="oninput" />
+            </div>
+            <p class="ceti-menu-label">NAVEGACIÓN</p>
+        }
+        else
+        {
+            <button type="button" class="ceti-rail-button" @onclick="Expand" aria-label="Buscar opciones" title="Buscar opciones">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4 4" /></svg>
+            </button>
+        }
+        @if (Session.Current is not null)
+        {
+                <nav aria-label="Navegación principal">
+                    @foreach (var option in VisibleOptions())
+                    {
+                        <NavLink class="ceti-menu-link" href="@option.Path" Match="NavLinkMatch.All" @onclick="Collapse" title="@option.Label" aria-label="@option.Label">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)option.Icon)</svg>
+                            <span class="ceti-option-title">@option.Label</span>
+                        </NavLink>
+                    }
+                </nav>
+                @if (expanded && !VisibleOptions().Any())
+                {
+                    <p class="ceti-menu-empty" role="status">No se encontraron opciones.</p>
+                }
+        }
+    </div>
+    <button type="button" class="ceti-nav-toggle" @onclick="Toggle" aria-label="@(expanded ? "Contraer navegación" : "Expandir navegación")"
+            aria-expanded="@(expanded ? "true" : "false")" aria-controls="ceti-navigation" title="@(expanded ? "Contraer menú" : "Expandir menú")">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+        <span class="ceti-option-title">Contraer menú</span>
+    </button>
+    <AccountMenu Expanded="expanded" />
+</aside>
 
 @code {
-    private bool collapseNavMenu = true;
+    private bool expanded;
+    private string search = string.Empty;
+    private IEnumerable<PortalMenuOption> VisibleOptions() => PortalNavigation.Options.Where(option =>
+        PortalNavigation.CanAccess(option.Path, Session.Roles) &&
+        Normalize($"{option.Label} {option.Path} {option.Keywords}").Contains(Normalize(search), StringComparison.OrdinalIgnoreCase));
+    private static string Normalize(string value) => new string(value.Trim().Normalize(NormalizationForm.FormD)
+        .Where(character => CharUnicodeInfo.GetUnicodeCategory(character) != UnicodeCategory.NonSpacingMark).ToArray());
 
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-
-    private void ToggleNavMenu()
+    protected override void OnInitialized() { Navigation.LocationChanged += LocationChanged; Session.Changed += SessionChanged; }
+    private void Toggle() { expanded = !expanded; search = string.Empty; }
+    private void Expand() => expanded = true;
+    private void Collapse() { expanded = false; search = string.Empty; }
+    private void HandleKey(KeyboardEventArgs args) { if (args.Key == "Escape") Collapse(); }
+    private void LocationChanged(object? sender, LocationChangedEventArgs args)
     {
-        collapseNavMenu = !collapseNavMenu;
+        Collapse();
+        _ = InvokeAsync(StateHasChanged);
     }
+    private void SessionChanged() => _ = InvokeAsync(StateHasChanged);
+    public void Dispose() { Navigation.LocationChanged -= LocationChanged; Session.Changed -= SessionChanged; }
 }

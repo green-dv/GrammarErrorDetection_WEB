@@ -20,7 +20,9 @@ public sealed class ApiClient(HttpClient httpClient) : IApiClient
 
     public async Task<TResponse?> PostAsync<TRequest, TResponse>(string requestUri, TRequest data, CancellationToken cancellationToken = default)
     {
-        using var response = await httpClient.PostAsJsonAsync(requestUri, data, JsonOptions, cancellationToken);
+        using var response = data is null
+            ? await httpClient.PostAsync(requestUri, null, cancellationToken)
+            : await httpClient.PostAsJsonAsync(requestUri, data, JsonOptions, cancellationToken);
         return await ReadResponseAsync<TResponse>(response, cancellationToken);
     }
 

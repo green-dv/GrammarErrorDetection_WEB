@@ -53,7 +53,7 @@ public partial class LoginVerification : IDisposable
                 status = "No se pudo verificar el acceso. Revisa el código e inténtalo de nuevo.";
                 return;
             }
-            Session.SignIn(response.Data, email);
+            Session.SignIn(response.Data, email, Flow.IsTotpEnabled);
             Flow.Clear();
             model.Code = string.Empty;
             Navigation.NavigateTo("/home", replace: true);
