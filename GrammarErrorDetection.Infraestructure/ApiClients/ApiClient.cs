@@ -12,31 +12,25 @@ public sealed class ApiClient(HttpClient httpClient) : IApiClient
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
-    public async Task<TResponse?> GetAsync<TResponse>(
-        string requestUri, CancellationToken cancellationToken = default)
+    public async Task<TResponse?> GetAsync<TResponse>(string requestUri, CancellationToken cancellationToken = default)
     {
         using var response = await httpClient.GetAsync(requestUri, cancellationToken);
         return await ReadResponseAsync<TResponse>(response, cancellationToken);
     }
 
-    public async Task<TResponse?> PostAsync<TRequest, TResponse>(
-        string requestUri, TRequest data, CancellationToken cancellationToken = default)
+    public async Task<TResponse?> PostAsync<TRequest, TResponse>(string requestUri, TRequest data, CancellationToken cancellationToken = default)
     {
-        using var response = await httpClient.PostAsJsonAsync(
-            requestUri, data, JsonOptions, cancellationToken);
+        using var response = await httpClient.PostAsJsonAsync(requestUri, data, JsonOptions, cancellationToken);
         return await ReadResponseAsync<TResponse>(response, cancellationToken);
     }
 
-    public async Task<TResponse?> PutAsync<TRequest, TResponse>(
-        string requestUri, TRequest data, CancellationToken cancellationToken = default)
+    public async Task<TResponse?> PutAsync<TRequest, TResponse>(string requestUri, TRequest data, CancellationToken cancellationToken = default)
     {
-        using var response = await httpClient.PutAsJsonAsync(
-            requestUri, data, JsonOptions, cancellationToken);
+        using var response = await httpClient.PutAsJsonAsync(requestUri, data, JsonOptions, cancellationToken);
         return await ReadResponseAsync<TResponse>(response, cancellationToken);
     }
 
-    private static async Task<TResponse?> ReadResponseAsync<TResponse>(
-        HttpResponseMessage response, CancellationToken cancellationToken)
+    private static async Task<TResponse?> ReadResponseAsync<TResponse>(HttpResponseMessage response, CancellationToken cancellationToken)
     {
         response.EnsureSuccessStatusCode();
 
