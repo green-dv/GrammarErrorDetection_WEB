@@ -1,0 +1,57 @@
+# Environment variables and local secrets
+.env
+.env.*
+!.env.example
+!.env.sample
+appsettings.Local.json
+appsettings.*.Local.json
+*.pfx
+*.p12
+*.key
+
+# Tests and documentation
+[Tt]est/
+[Tt]ests/
+[Dd]ocs/
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+
+# .NET build and publish output
+[Bb]in/
+[Oo]bj/
+[Aa]rtifacts/
+[Pp]ublish/
+*.nupkg
+*.snupkg
+
+# IDE and user-specific settings
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Node dependencies, caches and generated Tailwind CSS
+node_modules/
+.npm/
+.cache/
+/wwwroot/css/tailwind.css
+
+# Logs and temporary files
+[Ll]ogs/
+*.log
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
