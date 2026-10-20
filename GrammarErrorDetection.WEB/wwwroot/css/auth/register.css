@@ -1,0 +1,23 @@
+.auth-register-form { margin-top: 1.25rem; }
+.auth-register-form:has(.auth-errors) { margin-top: .75rem; }
+.auth-register-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem .875rem; }
+.auth-register-fields > div { min-width: 0; }
+.auth-register-fields .auth-label { margin-bottom: .375rem; font-size: .8125rem; }
+.auth-register-fields .auth-control { height: 2.75rem; font-size: .875rem; }
+.auth-register-submit { min-height: 3rem; padding: .75rem 1rem; font-size: .9375rem; }
+.auth-verification-note { margin-top: 1rem; color: var(--color-muted); font-size: .875rem; line-height: 1.5; }
+.auth-register-email, .auth-register-submit { grid-column: 1 / -1; }
+.auth-field-optional { font-size: .6875rem; font-weight: 400; color: var(--color-muted); }
+.auth-verification-fields { display: grid; gap: .75rem; }
+.auth-verification-fields .auth-label { margin: 0; }
+.auth-code-control { text-align: center; letter-spacing: .35em; }
+.auth-cancel { margin-top: 1rem; padding: 0; border: 0; background: none; font-size: .8125rem; }
+.auth-panel:has(.auth-register-form) { padding-block: 1.25rem; }
+.auth-panel:has(.auth-register-form) .auth-footer { margin-top: .75rem; }
+@media (max-width: 24rem) {
+    .auth-register-fields { grid-template-columns: minmax(0, 1fr); }
+}
+@media (min-width: 40rem) {
+    .auth-register-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem .875rem; }
+    .auth-register-email, .auth-register-submit { grid-column: 1 / -1; }
+}
