@@ -9,4 +9,5 @@ public interface IUserService
     Task<ApiResponse<UserUpdateResponse>?> UpdateAsync(UserUpdateRequest request, CancellationToken cancellationToken = default);
     Task<ApiResponse<List<UserLookupOption>>?> GetRolesAsync(int pageNumber, CancellationToken cancellationToken = default);
     Task<ApiResponse<List<UserLookupOption>>?> GetModulesAsync(int pageNumber, CancellationToken cancellationToken = default);
+    Task<ApiResponse<List<UserLookupOption>>?> SearchModulesAsync(string? name, int pageNumber, int pageSize, CancellationToken cancellationToken = default);
 }

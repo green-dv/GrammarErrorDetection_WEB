@@ -1,0 +1,37 @@
+@using static GrammarErrorDetection.WEB.Views.Courses.CourseDisplay
+
+<section class="users-page courses-page" aria-labelledby="student-courses-title">
+    <header class="users-heading"><div><p class="users-eyebrow">CETI · PORTAL ESTUDIANTIL</p><h1 id="student-courses-title">Mis cursos</h1><p>Consulta tus módulos, profesores, horarios y notas personales.</p></div></header>
+    <div class="data-table-card">
+        <header class="data-table-heading"><div><h2>Mis cursos</h2><p>Las inscripciones rechazadas o desactivadas no forman parte de este listado.</p></div></header>
+        @if (error is not null) { <div class="data-table-error" role="alert"><span>@error</span><button type="button" class="data-table-text-button" disabled="@loading" @onclick="RetryAsync">Reintentar</button></div> }
+        <p class="data-table-summary" role="status">@(loading ? "Cargando tus cursos…" : $"{courses.Count} cursos en esta página")</p>
+        <div class="data-table-scroll" role="region" aria-label="Mis cursos y notas" aria-busy="@loading.ToString().ToLowerInvariant()" tabindex="0">
+            <table class="data-table student-courses-table">
+                <caption class="data-table-sr-only">Módulo, profesor, paralelo, horario, periodo y notas personales de ambos exámenes.</caption>
+                <thead><tr><th scope="col">Módulo</th><th scope="col">Profesor</th><th scope="col">Paralelo</th><th scope="col">Horario</th><th scope="col">Periodo</th><th scope="col">Examen 1</th><th scope="col">Examen 2</th></tr></thead>
+                <tbody>
+                    @if (loading) { <tr><td colspan="7" class="data-table-empty">Cargando tus cursos…</td></tr> }
+                    else
+                    {
+                        @foreach (var row in courses)
+                        {
+                            <tr @key="row.RegistrationId">
+                                <th scope="row"><span class="data-table-primary">@Text(row.ModuleName, "Módulo sin informar")</span></th>
+                                <td>@Text(row.TeacherName, "Sin profesor informado")</td>
+                                <td>@Text(row.Parallel, "—")</td>
+                                <td><span class="data-table-primary">@Hour(row.StartTime) – @Hour(row.EndTime)</span></td>
+                                <td>@row.Year · Bimestre @row.Bimester</td>
+                                <td>@if (row.Exam1Score is { } first) { <span class="data-table-grade">@first.ToString("0.##")</span><span class="data-table-grade-scale"> / 100</span> } else { <span class="data-table-secondary">Pendiente</span> }</td>
+                                <td>@if (row.Exam2Score is { } second) { <span class="data-table-grade">@second.ToString("0.##")</span><span class="data-table-grade-scale"> / 100</span> } else { <span class="data-table-secondary">Pendiente</span> }</td>
+                            </tr>
+                        }
+                        @if (courses.Count == 0 && error is null) { <tr><td colspan="7" class="data-table-empty"><strong>No hay cursos para mostrar en esta página</strong><p>Consulta tus inscripciones o cambia de página.</p><a href="/my-enrollments" class="data-table-button">Mis inscripciones</a></td></tr> }
+                    }
+                </tbody>
+            </table>
+        </div>
+        <footer class="data-table-footer"><label class="data-table-page-size">Filas por página <select @bind="pageSize" @bind:after="ChangeSizeAsync" disabled="@loading"><option value="5">5</option><option value="20">20</option><option value="50">50</option></select></label><span>Notas personales · escala de 0 a 100.</span><nav class="data-table-pagination" aria-label="Paginación de mis cursos"><button type="button" @onclick="PreviousAsync" disabled="@(loading || page <= 1)" aria-label="Página anterior">‹</button><span>Página <strong>@(page)</strong></span><button type="button" @onclick="NextAsync" disabled="@(loading || !hasNext)" aria-label="Página siguiente">›</button></nav></footer>
+    </div>
+</section>
+

@@ -1,0 +1,46 @@
+@using GrammarErrorDetection.Models.Registrations
+@using GrammarErrorDetection.WEB.Components.Dialogs
+@using static GrammarErrorDetection.WEB.Views.Registrations.RegistrationViewSupport
+
+<ModalDialog Title="Solicitar / editar inscripción" Class="registration-course-modal" Busy="Busy" OnClose="CloseAsync">
+    <p class="ceti-modal-description">Selecciona un año y bimestre para consultar los cursos a los que puedes postular. Si ya tienes una inscripción pendiente en ese periodo, se actualizará esa misma solicitud.</p>
+    <EditForm Model="period" OnValidSubmit="SearchAsync" novalidate>
+        <DataAnnotationsValidator />
+        <fieldset class="registration-filter-fields" disabled="@Busy">
+            <div class="data-table-toolbar registration-filters">
+                <label class="data-table-field"><span>Año</span><InputNumber @bind-Value="period.Year" @bind-Value:after="InvalidateCourses" /></label>
+                <label class="data-table-field"><span>Bimestre</span><InputSelect @bind-Value="period.Bimester" @bind-Value:after="InvalidateCourses">@for (var number = 1; number <= 6; number++) { <option value="@number">@number</option> }</InputSelect></label>
+                <button type="submit" class="data-table-button" disabled="@Busy">Consultar cursos</button>
+            </div>
+        </fieldset>
+        <div class="data-table-error"><ValidationSummary /></div>
+    </EditForm>
+    <EditForm Model="application" OnValidSubmit="SaveAsync" novalidate>
+        <DataAnnotationsValidator />
+        <div class="ceti-modal-body">
+            @if (loading) { <p role="status">Consultando cursos disponibles…</p> }
+            @if (courseError is not null) { <p class="ceti-modal-errors" role="alert">@courseError</p><button type="button" class="data-table-button" disabled="@Busy" @onclick="RetryAsync">Reintentar consulta</button> }
+            <fieldset class="registration-course-options" disabled="@Busy">
+                <legend>Cursos disponibles</legend>
+                @foreach (var course in courses)
+                {
+                    <label class="registration-course-option @(selected?.ClassId == course.ClassId ? "selected" : "")" @key="course.ClassId">
+                        <input type="radio" name="registration-course" value="@course.ClassId" checked="@(selected?.ClassId == course.ClassId)" @onchange="() => Select(course)" disabled="@(course.AvailableSeats <= 0)" />
+                        <span><strong>@(course.ModuleName ?? "Módulo sin nombre") <span class="data-table-chip">Paralelo @(course.Parallel ?? "—")</span></strong><span>@Hour(course.StartTime) – @Hour(course.EndTime) · @(course.ClassroomName ?? "Sin aula informada")</span><span>@(course.StartDate?.ToString("dd/MM/yyyy") ?? "—") – @(course.EndDate?.ToString("dd/MM/yyyy") ?? "—") · @course.AvailableSeats cupos</span></span>
+                    </label>
+                }
+                @if (loaded && courses.Count == 0 && courseError is null) { <p class="registration-notice" role="status">No hay cursos disponibles en esta página del periodo seleccionado. Si ya tienes una inscripción aprobada en ese periodo, no puedes enviar otra solicitud.</p> }
+                @if (!loaded && !loading && courseError is null) { <p>Consulta un periodo para ver los cursos disponibles.</p> }
+            </fieldset>
+            @if (loaded)
+            {
+                <nav class="data-table-pagination registration-course-pagination" aria-label="Paginación de cursos disponibles"><button type="button" @onclick="PreviousAsync" disabled="@(Busy || page <= 1)" aria-label="Página anterior de cursos">‹</button><span>Página @(page) · @courses.Count cursos</span><button type="button" @onclick="NextAsync" disabled="@(Busy || !hasNext)" aria-label="Página siguiente de cursos">›</button></nav>
+            }
+            @if (selected is not null) { <p class="registration-selection">Seleccionado: <strong>@selected.ModuleName · Paralelo @selected.Parallel · @selected.Year / Bimestre @selected.Bimester</strong></p> }
+            <ValidationSummary />
+            @if (saveError is not null) { <p class="ceti-modal-errors" role="alert">@saveError</p> }
+        </div>
+        <footer class="ceti-modal-footer"><span>@(saving ? "Guardando solicitud…" : "La solicitud quedará pendiente de aprobación.")</span><div><button type="button" class="data-table-button" disabled="@Busy" @onclick="CloseAsync">Cancelar</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@(Busy || selected is null || courseError is not null)">Enviar solicitud</button></div></footer>
+    </EditForm>
+</ModalDialog>
+

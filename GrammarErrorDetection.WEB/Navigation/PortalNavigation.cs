@@ -15,7 +15,7 @@ public static class PortalNavigation
         new("my-courses", "Mis cursos", Book, ["Student"]),
         new("users", "Usuarios", "<circle cx='9' cy='8' r='3'/><path d='M3 20v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 4v2'/>", ["Coordinator"]),
         new("courses", "Cursos", Book, ["Coordinator", "Teacher"]),
-        new("enrollments", "Inscripciones", List, ["Teacher", "Coordinator"])
+        new("enrollments", "Inscripciones", List, ["Coordinator"])
     ];
 
     public static bool IsAuthPath(string path) => path is "" or "login" or "register" || path.StartsWith("auth/", StringComparison.OrdinalIgnoreCase);

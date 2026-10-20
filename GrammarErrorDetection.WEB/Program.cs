@@ -29,6 +29,7 @@ builder.Services.AddScoped<IApiClient>(provider =>
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
+builder.Services.AddScoped<IRegistrationService, GrammarErrorDetection.Services.Services.Registrations.RegistrationService>();
 builder.Services.AddScoped<LoginFlowState>();
 builder.Services.AddScoped<RegistrationFlowState>();
 builder.Services.AddScoped<LoginFlowService>();
