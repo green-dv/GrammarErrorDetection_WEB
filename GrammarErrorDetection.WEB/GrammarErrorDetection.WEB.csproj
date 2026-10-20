@@ -14,7 +14,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\GrammarErrorDetection.Infraestructure\GrammarErrorDetection.Infraestructure.csproj" />
-    <ProjectReference Include="..\GrammarErrorDetection.Services\GrammarErrorDetection.Services.csproj" />
   </ItemGroup>
 
 </Project>

@@ -81,8 +81,6 @@ Contiene las páginas, componentes, formularios y navegación para estudiantes, 
 
 Está destinada a los servicios e interfaces que coordinan las operaciones del frontend, como solicitar el análisis de un párrafo o consultar resultados. Permite mantener esa coordinación fuera de los componentes visuales. Las reglas de negocio que requieran validación autoritativa deben ejecutarse en la API.
 
-Las interfaces se ubican en `GrammarErrorDetection.Services/Interfaces/`; las implementaciones de autenticación y su estado temporal, en `GrammarErrorDetection.Services/Services/Auth/`.
-
 ### Infraestructura: GrammarErrorDetection.Infraestructure
 
 Está destinada a las implementaciones de comunicación con sistemas externos, especialmente clientes HTTP para consumir la API y el manejo técnico de solicitudes, respuestas y autenticación. Los repositorios de acceso a la base de datos pertenecen al backend, en su proyecto independiente.
@@ -97,70 +95,9 @@ Task<TResponse?> PutAsync<TRequest, TResponse>(string requestUri, TRequest data,
 
 Las solicitudes POST y PUT envían JSON y las tres operaciones deserializan las respuestas JSON al tipo solicitado. Las respuestas exitosas sin contenido devuelven `default(TResponse)`; los códigos HTTP de error generan `HttpRequestException`. Los errores de red, cancelación y JSON inválido se propagan al consumidor para que pueda manejarlos.
 
-Se pueden enviar URLs absolutas para consumir APIs distintas. Las rutas relativas del cliente de infraestructura usan `Api:BaseUrl`, configurada en `GrammarErrorDetection.WEB/wwwroot/appsettings.json` como `https://localhost:7028/`. El `HttpClient` general del frontend conserva su propia dirección para archivos estáticos. El cliente no añade credenciales ni tokens automáticamente.
+Se pueden enviar URLs absolutas para consumir APIs distintas. Para usar rutas relativas, configurar el `BaseAddress` del `HttpClient` en `Program.cs` con la URL de la API. Actualmente conserva la dirección del frontend; el puerto `7178` corresponde a la interfaz web, no a la API externa. El cliente no añade credenciales ni tokens automáticamente.
 
 ### Modelos: GrammarErrorDetection.Models
 
 Contiene los modelos de datos compartidos entre las capas del frontend: DTOs, solicitudes, respuestas y enumeraciones. No debe depender de la interfaz visual ni de las implementaciones de infraestructura.
-
-## Prueba del login base
-
-### Registro inicial
-
-En `/auth/register` se solicitan nombres, apellidos, CI, teléfono opcional, correo, contraseña y confirmación. El formulario utiliza validación propia, errores compactos y lógica de entrada en `Views/Auth/Register.razor.cs`. Envía únicamente `email`, `purpose: "signup"` y `password` a `POST /api/Auth/SendCode`; los datos personales y la confirmación de contraseña no se envían en esta etapa. La contraseña conserva su valor original y HTTPS protege el transporte.
-
-Al recibir una respuesta válida, abre `/auth/register/verification`. `RegistrationFlowState` conserva el desafío y una copia de los datos completos del usuario, incluida la contraseña, únicamente en memoria; no usa almacenamiento del navegador. Al pulsar «Verificar y crear cuenta», envía `firstName`, `lastName`, `ci`, `email`, `password`, `phone`, `challengeId` y `code` a `POST /api/Auth/Signup`. El backend valida el código antes de crear la cuenta, en la misma operación. Los errores permiten corregir el código y reintentar mientras el desafío siga vigente. El estado temporal se limpia al completar, cancelar o vencer el registro; recargar la página también pierde estos datos. Si la respuesta contiene una sesión válida, se conserva el JWT en memoria y se abre `/home`.
-
-Los estilos específicos están en `wwwroot/css/auth/register.css`. El layout compartido compacta el encabezado en pantallas pequeñas para dar espacio al formulario.
-
-### Inicio de sesión
-
-Abrir [https://localhost:7178/auth/login](https://localhost:7178/auth/login). El formulario también está disponible en `/` y `/login`.
-
-El flujo es `Login.razor → IAuthService → IApiClient → POST https://localhost:7028/api/Auth/Login`. El cuerpo JSON contiene únicamente `email` y `password`.
-
-- Si las credenciales son válidas y `data.isTotpEnabled` es `true`, abre `/auth/methods` para elegir correo electrónico o aplicación autenticadora.
-- Si `data.isTotpEnabled` es `false`, solicita automáticamente el código por correo y abre `/auth/verify`.
-- Al elegir correo manualmente, también llama a `POST /api/Auth/SendCode`, con `email`, `password` y `purpose: "login"`. Un envío correcto libera la contraseña temporal y conserva el desafío hasta su vencimiento.
-- La pantalla `/auth/verify` envía únicamente `challengeId` y `code` a `POST /api/Auth/Login/Verify`. El código se maneja como texto para conservar ceros iniciales.
-- La opción de autenticador usa `POST /api/Auth/Login/VerifyTotp`, con `email`, `password` y `code`, sin llamar a `SendCode`.
-- El estado pendiente vive en memoria y se limpia al completar, cancelar o vencer el flujo. Recargar la página requiere volver al login.
-- Los errores de validación, credenciales, límite de intentos, red y respuestas inválidas se muestran juntos en un panel arriba de los campos. La validación nativa HTML está desactivada.
-
-### Sesión tras verificar
-
-Login por correo, TOTP y registro comparten `AuthSessionResponse` (`accessToken`, `tokenType`, `expiresAt`, `user`). `AuthSessionState` conserva la respuesta en memoria solo si contiene un token Bearer, una fecha vigente y el usuario esperado; no escribe tokens en almacenamiento del navegador. Al verificar correctamente, abre `/home`. Cerrar sesión, recargar la aplicación o vencer la sesión exige autenticarse de nuevo. El JWT queda disponible en `AuthSessionState.Current` para las siguientes integraciones con endpoints protegidos.
-
-En el backend actual, `Login/Verify` acepta desafíos `login_email`; `Signup` valida los desafíos `signup_email` y crea el usuario en la misma operación, devolviendo la misma estructura de sesión. El registro conserva este endpoint para no consumir un desafío de registro en una operación de login.
-
-Para comprobar el rol recibido, `SessionRolePreview` muestra «Rol del JWT · comprobación» en `/home` y en `/auth/login` si ya existe una sesión. Lee `role`, `roles` o el claim URI de .NET desde el payload, siguiendo el formato de claims JSON del [estándar JWT](https://www.rfc-editor.org/rfc/rfc7519.html). Si no hay un rol legible muestra «No informado». Esta lectura es solo visual; no valida la firma ni concede permisos. No se muestra el token completo.
-
-### Archivos recuperados de Failed
-
-Se reutilizaron `Layout/AuthLayout.razor`, `Views/Auth/Components/AuthHeader.razor`, `Views/Auth/Components/AuthPasswordField.razor`, `wwwroot/images/ceti-logo.png` y `wwwroot/images/auth-globe.png`.
-
-`Views/Auth/Login.razor` y `Views/Auth/SelectVerificationMethod.razor` adaptan esas vistas al contrato real de la API. `wwwroot/css/auth.css` importa cinco archivos en `wwwroot/css/auth/`: `theme.css` (colores), `layout.css` (estructura visual), `form.css` (campos y mensajes), `methods.css` (selección de verificación) y `register.css` (registro). Estos estilos recuperan las reglas necesarias de `Failed`; no hay estilos inline en `index.html`. No se importaron el registro, la verificación de códigos, el proveedor de autenticación de prueba ni los estilos de las otras páginas.
-
-### HTTPS y contraseña
-
-La configuración exige HTTPS para la API y utiliza la validación de certificados del navegador. El campo `password` se envía tal cual en el JSON, sin cifrar, hashear ni transformar en el frontend. La conexión HTTPS sigue protegiendo el transporte. No se guarda en almacenamiento del navegador, no se añade a URLs y se limpia del formulario al terminar la solicitud. Un cifrado adicional del campo requeriría acordar un protocolo de claves y descifrado con la API. Consultar la [guía de TLS de OWASP](https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html).
-
-### CORS en el backend
-
-Como el frontend y la API usan puertos distintos, la API debe permitir el origen exacto `https://localhost:7178`. La comprobación actual de `OPTIONS /api/Auth/Login` devuelve `405` sin cabeceras CORS, por lo que el navegador bloquea la solicitud. Para habilitarla en el proyecto externo de la API, registrar antes de `builder.Build()`:
-
-```csharp
-builder.Services.AddCors(options => options.AddPolicy("CetiWeb", policy =>
-    policy.WithOrigins("https://localhost:7178")
-          .WithMethods("POST")
-          .WithHeaders("Content-Type")));
-```
-
-Y agregar después de `app.UseHttpsRedirection()` y antes de autenticación/autorización:
-
-```csharp
-app.UseCors("CetiWeb");
-```
-
-Reiniciar la API después de aplicar esta configuración. No se requiere permitir cualquier origen ni desactivar la validación HTTPS.
 
