@@ -1,0 +1,37 @@
+/* Diseño de autenticación recuperado de Failed; sin estilos del portal. */
+.auth-shell { min-height: 100svh; color: #101735; font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; }
+.auth-shell p { margin-bottom: 0; }
+.auth-shell fieldset { min-width: 0; padding: 0; margin: 0; border: 0; }
+.auth-shell h2 { font-size: clamp(1.9rem, 2.4vw, 2.65rem); font-weight: 700; line-height: 1.15; letter-spacing: -.04em; }
+.auth-brand {
+    background-color: #171d46;
+    background-image: linear-gradient(180deg, rgb(10 17 44 / 8%), transparent 65%), url('../../images/auth-globe.png');
+    background-position: center;
+    background-size: cover;
+}
+.auth-heading { font-size: clamp(2.25rem, 3.85vw, 4.5rem); line-height: 1.07; letter-spacing: -.045em; text-wrap: balance; }
+.auth-shell :focus-visible { outline: 3px solid #176b9f; outline-offset: 4px; }
+.auth-shell h1[tabindex="-1"]:focus { outline: none; }
+.auth-panel { min-width: 0; padding: clamp(1.25rem, 4vh, 3rem) clamp(1.5rem, 6vw, 5rem); }
+.auth-content { padding: 0; }
+.auth-footer { margin-top: 1.5rem; }
+.auth-content header > p:first-child { margin-bottom: .875rem !important; }
+.auth-content header > p:last-child { margin-top: .5rem !important; }
+@media (max-width: 63.99rem) {
+    .auth-shell { grid-template-rows: auto 1fr; }
+    .auth-brand { display: flex; align-items: center; gap: 2rem; padding: 1rem 1.5rem; background-position: center 28%; }
+    .auth-brand-identity { flex-shrink: 0; gap: 1rem; }
+    .auth-brand-identity img { width: 3.5rem; height: 3.5rem; }
+    .auth-brand-identity > span { height: 2rem; }
+    .auth-brand-identity > p { font-size: .75rem; }
+    .auth-brand-message { margin-top: 0; padding-bottom: 0; }
+    .auth-heading { font-size: 1.5rem; }
+    .auth-brand-message > p { margin-top: .375rem !important; font-size: .8125rem; }
+    .auth-panel { padding-block: 1.5rem; }
+}
+@media (max-width: 39.99rem) {
+    .auth-brand { justify-content: center; padding-block: .75rem; }
+    .auth-brand-message { display: none; }
+    .auth-footer { margin-top: 1rem; font-size: .6875rem; }
+}
+@media (prefers-reduced-motion: reduce) { .auth-shell *, .auth-shell *::before, .auth-shell *::after { transition: none !important; } }

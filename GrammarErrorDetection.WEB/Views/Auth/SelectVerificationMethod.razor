@@ -1,0 +1,29 @@
+@page "/auth/methods"
+@layout AuthLayout
+@using GrammarErrorDetection.WEB.Views.Auth.Components
+
+<PageTitle>Método de verificación | CETI La Paz</PageTitle>
+@if (Flow.PendingEmail is not null)
+{
+    <AuthHeader Title="Verifica tu identidad" Subtitle='@(Flow.IsTotpEnabled ? "Elige cómo quieres verificar tu inicio de sesión." : "Continúa con la verificación por correo electrónico.")' />
+    @if (!string.IsNullOrEmpty(status))
+    {
+        <div class="auth-errors auth-method-error" role="alert"><ul><li>@status</li></ul></div>
+    }
+    <div class="auth-method-list" role="group" aria-label="Método de verificación">
+        <button type="button" class="auth-method-card" @onclick="SendEmailAsync" disabled="@busy" aria-busy="@(busy ? "true" : "false")">
+            <span class="auth-method-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></span>
+            <span><span class="auth-method-title">Correo electrónico</span><span class="auth-method-description">@(busy ? "Enviando código…" : "Recibe un código en tu correo.")</span></span>
+            <span class="auth-method-arrow" aria-hidden="true">›</span>
+        </button>
+        @if (Flow.IsTotpEnabled)
+        {
+            <button type="button" class="auth-method-card" @onclick="SelectTotp" disabled="@busy">
+                <span class="auth-method-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 8 3v5c0 5-4 8-8 10-4-2-8-5-8-10V6Z"/><path d="m8 12 3 3 5-6"/></svg></span>
+                <span><span class="auth-method-title">Aplicación autenticadora</span><span class="auth-method-description">Usa el código de tu aplicación TOTP.</span></span>
+                <span class="auth-method-arrow" aria-hidden="true">›</span>
+            </button>
+        }
+    </div>
+    <button type="button" class="auth-link auth-cancel" @onclick="Cancel" disabled="@busy">Volver al inicio de sesión</button>
+}
