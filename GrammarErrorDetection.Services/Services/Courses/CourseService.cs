@@ -27,7 +27,7 @@ public sealed class CourseService(IApiClient apiClient) : ICourseService
     {
         if (classId == Guid.Empty) throw new ArgumentException("Selecciona un curso válido.");
         ArgumentOutOfRangeException.ThrowIfLessThan(pageNumber, 1);
-        return apiClient.GetAsync<ApiResponse<List<CourseRegistration>>>($"api/Registration?Filter.ClassId={classId:D}&Filter.Active=true&PageNumber={pageNumber.ToString(CultureInfo.InvariantCulture)}&PageSize=100", cancellationToken);
+        return apiClient.GetAsync<ApiResponse<List<CourseRegistration>>>($"api/Class/{classId:D}/registrations?PageNumber={pageNumber.ToString(CultureInfo.InvariantCulture)}&PageSize=100", cancellationToken);
     }
 
     public Task<ApiResponse<CourseCreateResponse>?> CreateWithStudentsAsync(CourseCreateRequest request, CancellationToken cancellationToken = default)

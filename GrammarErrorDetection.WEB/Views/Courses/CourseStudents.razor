@@ -19,9 +19,9 @@
         </article>
         <div class="courses-stats course-detail-stats">
             <article><div><p>Estudiantes inscritos</p><strong>@(course.StudentCount?.ToString() ?? "—")</strong><span>Total del curso</span></div></article>
-            <article><div><p>Promedio examen 1</p><strong>@(course.Exam1Average?.ToString("0.##") ?? "—")<small> / 100</small></strong><span>Primer examen</span></div></article>
-            <article><div><p>Promedio examen 2</p><strong>@(course.Exam2Average?.ToString("0.##") ?? "—")<small> / 100</small></strong><span>Segundo examen</span></div></article>
-            <article><div><p>Media de ambos exámenes</p><strong>@(ExamsMean?.ToString("0.##") ?? "—")<small> / 100</small></strong><span>Examen 1: 50 % · Examen 2: 50 %</span></div></article>
+            <article><div><p>Promedio examen 1</p><strong class="@StudentGradeDraft.Color(course.Exam1Average)">@(course.Exam1Average?.ToString("0.##") ?? "—")<small> / 100</small></strong><span>Primer examen</span></div></article>
+            <article><div><p>Promedio examen 2</p><strong class="@StudentGradeDraft.Color(course.Exam2Average)">@(course.Exam2Average?.ToString("0.##") ?? "—")<small> / 100</small></strong><span>Segundo examen</span></div></article>
+            <article><div><p>Media de ambos exámenes</p><strong class="@StudentGradeDraft.Color(ExamsMean)">@(ExamsMean?.ToString("0.##") ?? "—")<small> / 100</small></strong><span>Examen 1: 50 % · Examen 2: 50 %</span></div></article>
         </div>
         <UserList @key="course.Id" Course="course" />
     }
