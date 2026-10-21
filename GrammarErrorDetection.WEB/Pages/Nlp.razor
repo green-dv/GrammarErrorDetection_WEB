@@ -1,0 +1,104 @@
+@page "/process"
+@page "/nlp"
+
+<PageTitle>Procesar | CETI La Paz</PageTitle>
+
+<section class="users-page nlp-page" aria-labelledby="nlp-title">
+    <header class="users-heading"><div><p class="users-eyebrow">CETI · PRÁCTICA DE ESCRITURA</p><h1 id="nlp-title">Procesar</h1><p>Escribe en inglés y revisa los errores de cada oración.</p></div></header>
+    <div class="nlp-layout">
+        <aside class="nlp-history" aria-labelledby="nlp-history-title" aria-busy="@(loading ? "true" : "false")">
+            <header><h2 id="nlp-history-title">@(allTexts ? "Todos los párrafos" : "Mis párrafos")</h2><button type="button" class="data-table-text-button" disabled="@EditorBusy" @onclick="NewParagraph">Nuevo</button></header>
+            @if (CanReadAll)
+            {
+                <label class="data-table-field nlp-history-search"><span>Mostrar</span><select @bind="allTexts" @bind:after="ChangeScopeAsync" disabled="@(loading || EditorBusy)"><option value="false">Mis párrafos</option><option value="true">Todos los usuarios</option></select></label>
+            }
+            <form class="nlp-history-search-form" @onsubmit="SearchAsync" @onsubmit:preventDefault>
+                <label class="data-table-field"><span class="ceti-sr-only">Buscar por contenido</span><input type="search" placeholder="Buscar por contenido…" maxlength="5000" @bind="search" @bind:event="oninput" /></label>
+                <button type="submit" class="data-table-button" disabled="@(loading || EditorBusy)">Buscar</button>
+            </form>
+            <p class="nlp-history-count" role="status">@(loading ? "Cargando párrafos…" : $"{paragraphs.Count} párrafos en esta página")</p>
+            @if (historyError is not null)
+            {
+                <div class="nlp-history-error" role="alert"><p>@historyError</p><button type="button" class="data-table-text-button" disabled="@(loading || EditorBusy)" @onclick="RetryHistoryAsync">Reintentar historial</button></div>
+            }
+            <ul class="nlp-history-list">
+                @foreach (var paragraph in paragraphs)
+                {
+                    <li @key="paragraph.Id"><button type="button" class="nlp-history-entry @(selected?.Id == paragraph.Id ? "is-selected" : "")" disabled="@EditorBusy" aria-pressed="@(selected?.Id == paragraph.Id ? "true" : "false")" @onclick="() => SelectParagraph(paragraph)"><span class="nlp-history-item-heading"><strong>@Title(paragraph)</strong><span>@(IsProcessed(paragraph) ? "✓" : "◷")</span></span><span class="nlp-history-excerpt">@paragraph.OriginalContent</span><span class="nlp-history-date">@paragraph.SubmissionDate.ToString("dd/MM/yyyy HH:mm") · @paragraph.Status</span></button></li>
+                }
+            </ul>
+            @if (!loading && paragraphs.Count == 0 && historyError is null) { <p class="nlp-history-empty">No se encontraron párrafos.</p> }
+            <footer class="nlp-history-pagination">
+                <label>Por página <select @bind="pageSize" @bind:after="ChangePageSizeAsync" disabled="@(loading || EditorBusy)"><option value="3">3</option><option value="5">5</option><option value="10">10</option><option value="20">20</option></select></label>
+                <nav aria-label="Paginación de párrafos"><button type="button" @onclick="PreviousPageAsync" disabled="@(loading || EditorBusy || currentPage <= 1)" aria-label="Página anterior">‹</button><span>Página @currentPage</span><button type="button" @onclick="NextPageAsync" disabled="@(loading || EditorBusy || !hasNext)" aria-label="Página siguiente">›</button></nav>
+            </footer>
+        </aside>
+
+        <div class="nlp-main">
+            <article class="nlp-editor" aria-labelledby="nlp-editor-title" aria-busy="@(EditorBusy ? "true" : "false")">
+                <header><h2 id="nlp-editor-title">Tu párrafo</h2><span class="nlp-language">EN · Inglés</span></header>
+                <label class="ceti-sr-only" for="nlp-paragraph">Párrafo en inglés</label>
+                <textarea id="nlp-paragraph" rows="4" lang="en" spellcheck="false" maxlength="5000" placeholder="Write your paragraph here…" disabled="@EditorBusy" @bind="text" @bind:event="oninput"></textarea>
+                <p class="nlp-character-count">@text.Length / 5000 caracteres</p>
+                <div class="nlp-editor-actions">
+                    <div class="nlp-photo-picker">
+                        <button type="button" class="nlp-photo-button" disabled="@EditorBusy" aria-haspopup="menu" aria-expanded="@photoMenuOpen" aria-controls="nlp-photo-menu" @onclick="TogglePhotoMenu"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="15" rx="2"/><circle cx="8" cy="10" r="1.5"/><path d="m3 17 5-4 4 3 4-5 5 6"/></svg>@(recognizingPhoto ? "Extrayendo texto…" : "Extraer texto de una imagen")<svg class="nlp-photo-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 5 5 5-5"/></svg></button>
+                        @if (photoMenuOpen)
+                        {
+                            <div id="nlp-photo-menu" class="nlp-photo-menu" role="menu" aria-label="Origen de la imagen">
+                                <label for="nlp-photo-device" role="menuitem"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h5"/></svg><span><strong>Desde este dispositivo</strong><small>Selecciona una imagen guardada</small></span></label>
+                                <label for="nlp-photo-camera" role="menuitem"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h4l2-2h4l2 2h4v12H4z"/><circle cx="12" cy="13" r="3"/></svg><span><strong>Tomar una foto</strong><small>Abre la cámara del dispositivo</small></span></label>
+                            </div>
+                        }
+                        <InputFile @key="devicePhotoInputKey" id="nlp-photo-device" class="nlp-photo-input" accept="image/*" OnChange="RecognizePhotoAsync" disabled="@EditorBusy" aria-label="Subir imagen desde este dispositivo" />
+                        <InputFile @key="cameraPhotoInputKey" id="nlp-photo-camera" class="nlp-photo-input" accept="image/*" capture="environment" OnChange="RecognizePhotoAsync" disabled="@EditorBusy" aria-label="Tomar una foto" />
+                    </div>
+                    <button type="button" class="nlp-upload-button" disabled="@(EditorBusy || loading || string.IsNullOrWhiteSpace(text))" @onclick="UploadAsync"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V3m-5 5 5-5 5 5M4 15v6h16v-6"/></svg>@(uploading ? "Analizando…" : "Subir párrafo")</button>
+                </div>
+                @if (photoMessage is not null) { <p class="nlp-feedback" role="status">@photoMessage</p> }
+                @if (photoError is not null) { <p class="nlp-upload-error" role="alert">@photoError</p> }
+                @if (status is not null) { <p class="nlp-feedback" role="status">@status</p> }
+                @if (uploadError is not null) { <p class="nlp-upload-error" role="alert">@uploadError</p> }
+            </article>
+
+            <section class="nlp-analysis" aria-labelledby="nlp-analysis-title">
+                <header class="nlp-analysis-heading"><h2 id="nlp-analysis-title">Análisis</h2>@if (CurrentAnalysis is { } summary) { <span>@summary.Sentences.Count oraciones · @summary.ErrorCount errores · @summary.Status</span> }</header>
+                @if (CurrentAnalysis is not { } analysis)
+                {
+                    <p class="nlp-analysis-empty">Sube tu párrafo para analizarlo o selecciona uno del historial. Si editas un texto, vuelve a subirlo para obtener su nuevo análisis.</p>
+                }
+                else if (analysis.Sentences.Count == 0)
+                {
+                    <p class="nlp-analysis-empty">@(IsProcessed(analysis) ? "No se recibieron oraciones para este análisis." : $"Estado del párrafo: {analysis.Status}.")</p>
+                    <button type="button" class="data-table-text-button" disabled="@(loading || EditorBusy)" @onclick="RefreshAnalysisAsync">Actualizar análisis</button>
+                }
+                else
+                {
+                    <ol class="nlp-sentences">
+                        @foreach (var sentence in analysis.Sentences.OrderBy(item => item.SentenceIndex))
+                        {
+                            <li class="nlp-sentence" @key="sentence.Id">
+                                <header><span class="nlp-sentence-number">@sentence.SentenceIndex</span><div><p>@sentence.OriginalSentence</p></div></header>
+                                @if (sentence.ErrorCount == 0 && sentence.Errors.Count == 0)
+                                {
+                                    <p class="nlp-no-errors"><span aria-hidden="true">✓</span><strong>No tiene errores</strong></p>
+                                }
+                                else
+                                {
+                                    @if (CorrectionText(sentence) is { Length: > 0 } correction) { <p class="nlp-compact-correction"><strong>Corrección:</strong> @correction</p> }
+                                    @if (sentence.Errors.Count == 0) { <p class="nlp-feedback">Se detectaron @sentence.ErrorCount errores, pero no se recibió su detalle.</p> }
+                                    <ul class="nlp-errors" aria-label="Errores de la oración @sentence.SentenceIndex">
+                                        @foreach (var error in sentence.Errors)
+                                        {
+                                            <li @key="error.Id"><strong class="nlp-error-word"><span class="ceti-sr-only">Palabra errónea:</span>@(error.ErrorToken ?? "—")</strong><span>@(error.ErrorClassificationName ?? "Sin clasificación")</span>@if (!string.IsNullOrWhiteSpace(error.SuggestedCorrection)) { <span>→ @error.SuggestedCorrection</span> }@if (error.ConfidenceScore is { } confidence) { <span class="nlp-compact-confidence" title="Confianza"><span class="ceti-sr-only">Confianza:</span>@((confidence * 100m).ToString("0.#")) %</span> }</li>
+                                        }
+                                    </ul>
+                                }
+                            </li>
+                        }
+                    </ol>
+                }
+            </section>
+        </div>
+    </div>
+</section>

@@ -7,7 +7,7 @@
         <header class="users-heading"><div><p class="users-eyebrow">CETI · COMUNIDAD ACADÉMICA</p><h1 id="users-title">Usuarios</h1><p>Datos de contacto y recorrido académico de los estudiantes.</p></div></header>
     }
     <div class="data-table-card">
-        <header class="data-table-heading"><div><h2>@ListTitle</h2><p>@(IsCourseList ? "Datos de contacto, estado de inscripción y calificación del grupo." : "Busca por uno o varios campos. Deja los filtros vacíos para consultar todos los usuarios.")</p></div></header>
+        <header class="data-table-heading"><div><h2>@ListTitle</h2><p>@(IsCourseList ? "Datos de contacto, inscripción y notas de ambos exámenes." : "Busca por uno o varios campos. Deja los filtros vacíos para consultar todos los usuarios.")</p></div></header>
         <EditForm Model="filters" OnValidSubmit="SearchAsync" OnInvalidSubmit="ShowValidationErrors" novalidate>
             <DataAnnotationsValidator />
             <div class="data-table-toolbar users-filters">
@@ -38,13 +38,15 @@
         {
             <div class="data-table-error" role="alert"><span>@error</span><button type="button" class="data-table-text-button" @onclick="RetryAsync" disabled="@busy">Reintentar</button></div>
         }
+        @if (loadingGrades) { <p class="data-table-message" role="status">Cargando evaluaciones…</p> }
+        @if (gradesError is not null) { <div class="data-table-error" role="alert">@gradesError <button type="button" class="data-table-text-button" disabled="@(busy || loadingGrades)" @onclick="RetryGradesAsync">Reintentar notas</button></div> }
         @if (status is not null) { <p class="data-table-message" role="status">@status</p> }
         <p class="data-table-summary" role="status">@(busy ? (IsCourseList ? "Cargando estudiantes…" : "Cargando usuarios…") : error is not null ? "Consulta no disponible" : $"{users.Count} {(IsCourseList ? "estudiantes" : "usuarios")} en esta página")</p>
 
         <div class="data-table-scroll" role="region" aria-label="@ListTitle" aria-busy="@busy.ToString().ToLowerInvariant()" tabindex="0">
             <table class="data-table users-table @(IsCourseList ? "course-students-table" : "")">
-                <caption class="data-table-sr-only">@(IsCourseList ? "Estudiantes del curso seleccionado, contacto, inscripción y nota disponible." : "Contacto, curso anterior, curso actual, nota y acciones de los usuarios.")</caption>
-                <thead><tr><th scope="col">@(IsCourseList ? "Estudiante" : "Nombre y apellido")</th><th scope="col">CI / Teléfono</th>@if (IsCourseList) { <th scope="col">Inscripción</th><th scope="col">Nota del curso</th> } else { <th scope="col">Anterior curso</th><th scope="col">Curso actual</th><th scope="col">Nota actual</th><th scope="col" class="data-table-actions-heading">Acciones</th> }</tr></thead>
+                <caption class="data-table-sr-only">@(IsCourseList ? "Estudiantes del curso seleccionado, contacto, inscripción, dos exámenes y promedio del curso." : "Contacto, curso anterior, curso actual, nota y acciones de los usuarios.")</caption>
+                <thead><tr><th scope="col">@(IsCourseList ? "Estudiante" : "Nombre y apellido")</th><th scope="col">CI / Teléfono</th>@if (IsCourseList) { <th scope="col">Inscripción</th><th scope="col">Examen 1</th><th scope="col">Examen 2</th><th scope="col">Promedio</th><th scope="col" class="course-grade-actions">Acciones</th> } else { <th scope="col">Anterior curso</th><th scope="col">Curso actual</th><th scope="col">Nota actual</th><th scope="col" class="data-table-actions-heading">Acciones</th> }</tr></thead>
                 <tbody>
                     @if (busy)
                     {
@@ -60,7 +62,13 @@
                                 @if (IsCourseList)
                                 {
                                     <td><span class="data-table-chip">@RegistrationStatus(user)</span></td>
-                                    <td><span class="data-table-grade">@(CourseGrade(user)?.ToString("0.##") ?? "—")</span>@if (CourseGrade(user) is not null) { <span class="data-table-grade-scale"> / 100</span> }</td>
+                                    @for (var exam = 0; exam < 2; exam++)
+                                    {
+                                        var score = GradeFor(user).Total(exam);
+                                        <td><strong class="@StudentGradeDraft.Color(score)">@(score?.ToString("0.##") ?? "—")</strong><span class="data-table-grade-scale"> / 100</span></td>
+                                    }
+                                    <td><strong class="@StudentGradeDraft.Color(GradeFor(user).Average)">@(GradeFor(user).Average?.ToString("0.##") ?? "—")</strong><span class="data-table-grade-scale"> / 100</span><span class="data-table-secondary">@StudentGradeDraft.Result(GradeFor(user).Average)</span></td>
+                                    <td class="course-grade-actions"><button type="button" class="grade-register-button" disabled="@(!CanOpenGrades || loadingGrades || (CanRegisterGrades && (gradesError is not null || !gradeRegistrations.ContainsKey(user.Id))))" @onclick="() => OpenGrades(user)" title="@(!loadingGrades && !gradeRegistrations.ContainsKey(user.Id) ? "No se recibió una inscripción válida para este módulo." : "Registrar notas")" aria-label="Registrar notas de @FullName(user)" aria-haspopup="dialog">Registrar notas</button></td>
                                 }
                                 else
                                 {
@@ -101,4 +109,9 @@
         </div>
         <footer class="ceti-modal-footer"><span role="status">@(updatingStatus ? "Actualizando estado…" : "")</span><div><button type="button" class="data-table-button" disabled="@updatingStatus" @onclick="CloseStatus">Cancelar</button><button type="button" class="data-table-button data-table-button-danger" disabled="@updatingStatus" @onclick="ConfirmStatusAsync">@(statusUser.Active ? "Desactivar" : "Reactivar")</button></div></footer>
     </ModalDialog>
+}
+
+@if (CanOpenGrades && gradingUser is not null)
+{
+    <StudentGradesModal @key="gradingUser.Id" Name="@FullName(gradingUser)" Email="@gradingUser.Email" Initials="@Initials(gradingUser)" Module="@Course!.ModuleName" Parallel="@Course.Parallel" TeacherId="@Course.TeacherId" RegistrationId="@gradeRegistrations.GetValueOrDefault(gradingUser.Id)" Value="@GradeFor(gradingUser)" OnClose="CloseGrades" OnSaved="SaveGrades" />
 }

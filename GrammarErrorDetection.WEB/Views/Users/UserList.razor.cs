@@ -15,7 +15,54 @@ public partial class UserList : IDisposable
     [Parameter] public CourseSearchResponse? Course { get; set; }
     private bool IsCourseList => Course is not null;
     private bool CanManageUsers => !IsCourseList && Session.IsInRole("Coordinator");
-    private int ColumnCount => IsCourseList ? 4 : 6;
+    private int ColumnCount => IsCourseList ? 7 : 6;
+    private bool CanOpenGrades => CanRegisterGrades;
+    private bool CanRegisterGrades => IsCourseList && Session.Current?.User is { } user
+        && (Session.IsInRole("Coordinator") || (Session.IsInRole("Teacher") && Course!.TeacherId == user.Id));
+    private UserSearchResponse? gradingUser;
+    private readonly Dictionary<Guid, StudentGradeDraft> gradeDrafts = [];
+    private readonly Dictionary<Guid, Guid> gradeRegistrations = [];
+    private bool loadingGrades;
+    private string? gradesError;
+    [Inject] private ICourseService GradeCourseService { get; set; } = default!;
+    [Inject] private IEvaluationService EvaluationService { get; set; } = default!;
+    private StudentGradeDraft GradeFor(UserSearchResponse user)
+    {
+        if (!gradeDrafts.TryGetValue(user.Id, out var draft)) gradeDrafts[user.Id] = draft = new();
+        return draft;
+    }
+    private async Task OpenGrades(UserSearchResponse user)
+    {
+        if (!CanOpenGrades || busy || loadingGrades || !CheckSession()) return;
+        if (!CanRegisterGrades || busy || loadingGrades || gradesError is not null || !gradeRegistrations.TryGetValue(user.Id, out var registrationId) || !CheckSession()) return;
+        var version = requestVersion;
+        loadingGrades = true;
+        try
+        {
+            var evaluations = await EvaluationService.GetAsync(registrationId, lifetime.Token);
+            if (disposed || version != requestVersion) return;
+            var draft = new StudentGradeDraft();
+            foreach (var group in evaluations.Where(item => item.Period is 1 or 2).GroupBy(item => item.Period))
+            {
+                if (group.Count() != 1) throw new InvalidOperationException("Hay evaluaciones duplicadas para el mismo examen.");
+                draft.Set(group.Single());
+            }
+            gradeDrafts[user.Id] = draft;
+            gradingUser = user;
+        }
+        catch (HttpRequestException ex) { if (!disposed && version == requestVersion) gradesError = HttpError(ex); }
+        catch (OperationCanceledException) { if (!disposed && version == requestVersion) gradesError = "La consulta de notas se canceló. Inténtalo de nuevo."; }
+        catch (Exception ex) when (ex is InvalidOperationException or JsonException)
+        { if (!disposed && version == requestVersion) gradesError = ex is InvalidOperationException ? ex.Message : "No se pudieron interpretar las notas."; }
+        finally { if (version == requestVersion) loadingGrades = false; }
+    }
+    private void CloseGrades() => gradingUser = null;
+    private void SaveGrades(StudentGradeDraft draft)
+    {
+        if (!CanRegisterGrades || gradingUser is null) return;
+        gradeDrafts[gradingUser.Id] = draft;
+        status = $"Notas de {FullName(gradingUser)} guardadas.";
+    }
     private string ListTitle => IsCourseList ? "Estudiantes del curso" : "Listado de usuarios";
     [Inject] private IUserService UserService { get; set; } = default!;
     [Inject] private AuthSessionState Session { get; set; } = default!;
@@ -111,6 +158,7 @@ public partial class UserList : IDisposable
             page = requestedPage;
             loadedPageSize = requestedSize;
             hasNext = users.Count == requestedSize;
+            if (CanRegisterGrades) await LoadGradesAsync(cancellation.Token, version);
         }
         catch (OperationCanceledException)
         {
