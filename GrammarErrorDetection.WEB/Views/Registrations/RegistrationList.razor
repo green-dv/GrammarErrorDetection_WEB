@@ -18,14 +18,14 @@
             {
             <EditForm Model="filters" OnValidSubmit="SearchAsync" novalidate>
                 <DataAnnotationsValidator />
-                <fieldset class="registration-filter-fields" disabled="@(loading || deciding)">
+                <fieldset class="data-filter-panel data-filter-panel-inset" disabled="@(loading || deciding)">
                     <div class="data-table-toolbar registration-filters">
                         <label class="data-table-field"><span>Fecha de inscripción</span><InputDate @bind-Value="filters.RegistrationDate" /></label>
                         @if (!Mine) { <RegistrationFilterLookup Students="true" @bind-Value="filters.UserId" Disabled="@(loading || deciding)" /> }
                         <RegistrationFilterLookup @bind-Value="filters.ModuleNameId" Disabled="@(loading || deciding)" />
                         <label class="data-table-field"><span>Estado</span><InputSelect @bind-Value="filters.Status"><option value="">Todos</option><option value="Pending">Pendiente</option><option value="Approved">Aprobada</option><option value="Rejected">Rechazada</option></InputSelect></label>
                     </div>
-                    <div class="registration-search-actions"><button type="submit" class="data-table-button data-table-button-primary">Buscar</button><button type="button" class="data-table-button" @onclick="ClearAsync">Limpiar filtros</button></div>
+                    <div class="data-filter-actions"><button type="submit" class="data-table-button data-table-button-primary">Buscar</button><button type="button" class="data-table-button" @onclick="ClearAsync">Limpiar filtros</button></div>
                 </fieldset>
                 <div class="data-table-error"><ValidationSummary /></div>
             </EditForm>
@@ -50,7 +50,7 @@
                                     <td>@Text(item.Ci)</td>
                                     <td>@Text(item.Phone)</td>
                                     <td>@Text(item.ModuleName)</td>
-                                    <td><span class="registration-status @StatusClass(item)">@Status(item)</span>
+                                    <td><span class="data-table-status @StatusClass(item)">@Status(item)</span>
                                         @if (!Mine && IsPending(item))
                                         {
                                             <div class="registration-decision-actions"><button type="button" class="data-table-button data-table-button-primary" disabled="@deciding" @onclick="() => Review(item, true)" aria-label="Aprobar inscripción de @item.FirstName @item.LastName" aria-haspopup="dialog">Aprobar</button><button type="button" class="data-table-button data-table-button-danger" disabled="@deciding" @onclick="() => Review(item, false)" aria-label="Rechazar inscripción de @item.FirstName @item.LastName" aria-haspopup="dialog">Rechazar</button></div>

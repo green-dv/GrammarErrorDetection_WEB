@@ -200,6 +200,22 @@ El rol `Teacher` también puede abrir `/courses` y la ruta anterior `/teaching-c
 
 Los filtros se aplican al pulsar Buscar o Enter. Los selectores recorren sus catálogos en páginas de 100: módulos mediante `GET /api/ModuleName`, profesores mediante `POST /api/User/search` con `filter.roleId = f2700000-0000-4000-8000-000000000002` y aulas mediante `GET /api/Classroom` con `PageNumber` y `PageSize` en query. Cada catálogo puede reintentarse sin bloquear los que sí cargaron. La paginación consulta al servidor. En el backend local, `ClassController` devuelve `count = data.Count`, por lo que se muestran el rango y la página actual; Siguiente se habilita al recibir una página completa y conserva la anterior si la siguiente está vacía. Las tarjetas resumen únicamente la página cargada, sin presentar esos cálculos como estadísticas globales. Las notas conservan decimales, los nulos aparecen como pendientes y las horas aceptan la terminación `Z` sin convertir la zona horaria. Se reutiliza el JWT del cliente API y se manejan carga, errores, reintentos, cancelación y expiración de sesión. La creación, edición y generación automática están habilitadas para coordinadores. Ver abre los estudiantes del curso para coordinadores y su docente; enviar a papelera sigue deshabilitado.
 
+### Material de apoyo
+
+`/materials` adapta las tarjetas y el modal de `Failed`. Todos los usuarios autenticados pueden consultar el listado y el detalle; solo `Teacher` y `Coordinator` pueden registrar, editar, desactivar y reactivar materiales. El rol también se comprueba antes de cada escritura. `ISupportMaterialService` reutiliza el cliente autenticado y consume los GET, POST y PUT de `/api/SupportMaterial`. La búsqueda usa parámetros de query, omite filtros vacíos y conserva valores como `false` y tamaño cero. La paginación trata `count` como registros de la página, sin inventar un total global.
+
+Los selectores consultan `/api/ErrorClassification` y `/api/FileType` en páginas de 100 con `Filter.Active=true`, y tienen carga y reintento independientes. El tipo y la vista previa usan la extensión y el MIME del catálogo, con una alternativa basada en el enlace. Las rutas relativas de archivos se resuelven contra `Api:BaseUrl` y solo se abren enlaces HTTP/HTTPS. La descarga usa un enlace al recurso; su servidor determina si lo entrega como archivo o lo abre en el navegador.
+
+El formulario registra un enlace o ruta de un archivo ya alojado: los endpoints proporcionados aceptan JSON, no bytes de archivos. El autor sale de la sesión, la fecha inicia con la hora actual y el tamaño es opcional. Editar envía solo los campos modificados y conserva el autor original; dejar el tamaño vacío conserva su valor porque `null` no lo borra en esta API. Desactivar solicita confirmación y envía exclusivamente `{ id, active: false }`; reactivar usa `true`. Un guardado confirmado y un fallo posterior del listado se muestran por separado.
+
+Las comprobaciones de contratos y permisos se ejecutan desde la raíz, después de compilar la solución:
+
+```powershell
+dotnet restore checks/SupportMaterialChecks/SupportMaterialChecks.csproj --ignore-failed-sources -m:1
+dotnet build checks/SupportMaterialChecks/SupportMaterialChecks.csproj --no-restore -m:1 -p:UseSharedCompilation=false
+dotnet checks/SupportMaterialChecks/bin/Debug/net10.0/SupportMaterialChecks.dll
+```
+
 ### Listado de usuarios y tablas
 
 `/users` está disponible para el rol `Coordinator` del JWT. La página comprueba el rol incluso al acceder por URL, y el menú muestra Usuarios únicamente para coordinadores. `Views/Users/UserList.razor` define la tabla y `UserList.razor.cs` coordina filtros, carga y paginación. `IUserService` y `Services/Users/UserService` consumen `POST /api/User/search`, enviando siempre `pageNumber` y `pageSize` (20 por defecto); `filter` y sus campos nulos se omiten cuando no se usan. Se admiten nombre, apellido, CI, teléfono, correo, fecha de registro, rol, estado y módulo actual. El estado Inactivo se envía como `false`, sin confundirlo con el filtro vacío.

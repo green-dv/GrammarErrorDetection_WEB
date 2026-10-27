@@ -13,17 +13,11 @@
 .registration-lookup-option:hover, .registration-lookup-option.active, .registration-lookup-option[aria-selected="true"] { background: #edf3f9; }
 .registration-lookup-option small { color: #627187; font-size: 11px; overflow-wrap: anywhere; }
 .registration-lookup-footer { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 11px; }
-.registration-filter-fields { min-width: 0; border: 0; padding: 0; margin: 0; }
-.registration-search-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 22px 16px; }
 .registration-course-pagination { margin-block: 18px; justify-content: center; }
 .registration-decision-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .registration-filters .data-table-field:first-child { flex: 1 1 260px; }
 .registration-filters select { min-width: 160px; }
 .registrations-table { min-width: 740px; }
-.registration-status { display: inline-flex; padding: 5px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
-.registration-status.pending { color: #805d13; background: #fff5d8; }
-.registration-status.approved { color: #27664c; background: #e9f5ee; }
-.registration-status.rejected { color: #a33740; background: #fcecef; }
 .registration-notice { margin: 0 0 18px; padding: 14px 18px; border-left: 3px solid #52769f; border-radius: 4px; color: #445c78; background: #edf3f9; font-size: 13px; line-height: 1.6; }
 .registration-course-options { display: grid; gap: 12px; min-width: 0; margin: 0; padding: 0; border: 0; }
 .registration-course-options legend { margin-bottom: 12px; color: #182440; font-size: 14px; font-weight: 600; }

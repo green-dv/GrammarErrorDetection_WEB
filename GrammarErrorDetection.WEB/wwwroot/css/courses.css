@@ -12,8 +12,7 @@
 .courses-stats .courses-teacher-name { font-size: 21px; }
 .courses-stats div > span { display: block; margin-top: 8px; color: #627187; font-size: 11px; line-height: 1.5; }
 .courses-filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.courses-search-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 22px 18px; }
-.courses-advanced-filters summary { margin: 0 22px 16px; color: #285d8c; font-size: 12px; cursor: pointer; }
+.courses-advanced-filters summary { margin: 14px 0; color: #285d8c; font-size: 12px; cursor: pointer; }
 .courses-table { min-width: 1250px; }
 .student-courses-table { min-width: 900px; }
 .courses-table tbody th { min-width: 165px; }
@@ -29,6 +28,4 @@
     .courses-header-actions .data-table-button { width: 100%; }
     .courses-stats, .courses-filters { grid-template-columns: 1fr; }
     .courses-stat-symbol { display: grid; }
-    .courses-search-actions { padding-inline: 16px; }
-    .courses-advanced-filters summary { margin-inline: 16px; }
 }
