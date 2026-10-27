@@ -11,12 +11,11 @@ using QRCoder;
 
 namespace GrammarErrorDetection.WEB.Pages;
 
-public partial class Profile : IDisposable
+public partial class Settings : IDisposable
 {
     [Inject] private AuthSessionState Session { get; set; } = default!;
     [Inject] private IAuthService AuthService { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
-    [SupplyParameterFromQuery(Name = "tab")] public string? Tab { get; set; }
     private readonly VerificationCodeModel model = new();
     private readonly CancellationTokenSource lifetime = new();
     private EditContext editContext = default!;
@@ -24,7 +23,6 @@ public partial class Profile : IDisposable
     private string? status;
     private string? qrImage;
     private string? manualKey;
-    private bool showTotp;
     private bool loading;
     private bool confirming;
     private bool confirmed;
@@ -33,14 +31,6 @@ public partial class Profile : IDisposable
     protected override async Task OnParametersSetAsync()
     {
         if (Session.Current is null) { Navigation.NavigateTo("/auth/login", replace: true); return; }
-        if (Tab == "totp" && !showTotp) await OpenTotpAsync();
-    }
-
-    private static string Initials(string name) => string.Concat(name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(part => part[0])).ToUpperInvariant();
-    private void ShowProfile() => showTotp = false;
-    private async Task OpenTotpAsync()
-    {
-        showTotp = true;
         if (qrImage is null && !confirmed && Session.IsTotpEnabled != true) await SetupTotpAsync();
     }
 

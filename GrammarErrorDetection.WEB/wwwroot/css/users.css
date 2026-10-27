@@ -1,4 +1,4 @@
-/* Solo distribución de la página; el diseño de las tablas vive en tables.css. */
+/* Distribución y variantes del directorio; la base compartida vive en tables.css. */
 .users-page { width: 100%; max-width: 1500px; min-width: 0; margin: 10px auto 30px; color: #182440; }
 .users-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
 .users-eyebrow { margin: 0 0 7px; color: #738199; font-size: 10px; font-weight: 700; letter-spacing: .12em; }
@@ -6,12 +6,11 @@
 .users-heading h1 + p { margin: 8px 0 0; color: #627187; font-size: 13px; }
 .users-search { flex: 1 1 300px; }
 .users-filters { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
-.users-filter-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.users-filters > .data-filter-actions { margin-top: 0; padding-top: 2px; }
 .users-table { min-width: 1020px; }
 .users-table tbody th { min-width: 250px; }
 .users-table td:nth-child(2) { min-width: 130px; }
 .users-table td:nth-child(4) { min-width: 215px; }
-.users-inactive { display: inline-block; margin-left: 5px; padding: 2px 5px; border-radius: 4px; color: #7a6570; background: #f2edf0; font-size: 10px; font-weight: 500; }
 .users-role { display: inline-block; margin-left: 5px; padding: 2px 6px; border-radius: 4px; color: #49658a; background: #edf2f8; font-size: 10px; font-weight: 500; }
 .users-detail { margin: 0 22px 18px; padding: 18px; border: 1px solid #dfe7f0; border-radius: 9px; background: #fafbfd; }
 .users-detail h3 { margin: 0 0 16px; font-size: 16px; font-weight: 700; }
@@ -23,6 +22,16 @@
 .users-detail-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .users-edit-errors .validation-errors { padding-left: 18px; margin: 0 0 12px; }
 .users-edit-errors .validation-message { color: #a33740; font-size: 12px; }
+
+/* Detalles propios del directorio de usuarios. */
+.users-directory .users-heading { padding-left: 16px; border-left: 3px solid var(--color-brand-red, #c53736); }
+.users-directory .users-eyebrow { color: var(--color-brand-blue, #176b9f); }
+.users-directory .users-heading h1 { color: var(--color-brand-navy, #171d46); font-size: 29px; }
+.users-identity-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.users-identity-tags:empty { display: none; }
+.users-directory .users-role { display: inline-flex; align-items: center; margin: 0; padding: 3px 9px; border-radius: 20px; font-size: 10px; font-weight: 600; line-height: 1.5; }
+.users-directory .users-role { color: #17578b; background: #e6f1ff; }
+.users-directory .points-user-actions { justify-content: flex-end; flex-wrap: nowrap; gap: 8px; }
 @media (max-width: 1200px) { .users-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 1000px) { .users-detail-grid, .users-edit-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 640px) {

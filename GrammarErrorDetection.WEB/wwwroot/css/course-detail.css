@@ -27,8 +27,6 @@
 }
 
 /* Registro de notas: diseño compartido con Failed. */
-.grade-register-button{min-height:36px;color:#285d8c;white-space:nowrap;cursor:pointer;background:#edf5fc;border:1px solid #c9ddeb;border-radius:7px;padding:8px 11px;font-size:12px;font-weight:600}
-.grade-register-button:hover{border-color:#285d8c;background:#dfedf7}
 .grade-student{background:#f8fafc;border:1px solid #e3eaf2;border-radius:9px;align-items:center;gap:12px;margin-top:20px;padding:13px;display:flex}
 .grade-student strong{color:#182440;font-size:14px;font-weight:650;display:block}
 .grade-student div>span{color:#627187;overflow-wrap:anywhere;margin-top:5px;font-size:12px;display:block}
@@ -65,7 +63,6 @@
 }
 
 .grade-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
-.grade-register-button:disabled { opacity: .55; cursor: default; }
 
 .course-students-table .course-grade-actions { position: sticky; right: 0; z-index: 1; min-width: 155px; background: #fff; box-shadow: -4px 0 8px #18244008; }
-.course-students-table thead .course-grade-actions { background: #f8fafc; }
+.course-students-table thead .course-grade-actions { background: var(--color-brand-navy, #171d46); }

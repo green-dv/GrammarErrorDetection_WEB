@@ -6,11 +6,11 @@
     <p class="ceti-modal-description">Selecciona un año y bimestre para consultar los cursos a los que puedes postular. Si ya tienes una inscripción pendiente en ese periodo, se actualizará esa misma solicitud.</p>
     <EditForm Model="period" OnValidSubmit="SearchAsync" novalidate>
         <DataAnnotationsValidator />
-        <fieldset class="registration-filter-fields" disabled="@Busy">
+        <fieldset class="data-filter-panel data-filter-panel-inset" disabled="@Busy">
             <div class="data-table-toolbar registration-filters">
                 <label class="data-table-field"><span>Año</span><InputNumber @bind-Value="period.Year" @bind-Value:after="InvalidateCourses" /></label>
                 <label class="data-table-field"><span>Bimestre</span><InputSelect @bind-Value="period.Bimester" @bind-Value:after="InvalidateCourses">@for (var number = 1; number <= 6; number++) { <option value="@number">@number</option> }</InputSelect></label>
-                <button type="submit" class="data-table-button" disabled="@Busy">Consultar cursos</button>
+                <button type="submit" class="data-table-button data-table-button-primary" disabled="@Busy">Consultar cursos</button>
             </div>
         </fieldset>
         <div class="data-table-error"><ValidationSummary /></div>

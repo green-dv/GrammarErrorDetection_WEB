@@ -21,7 +21,7 @@
         <header class="data-table-heading"><div><h2>Listado de cursos</h2><p>Consulta la oferta académica y el rendimiento de cada grupo.</p></div></header>
         <EditForm Model="filters" OnValidSubmit="SearchAsync" OnInvalidSubmit="ShowValidationErrors" novalidate>
             <DataAnnotationsValidator />
-            <fieldset disabled="@busy">
+            <fieldset class="data-filter-panel data-filter-panel-inset" disabled="@busy">
                 <div class="data-table-toolbar courses-filters">
                     <label class="data-table-field"><span>Módulo</span><InputSelect @bind-Value="filters.ModuleNameId" disabled="@(loadingCatalogs || modules.Count == 0)"><option value="">Todos los módulos</option>@foreach (var module in modules) { <option value="@module.Id">@module.Name</option> }</InputSelect></label>
                     @if (IsTeacher)
@@ -50,7 +50,7 @@
                         <label class="data-table-field"><span>Fecha de creación</span><InputDate @bind-Value="filters.CreatedAt" /></label>
                     </div>
                 </details>
-                <div class="courses-search-actions"><button type="submit" class="data-table-button data-table-button-primary">Buscar</button><button type="button" class="data-table-button" @onclick="ClearFiltersAsync">Limpiar filtros</button></div>
+                <div class="data-filter-actions"><button type="submit" class="data-table-button data-table-button-primary">Buscar</button><button type="button" class="data-table-button" @onclick="ClearFiltersAsync">Limpiar filtros</button></div>
             </fieldset>
         </EditForm>
         @if (validationErrors.Count > 0) { <div class="data-table-error" role="alert">@foreach (var message in validationErrors) { <p>@message</p> }</div> }
@@ -69,7 +69,7 @@
                         @foreach (var course in courses)
                         {
                             <tr @key="course.Id">
-                                <th scope="row"><span class="data-table-primary">@Display(course.ModuleName, "Sin módulo informado") <span class="data-table-chip">@(course.Active ? "Activo" : "Inactivo")</span></span><span class="data-table-secondary">Nivel @(course.ModuleLevel?.ToString() ?? "—") · Paralelo @Display(course.Parallel, "—")</span></th>
+                                <th scope="row"><span class="data-table-primary">@Display(course.ModuleName, "Sin módulo informado") <span class="data-table-status @(course.Active ? "is-active" : "is-inactive")">@(course.Active ? "Activo" : "Inactivo")</span></span><span class="data-table-secondary">Nivel @(course.ModuleLevel?.ToString() ?? "—") · Paralelo @Display(course.Parallel, "—")</span></th>
                                 <td>@Display(course.TeacherName, "Sin profesor asignado")</td>
                                 <td><span class="data-table-primary">Bimestre @Bimester(course.Bimester) · @course.Year</span><span class="data-table-secondary">@Hour(course.StartTime) – @Hour(course.EndTime)</span><span class="data-table-secondary">@(course.StartDate?.ToString("dd/MM/yyyy") ?? "—") – @(course.EndDate?.ToString("dd/MM/yyyy") ?? "—")</span></td>
                                 <td><span class="data-table-primary">@Display(course.ClassroomName, "Sin aula asignada")</span><span class="data-table-secondary">Capacidad: @(course.ClassroomCapacity?.ToString() ?? "—")</span></td>

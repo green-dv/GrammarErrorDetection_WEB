@@ -12,7 +12,6 @@ namespace GrammarErrorDetection.WEB.Views.Users;
 public partial class UserEditModal : IDisposable
 {
     [Parameter, EditorRequired] public UserSearchResponse User { get; set; } = default!;
-    [Parameter] public IReadOnlyList<UserLookupOption> Roles { get; set; } = [];
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback<UserUpdateResponse> OnSaved { get; set; }
     [Inject] private IUserService UserService { get; set; } = default!;
@@ -24,7 +23,7 @@ public partial class UserEditModal : IDisposable
     private readonly CancellationTokenSource lifetime = new();
     private bool saving, disposed;
     private string? error;
-    private bool HasChanges => model.ChangesFrom(User).HasChanges;
+    private bool HasChanges => model.HasChangesFrom(User);
 
     protected override void OnInitialized()
     {
@@ -37,8 +36,7 @@ public partial class UserEditModal : IDisposable
         if (saving || disposed) return;
         error = null;
         validationErrors.Clear();
-        var request = model.ChangesFrom(User);
-        if (!request.HasChanges) return;
+        if (!HasChanges) return;
         if (!editContext.Validate())
         {
             validationErrors = editContext.GetValidationMessages().Distinct().ToList();
@@ -49,7 +47,7 @@ public partial class UserEditModal : IDisposable
         saving = true;
         try
         {
-            var response = await UserService.UpdateAsync(request, lifetime.Token);
+            var response = await UserService.UpdateDetailsAsync(model.ToRequest(User.Id), lifetime.Token);
             if (disposed) return;
             if (response?.Data is null || response.Data.Id != User.Id || response.Error is { ErrorCode: not 0 })
             {

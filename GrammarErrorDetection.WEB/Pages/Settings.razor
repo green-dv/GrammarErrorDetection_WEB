@@ -1,0 +1,54 @@
+@page "/settings"
+<PageTitle>Configuración | CETI La Paz</PageTitle>
+@if (Session.Current is not null)
+{
+    <section aria-labelledby="settings-title">
+        <header class="portal-heading"><p class="portal-eyebrow">CETI · MI CUENTA</p><h1 id="settings-title">Configuración</h1><p>Administra la seguridad de tu cuenta.</p></header>
+        <article class="settings-card">
+                <div id="profile-totp-panel" class="settings-content">
+                    <h2>Configura tu autenticador</h2>
+                    @if (confirmed || Session.IsTotpEnabled == true)
+                    {
+                        <p class="settings-status settings-success" role="status">La autenticación TOTP está activada para esta cuenta.</p>
+                    }
+                    else
+                    {
+                        <p>Escanea el código QR con tu aplicación de autenticación e ingresa el código de seis dígitos.</p>
+                        @if (!string.IsNullOrEmpty(status) || validationErrors.Count > 0)
+                        {
+                            <div class="auth-errors" role="alert"><ul>
+                                @if (!string.IsNullOrEmpty(status)) { <li>@status</li> }
+                                @foreach (var error in validationErrors) { <li>@error</li> }
+                            </ul></div>
+                        }
+                        @if (loading)
+                        {
+                            <p class="settings-status" role="status">Preparando tu autenticador…</p>
+                        }
+                        else if (qrImage is not null)
+                        {
+                            <div class="settings-totp-layout">
+                                <div>
+                                    <div class="settings-qr"><img src="@qrImage" alt="Código QR para configurar tu autenticador CETI" width="220" height="220" /></div>
+                                    <details class="settings-manual-key"><summary>¿No puedes escanear el QR?</summary><p>Introduce esta clave en tu autenticador:</p><code>@manualKey</code></details>
+                                </div>
+                                <EditForm EditContext="editContext" OnValidSubmit="ConfirmTotpAsync" OnInvalidSubmit="ShowValidationErrors" novalidate class="settings-totp-fields">
+                                    <DataAnnotationsValidator />
+                                    <fieldset disabled="@confirming">
+                                        <span class="settings-step">VERIFICA TU CÓDIGO</span>
+                                        <label for="totp-setup-code" class="portal-field">Código TOTP<InputText id="totp-setup-code" @bind-Value="model.Code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" /></label>
+                                        <p>Usa el código que aparece en tu aplicación.</p>
+                                        <button type="submit" class="portal-button">@(confirming ? "Validando…" : "Activar TOTP")</button>
+                                    </fieldset>
+                                </EditForm>
+                            </div>
+                        }
+                        else
+                        {
+                            <button type="button" class="portal-button" @onclick="SetupTotpAsync">Preparar autenticador</button>
+                        }
+                    }
+                </div>
+        </article>
+    </section>
+}

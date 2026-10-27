@@ -19,6 +19,39 @@ public partial class UserList : IDisposable
     private bool CanOpenGrades => CanRegisterGrades;
     private bool CanRegisterGrades => IsCourseList && Session.Current?.User is { } user
         && (Session.IsInRole("Coordinator") || (Session.IsInRole("Teacher") && Course!.TeacherId == user.Id));
+    private bool CanAssignPoints => CanManageUsers || CanRegisterGrades;
+    private UserSearchResponse? pointsUser;
+    [Inject] private GrammarErrorDetection.Services.Services.Points.PointRegistrationResolver PointRegistrations { get; set; } = default!;
+    private Guid pointsRegistrationId;
+    private string pointsResolvedCourseName = "";
+    private bool resolvingPoints;
+    private string PointsCourseName => pointsResolvedCourseName;
+    private async Task OpenPoints(UserSearchResponse user)
+    {
+        if (!CanAssignPoints || busy || resolvingPoints || !CheckSession()) return;
+        var version = requestVersion;
+        resolvingPoints = true; status = null;
+        try
+        {
+            var classId = IsCourseList ? Course!.Id : user.CurrentCourse?.ClassId;
+            var target = await PointRegistrations.ResolveAsync(user.Id, classId, lifetime.Token);
+            if (disposed || version != requestVersion || !CheckSession()) return;
+            pointsRegistrationId = target.RegistrationId;
+            pointsResolvedCourseName = IsCourseList ? $"{Course!.ModuleName} · Paralelo {Course.Parallel}"
+                : user.CurrentCourse is not null ? CurrentCourse(user) : target.CourseName;
+            pointsUser = user;
+        }
+        catch (HttpRequestException ex) { if (!disposed && version == requestVersion) status = ex.StatusCode == HttpStatusCode.Forbidden ? "La API no permitió consultar las inscripciones de este usuario o curso." : HttpError(ex); }
+        catch (OperationCanceledException) { if (!disposed && version == requestVersion) status = "La consulta de la inscripción tardó demasiado. Inténtalo de nuevo."; }
+        catch (Exception ex) when (ex is InvalidOperationException or JsonException) { if (!disposed && version == requestVersion) status = ex is JsonException ? "No se pudo interpretar la inscripción." : ex.Message; }
+        finally { resolvingPoints = false; }
+    }
+    private void ClosePoints() { pointsUser = null; pointsRegistrationId = Guid.Empty; pointsResolvedCourseName = ""; }
+    private void PointsSaved(GrammarErrorDetection.Models.Points.PointTransactionResponse transaction)
+    {
+        status = $"Movimiento de {transaction.Amount} puntos registrado para {FullName(pointsUser!)}.";
+        ClosePoints();
+    }
     private UserSearchResponse? gradingUser;
     private readonly Dictionary<Guid, StudentGradeDraft> gradeDrafts = [];
     private readonly Dictionary<Guid, Guid> gradeRegistrations = [];

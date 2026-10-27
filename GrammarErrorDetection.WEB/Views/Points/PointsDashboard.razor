@@ -1,0 +1,49 @@
+<section class="points-dashboard" aria-labelledby="points-title">
+    <header class="points-heading"><div><p class="portal-eyebrow">CADA PASO CUENTA</p><h2 id="points-title">Puntos y niveles</h2></div></header>
+    @if (loading) { <p class="data-table-message" role="status">Consultando tu progreso…</p> }
+    @if (error is not null) { <div class="data-table-error" role="alert">@error <button type="button" class="data-table-text-button" disabled="@loading" @onclick="LoadAsync">Reintentar</button></div> }
+    @if (!loading && total is not null)
+    {
+        <div class="points-level-card">
+            <span class="points-level-icon" aria-hidden="true">★</span>
+            <div><span class="points-label">NIVEL DEL ESTUDIANTE</span>
+                @if (progress?.Current is { } current) { <h3>Nivel @current.Level · @current.Name</h3> }
+                else { <h3>@(progress is null ? "Nivel no disponible" : "Sin nivel alcanzado")</h3> }
+                <p>Sigue aprendiendo y alcanza tu próxima meta.</p>
+            </div>
+            @if (progress?.Next is { } next)
+            {
+                <div class="points-progress"><div><span>Hacia el nivel @next.Level · @next.Name</span><strong>@progress.Remaining pts restantes</strong></div><progress value="@progress.Percent.ToString(System.Globalization.CultureInfo.InvariantCulture)" max="100" aria-label="Progreso hacia el siguiente nivel">@progress.Percent.ToString("0") %</progress></div>
+            }
+            else if (progress?.Current is not null) { <p class="points-progress">¡Alcanzaste el nivel máximo!</p> }
+        </div>
+        <div class="points-stats">
+            <article><span>Puntos totales</span><strong>@total.TotalPoints <small>pts</small></strong><p>Acumulados en tus inscripciones</p></article>
+            <article><span>Para el siguiente nivel</span><strong>@(progress?.Remaining?.ToString() ?? "—") <small>@(progress?.Next is not null ? "pts" : "")</small></strong><p>@(progress?.Next is { } target ? $"Tu próxima meta: nivel {target.Level}" : progress?.Current is not null ? "Nivel máximo alcanzado" : "Sin siguiente nivel disponible")</p></article>
+        </div>
+    }
+    <div class="data-table-card">
+        <header class="data-table-heading"><div><h2>Historial de puntos</h2><p>Fecha, motivo y cantidad de cada movimiento.</p></div></header>
+        @if (historyError is not null) { <div class="data-table-error" role="alert">@historyError <button type="button" class="data-table-text-button" disabled="@historyLoading" @onclick="RetryHistoryAsync">Reintentar historial</button></div> }
+        @if (historyStatus is not null) { <p class="data-table-message" role="status">@historyStatus</p> }
+        <div class="data-table-scroll" role="region" aria-label="Historial de puntos" aria-busy="@historyLoading.ToString().ToLowerInvariant()" tabindex="0">
+            <table class="data-table"><caption class="data-table-sr-only">Fecha, motivo y cantidad de los movimientos de puntos.</caption><thead><tr><th scope="col">Fecha</th><th scope="col">Motivo</th><th scope="col">Puntos</th></tr></thead><tbody>
+                @if (historyLoading) { <tr><td colspan="3" class="data-table-empty" role="status">Cargando historial…</td></tr> }
+                else if (historyError is not null) { <tr><td colspan="3" class="data-table-empty">Historial no disponible.</td></tr> }
+                else if (history.Count == 0) { <tr><td colspan="3" class="data-table-empty">Aún no tienes movimientos de puntos registrados.</td></tr> }
+                else
+                {
+                    @foreach (var entry in history)
+                    {
+                        <tr @key="entry.Id"><td><time datetime="@entry.GrantedAt.ToString("s")">@entry.GrantedAt.ToString("dd/MM/yyyy HH:mm")</time></td><th scope="row">@entry.Reason @if (!entry.Active) { <span class="data-table-status is-inactive">Inactivo</span> }</th><td><span class="points-amount @(entry.Amount < 0 ? "points-amount-negative" : entry.Amount == 0 ? "points-amount-zero" : "")">@(entry.Amount > 0 ? $"+{entry.Amount}" : entry.Amount.ToString())</span></td></tr>
+                    }
+                }
+            </tbody></table>
+        </div>
+        <footer class="data-table-footer">
+            <label class="data-table-page-size">Filas por página <select @bind="pageSize" @bind:after="ChangeHistorySizeAsync" disabled="@historyLoading"><option value="5">5</option><option value="10">10</option><option value="20">20</option></select></label>
+            <span role="status">@(historyLoading ? "Consultando…" : historyError is null ? HistoryRange : "")</span>
+            <nav class="data-table-pagination" aria-label="Paginación del historial de puntos"><button type="button" disabled="@(historyLoading || page <= 1)" @onclick="PreviousHistoryAsync" aria-label="Página anterior">‹</button><span>Página <strong>@(page)</strong></span><button type="button" disabled="@(historyLoading || !hasNext)" @onclick="NextHistoryAsync" aria-label="Página siguiente">›</button></nav>
+        </footer>
+    </div>
+</section>

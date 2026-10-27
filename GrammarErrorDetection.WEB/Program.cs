@@ -33,7 +33,11 @@ builder.Services.AddScoped<IApiClient>(provider =>
 });
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
+builder.Services.AddScoped<GrammarErrorDetection.Services.Services.Points.PointRegistrationResolver>();
+builder.Services.AddScoped<IPointService, GrammarErrorDetection.Services.Services.Points.PointService>();
 builder.Services.AddScoped<ITextService, GrammarErrorDetection.Services.Services.Texts.TextService>();
+builder.Services.AddScoped<ISupportMaterialService, GrammarErrorDetection.Services.Services.Materials.SupportMaterialService>();
 builder.Services.AddScoped<IOcrService>(_ => new GrammarErrorDetection.Services.Services.OcrService(
     new HttpClient { BaseAddress = ocrBaseUri, Timeout = TimeSpan.FromMinutes(3) }));
 builder.Services.AddScoped<ICourseService, CourseService>();

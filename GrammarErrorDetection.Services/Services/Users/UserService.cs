@@ -31,6 +31,13 @@ public sealed class UserService(IApiClient apiClient) : IUserService
     public Task<ApiResponse<List<UserLookupOption>>?> GetModulesAsync(int pageNumber, CancellationToken cancellationToken = default)
         => apiClient.GetAsync<ApiResponse<List<UserLookupOption>>>($"api/ModuleName?PageNumber={pageNumber}&PageSize=100", cancellationToken);
 
+    public Task<ApiResponse<UserUpdateResponse>?> UpdateDetailsAsync(UserDetailsUpdateRequest request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (request.Id == Guid.Empty) throw new ArgumentException("Selecciona un usuario válido.", nameof(request));
+        return apiClient.PutAsync<UserDetailsUpdateRequest, ApiResponse<UserUpdateResponse>>("api/User", request, cancellationToken);
+    }
+
     public Task<ApiResponse<List<UserLookupOption>>?> SearchModulesAsync(string? name, int pageNumber, int pageSize, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(pageNumber, 1);
