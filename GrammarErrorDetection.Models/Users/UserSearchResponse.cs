@@ -51,6 +51,7 @@ public sealed class UserCurrentCourseResponse : UserCourseSummaryResponse
 
 public sealed class UserLookupOption
 {
+    public int? Level { get; set; }
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public bool Active { get; set; }

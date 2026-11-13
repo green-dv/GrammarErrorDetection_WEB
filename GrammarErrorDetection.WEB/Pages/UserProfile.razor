@@ -1,23 +1,19 @@
 @page "/users/{UserId:guid}"
+@page "/profile/{UserId:guid}"
 @using GrammarErrorDetection.Services.Services.Auth
 @inject AuthSessionState Session
 @inject NavigationManager Navigation
+@using GrammarErrorDetection.WEB.Views.Profiles
 
 <PageTitle>Perfil de usuario | CETI La Paz</PageTitle>
 
 @if (Session.Current is not null)
 {
-    @if (Session.Roles.Contains("Coordinator", StringComparer.Ordinal))
-    {
-        <h1>Perfil de usuario</h1>
-        <p>Esta página aún está pendiente de implementación.</p>
-        <a href="users">Volver al listado de usuarios</a>
-    }
-    else
-    {
-        <h1>Acceso restringido</h1>
-        <p>Esta página está disponible para coordinadores.</p>
-    }
+        <header class="portal-heading"><p class="portal-eyebrow">CETI · COMUNIDAD ACADÉMICA</p><h1>Perfil de usuario</h1>
+            @if (Session.IsInRole("Coordinator")) { <a href="/users" class="data-table-text-button">← Volver a usuarios</a> }
+            else { <a href="/home" class="data-table-text-button">← Volver al inicio</a> }
+        </header>
+        <ProfileSections @key="UserId" UserId="UserId" />
 }
 
 @code {

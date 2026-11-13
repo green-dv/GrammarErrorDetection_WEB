@@ -22,6 +22,14 @@ public sealed class AuthService(IApiClient apiClient) : IAuthService
     public Task<ApiResponse<AuthSessionResponse>?> VerifyTotpAsync(VerifyTotpLoginRequest request, CancellationToken cancellationToken = default)
         => apiClient.PostAsync<VerifyTotpLoginRequest, ApiResponse<AuthSessionResponse>>("api/Auth/Login/VerifyTotp", request, cancellationToken);
 
+    public Task<ApiResponse<AuthSessionResponse>?> CompletePasswordChangeAsync(CompletePasswordChangeRequest request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (request.ChallengeId == Guid.Empty || string.IsNullOrEmpty(request.Token))
+            throw new InvalidOperationException("Vuelve a iniciar sesión.");
+        return apiClient.PostAsync<CompletePasswordChangeRequest, ApiResponse<AuthSessionResponse>>("api/Auth/Login/ChangePassword", request, cancellationToken);
+    }
+
     public Task<ApiResponse<TotpSetupResponse>?> SetupTotpAsync(CancellationToken cancellationToken = default)
         => apiClient.PostAsync<object?, ApiResponse<TotpSetupResponse>>("api/Auth/Totp/Setup", null, cancellationToken);
 

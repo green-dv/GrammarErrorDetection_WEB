@@ -1,4 +1,4 @@
-using System.Net;
+    using System.Net;
 using System.Text.Json;
 using GrammarErrorDetection.Models.Auth;
 using GrammarErrorDetection.Services.Interfaces;
@@ -15,6 +15,7 @@ public partial class LoginVerification : IDisposable
     [Inject] private IAuthService AuthService { get; set; } = default!;
     [Inject] private AuthSessionState Session { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
+    [Inject] private PasswordChangeFlowState PasswordChange { get; set; } = default!;
     private readonly VerificationCodeModel model = new();
     private readonly CancellationTokenSource lifetime = new();
     private EditContext editContext = default!;
@@ -51,6 +52,15 @@ public partial class LoginVerification : IDisposable
             if (response?.Error is { ErrorCode: not 0 } || response?.Data is null)
             {
                 status = "No se pudo verificar el acceso. Revisa el código e inténtalo de nuevo.";
+                return;
+            }
+            if (response.Data.RequiresPasswordChange)
+            {
+                // Contraseña temporal: la API aún no entrega el JWT; se completa en /auth/change-password.
+                PasswordChange.Start(response.Data, email, Flow.IsTotpEnabled);
+                Flow.Clear();
+                model.Code = string.Empty;
+                Navigation.NavigateTo("/auth/change-password", replace: true);
                 return;
             }
             Session.SignIn(response.Data, email, Flow.IsTotpEnabled);

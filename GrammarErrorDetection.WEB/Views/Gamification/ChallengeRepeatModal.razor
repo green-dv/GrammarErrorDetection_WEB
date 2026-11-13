@@ -1,0 +1,72 @@
+@using System.Net
+@using GrammarErrorDetection.Models.Gamification
+@using GrammarErrorDetection.Services.Interfaces
+@using GrammarErrorDetection.WEB.Components.Dialogs
+@implements IDisposable
+@inject IGamificationService Service
+
+@* Repetir: abre la ronda siguiente con nuevas fechas y vuelve a habilitar el desafío para todos. *@
+<ModalDialog Title="Repetir desafío" Subtitle="@($"{Challenge.Title} · ronda {Challenge.Round + 1}")" Busy="saving" OnClose="OnClose">
+    <div class="ceti-modal-body gamification-repeat">
+        <p>El desafío vuelve a estar disponible <strong>para todos los estudiantes</strong>, incluidos quienes ya lo completaron. Solo cuenta la actividad desde el nuevo inicio, con las mismas condiciones: @ConditionConfiguration.Summary(Challenge.Conditions).</p>
+        <p>@(Challenge.CompletionCount == 1 ? "1 estudiante completó" : $"{Challenge.CompletionCount} estudiantes completaron") la ronda @Challenge.Round; ese historial se conserva.</p>
+        <div class="gamification-grid">
+            <label class="data-table-field"><span>Inicio de la nueva ronda (hora de Bolivia) *</span><input type="datetime-local" @bind="startDate" @bind:format="yyyy-MM-ddTHH:mm" disabled="@saving" /></label>
+            <label class="data-table-field"><span>Fin (opcional)</span><input type="datetime-local" @bind="endDate" @bind:format="yyyy-MM-ddTHH:mm" disabled="@saving" /></label>
+        </div>
+        @if (error is not null) { <p class="data-table-error" role="alert">@error</p> }
+    </div>
+    <footer class="ceti-modal-footer">
+        <span role="status">@(saving ? "Abriendo nueva ronda…" : "")</span>
+        <div>
+            <button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">Cancelar</button>
+            <button type="button" class="data-table-button data-table-button-primary" disabled="@saving" @onclick="SaveAsync">Abrir ronda @(Challenge.Round + 1)</button>
+        </div>
+    </footer>
+</ModalDialog>
+
+@code {
+    [Parameter, EditorRequired] public ChallengeResponse Challenge { get; set; } = default!;
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnRepeated { get; set; }
+    private readonly CancellationTokenSource lifetime = new();
+    // Hora de Bolivia (UTC-4) sin zona, como espera la API.
+    private DateTime? startDate = DateTime.SpecifyKind(DateTime.UtcNow.AddHours(-4).Date, DateTimeKind.Unspecified);
+    private DateTime? endDate = DateTime.SpecifyKind(DateTime.UtcNow.AddHours(-4).Date.AddDays(7).AddSeconds(-1), DateTimeKind.Unspecified);
+    private bool saving, disposed;
+    private string? error;
+
+    private async Task SaveAsync()
+    {
+        if (saving || disposed) return;
+        error = null;
+        if (startDate is not { } start) { error = "Indica el inicio de la nueva ronda."; return; }
+        if (endDate is { } end && end <= start) { error = "La fecha de fin debe ser posterior al inicio."; return; }
+        saving = true;
+        try
+        {
+            var response = GamificationAdmin.Require(await Service.RepeatChallengeAsync(Challenge.Id, new()
+            {
+                StartDate = DateTime.SpecifyKind(start, DateTimeKind.Unspecified),
+                EndDate = endDate is { } value ? DateTime.SpecifyKind(value, DateTimeKind.Unspecified) : null
+            }, lifetime.Token));
+            if (response.Id != Challenge.Id) throw new InvalidOperationException("La respuesta no corresponde al desafío.");
+            await OnRepeated.InvokeAsync();
+        }
+        catch (HttpRequestException ex)
+        {
+            error = ex.StatusCode switch
+            {
+                HttpStatusCode.BadRequest => "No se pudo repetir: solo se repiten desafíos publicados o cerrados y la fecha de fin debe ser posterior al inicio.",
+                HttpStatusCode.NotFound => "El desafío ya no existe. Actualiza el listado.",
+                HttpStatusCode.Forbidden => "No tienes permiso para repetir desafíos.",
+                _ => "No se pudo confirmar la nueva ronda. Cierra y revisa el listado antes de volver a intentarlo."
+            };
+        }
+        catch (InvalidOperationException ex) { error = ex.Message; }
+        catch (OperationCanceledException) { }
+        finally { saving = false; }
+    }
+
+    public void Dispose() { disposed = true; lifetime.Cancel(); lifetime.Dispose(); }
+}

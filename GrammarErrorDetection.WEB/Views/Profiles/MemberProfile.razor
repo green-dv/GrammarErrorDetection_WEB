@@ -1,0 +1,95 @@
+@using GrammarErrorDetection.Models.Gamification
+@if (CanView)
+{
+    <section class="member-profile" aria-label="Información y progreso del usuario">
+        @if (ShowInformation)
+        {
+        <div class="member-overview">
+            <article class="member-person">
+                <span class="member-avatar" aria-hidden="true">@Initials(Name)</span>
+                <div><p class="member-eyebrow">PERFIL ACADÉMICO</p><h2>@Name</h2><p>@(member?.RoleName ?? (IsOwn ? string.Join(", ", Session.Roles) : "Consultando información…"))</p></div>
+                @if (member is not null) { <span class="member-status">@(member.Active ? "Cuenta activa" : "Cuenta inactiva")</span> }
+                <dl>
+                    @if (CanViewContact)
+                    {
+                        <div><dt>Correo electrónico</dt><dd>@Email</dd></div>
+                        <div><dt>Teléfono</dt><dd>@(member?.Phone ?? "No informado")</dd></div>
+                        <div><dt>Documento de identidad</dt><dd>@(member?.Ci ?? "No disponible")</dd></div>
+                    }
+                    @if (member is { BirthDate: { } birth } && string.Equals(member.RoleName, "Student", StringComparison.OrdinalIgnoreCase))
+                    {
+                        <div><dt>Fecha de nacimiento</dt><dd>@birth.ToString("dd/MM/yyyy") <span class="member-age">· @Age(birth) años</span></dd></div>
+                    }
+                    <div><dt>Miembro desde</dt><dd>@(member?.CreatedAt.ToString("dd/MM/yyyy") ?? "—")</dd></div>
+                </dl>
+                @if (loadingInfo) { <p role="status">Consultando información…</p> }
+                @if (infoError is not null) { <div class="data-table-error" role="alert">@infoError <button type="button" class="data-table-text-button" @onclick="ReloadAsync">Reintentar</button></div> }
+            </article>
+            <div class="member-stats">
+                <article><span class="member-stat-icon" aria-hidden="true">↗</span><div><span>Nivel académico</span><strong>@(academicLevel?.ToString() ?? "—")</strong><small>@(academicLevel is null ? "Sin nivel informado" : "Nivel del módulo actual")</small></div></article>
+                <article><span class="member-stat-icon" aria-hidden="true">▤</span><div><span>Módulo actual</span><strong>@(member?.CurrentCourse?.ModuleName ?? "—")</strong><small>@(member?.CurrentCourse is { } course ? $"Bimestre {course.Bimester} · {course.Year} · Paralelo {course.Parallel ?? "—"}" : "Sin curso actual informado")</small></div></article>
+                @if (ShowAchievements)
+                {
+                    <article><span class="member-stat-icon member-stat-gold" aria-hidden="true">✦</span><div><span>Puntos de estas medallas</span><strong>@(loadingMedals || medalsError is not null ? "—" : PageAwardPoints?.ToString() ?? "—")</strong><small>Premios obtenidos · página actual</small></div></article>
+                }
+            </div>
+        </div>
+        }
+        @if (ShowCourses)
+        {
+        @if (!ShowInformation && loadingInfo) { <p class="member-empty" role="status">Consultando cursos…</p> }
+        @if (!ShowInformation && infoError is not null) { <div class="data-table-error" role="alert">@infoError <button type="button" class="data-table-text-button" @onclick="ReloadAsync">Reintentar</button></div> }
+        @if (member?.CurrentCourse is { } currentCourse)
+        {
+            <article class="member-course"><div><p class="member-eyebrow">CURSO ACTUAL</p><h3>@currentCourse.ModuleName</h3><p>@(currentCourse.TeacherName ?? "Docente no informado") · @(currentCourse.ClassroomName ?? "Aula no informada")</p></div><div><span>Nota final</span><strong>@(member.CurrentCourseFinalScore?.ToString("0.##") ?? "Pendiente")</strong></div></article>
+        }
+        else if (!ShowInformation && !loadingInfo && infoError is null) { <p class="member-empty">No hay un curso actual informado para este perfil.</p> }
+        }
+        @if (ShowAchievements)
+        {
+        @if (!ShowInformation)
+        {
+            <div class="member-achievement-summary"><span>Puntos de estas medallas</span><strong>@(loadingMedals || medalsError is not null ? "—" : PageAwardPoints?.ToString() ?? "—")</strong><small>Premios obtenidos · página actual</small></div>
+        }
+        <article class="member-medals-panel">
+            <header class="member-panel-heading"><div><p class="member-eyebrow">RECONOCIMIENTOS</p><h2>@(IsOwn ? "Mis medallas" : "Medallas")</h2><p>El mejor nivel alcanzado en cada colección y el próximo objetivo.</p></div><button type="button" class="data-table-button" disabled="@loadingMedals" @onclick="() => LoadMedalPageAsync(page)">Actualizar</button></header>
+            @if (loadingMedals) { <p class="member-empty" role="status">Cargando medallas y próximos niveles…</p> }
+            else if (medalsError is not null) { <div class="data-table-error" role="alert">@medalsError <button class="data-table-text-button" @onclick="() => LoadMedalPageAsync(page)">Reintentar</button></div> }
+            else if (medals.Count == 0) { <div class="member-empty"><span aria-hidden="true">✦</span><h3>Aún no hay medallas para mostrar</h3><p>Los reconocimientos del aprendizaje aparecerán aquí.</p></div> }
+            else
+            {
+                <div class="member-medals">
+                    @foreach (var medal in medals)
+                    {
+                        <article class="member-medal @(medal.IsObtained ? "is-earned" : "is-pending")" @key="medal.Id">
+                            <div class="member-medal-top"><span class="member-medal-state">@(medal.IsMaxTier ? "Nivel máximo" : medal.IsObtained ? "Obtenida" : "Por obtener")</span>@if (medal.AchievementCategoryName is { } category) { <small>@category</small> }</div>
+                            @if (Icon(medal) is { } icon) { <img class="member-medal-icon" src="@icon" alt="" loading="lazy" /> } else { <div class="member-medal-symbol" aria-hidden="true">✦</div> }
+                            <p class="member-medal-collection">@(medal.AchievementCollectionName ?? "Logro individual")</p><h3>@MedalName(medal)</h3>
+                            <p class="member-medal-description">@(medal.IsObtained ? medal.BestAchievement?.Description ?? medal.Description : medal.NextAchievement?.Description ?? medal.Description)</p>
+                            @if (medal.TierOrder is { } tier) { <span class="member-tier">Nivel @tier</span> }
+                            @if (medal.IsObtained)
+                            {
+                                <p class="member-award">@(medal.AwardPoints is { } points ? $"{points} puntos otorgados por esta medalla" : "Puntos otorgados no informados")</p>
+                                @if (medal.ObtainedAt is { } date) { <small>Obtenida el @date.ToString("dd/MM/yyyy")</small> }
+                            }
+                            <div class="member-medal-progress">
+                                @if (medal.IsMaxTier) { <strong>Completaste todos los niveles</strong><progress max="100" value="100" aria-label="Nivel máximo completado"></progress> }
+                                else if (medal.HasNextAchievement || medal.NextAchievement is not null)
+                                {
+                                    <div><strong>@(medal.IsObtained ? $"Siguiente: {medal.NextAchievement?.Name ?? "próximo nivel"}" : "Tu primer objetivo")</strong><span>@(medal.ProgressPercent is { } percent ? $"{percent:0.##} %" : "Sin progreso informado")</span></div>
+                                    @if (medal.ProgressPercent.HasValue) { <progress max="100" value="@Progress(medal)" aria-label="Progreso hacia @medal.NextAchievement?.Name"></progress> }
+                                    @if (medal.CurrentValue is { } value && medal.NextRequiredValue is { } target) { <p>@value.ToString("0.##") de @target.ToString("0.##") · @ConditionConfiguration.OperatorSymbol(medal.NextComparisonOperator)</p> }
+                                    @if (medal.CanReachNext == false) { <p>La siguiente meta no es alcanzable con el valor actual.</p> }
+                                    else if (medal.NextConditionMet == true) { <p>Condición del siguiente nivel cumplida.</p> }
+                                    else if (medal.RemainingValue is { } remaining) { <p>Faltan @remaining.ToString("0.##") para el siguiente objetivo.</p> }
+                                }
+                            </div>
+                        </article>
+                    }
+                </div>
+            }
+                <footer class="data-table-footer"><span role="status">@pageMessage</span><nav class="data-table-pagination" aria-label="Paginación de medallas"><button disabled="@(loadingMedals || page <= 1)" @onclick="() => LoadMedalPageAsync(page - 1)" aria-label="Página anterior de medallas">‹</button><span>Página <strong>@(page)</strong></span><button disabled="@(loadingMedals || !hasNext)" @onclick="() => LoadMedalPageAsync(page + 1)" aria-label="Página siguiente de medallas">›</button></nav></footer>
+        </article>
+        }
+    </section>
+}
