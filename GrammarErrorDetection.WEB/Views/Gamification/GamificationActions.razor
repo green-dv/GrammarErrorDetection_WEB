@@ -1,0 +1,25 @@
+@inject GrammarErrorDetection.Services.Services.Auth.AuthSessionState Session
+
+<div class="data-table-actions gamification-actions">
+    @if (ViewHref is not null)
+    {
+        <a class="data-table-icon-button" href="@ViewHref" aria-label="Visualizar @Label" title="Visualizar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></a>
+    }
+    @if (Session.IsInRole("Coordinator") && OnEdit.HasDelegate)
+    {
+        <button type="button" class="data-table-icon-button" disabled="@Disabled" @onclick="OnEdit" title="Editar" aria-label="Editar @Label" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15l-1 6Z"/></svg></button>
+    }
+    @if (Session.IsInRole("Coordinator") && OnToggleActive.HasDelegate)
+    {
+        <button type="button" class="data-table-icon-button @(Active ? "data-table-icon-danger" : "")" disabled="@Disabled" @onclick="OnToggleActive" title="@(Active ? "Deshabilitar" : "Habilitar")" aria-label="@(Active ? $"Deshabilitar {Label}" : $"Habilitar {Label}")" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true">@if (Active) { <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/> } else { <path d="M4 9a8 8 0 1 1 0 6M4 3v6h6"/> }</svg></button>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = "";
+    [Parameter] public string? ViewHref { get; set; }
+    [Parameter] public bool Active { get; set; } = true;
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public EventCallback OnEdit { get; set; }
+    [Parameter] public EventCallback OnToggleActive { get; set; }
+}

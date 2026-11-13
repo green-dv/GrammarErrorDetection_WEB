@@ -9,10 +9,11 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using QRCoder;
 
-namespace GrammarErrorDetection.WEB.Pages;
+namespace GrammarErrorDetection.WEB.Views.Profiles;
 
-public partial class Settings : IDisposable
+public partial class ProfileSettings : IDisposable
 {
+    [Parameter] public Guid UserId { get; set; }
     [Inject] private AuthSessionState Session { get; set; } = default!;
     [Inject] private IAuthService AuthService { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
@@ -26,24 +27,25 @@ public partial class Settings : IDisposable
     private bool loading;
     private bool confirming;
     private bool confirmed;
+    private bool IsOwn => UserId != Guid.Empty && Session.Current?.User?.Id == UserId;
 
     protected override void OnInitialized() => editContext = new EditContext(model);
     protected override async Task OnParametersSetAsync()
     {
-        if (Session.Current is null) { Navigation.NavigateTo("/auth/login", replace: true); return; }
+        if (!IsOwn) return;
         if (qrImage is null && !confirmed && Session.IsTotpEnabled != true) await SetupTotpAsync();
     }
 
     private async Task SetupTotpAsync()
     {
-        if (loading || confirming || Session.Current is null || Session.IsTotpEnabled == true) return;
+        if (loading || confirming || !IsOwn || Session.IsTotpEnabled == true) return;
         loading = true;
         status = null;
         validationErrors.Clear();
         try
         {
             var response = await AuthService.SetupTotpAsync(lifetime.Token);
-            if (lifetime.IsCancellationRequested) return;
+            if (lifetime.IsCancellationRequested || !IsOwn) return;
             if (response?.Error is { ErrorCode: not 0 } || response?.Data is null) throw new InvalidOperationException("No se pudo preparar el autenticador. Inténtalo de nuevo.");
             var otpUri = response.Data.OtpAuthUri;
             if (!Uri.TryCreate(otpUri, UriKind.Absolute, out var uri) || uri.Scheme != "otpauth" || uri.Host != "totp") throw new InvalidOperationException("La API no devolvió una configuración TOTP válida.");
@@ -68,14 +70,14 @@ public partial class Settings : IDisposable
 
     private async Task ConfirmTotpAsync()
     {
-        if (confirming || loading || qrImage is null || Session.Current is null || confirmed) return;
+        if (confirming || loading || qrImage is null || !IsOwn || confirmed) return;
         confirming = true;
         status = null;
         validationErrors.Clear();
         try
         {
             var response = await AuthService.ConfirmTotpAsync(new TotpConfirmRequest { Code = model.Code }, lifetime.Token);
-            if (lifetime.IsCancellationRequested) return;
+            if (lifetime.IsCancellationRequested || !IsOwn) return;
             if (response?.Error is { ErrorCode: not 0 } || response?.Data != true)
             {
                 status = "El código no se pudo confirmar. Revisa el código actual de tu autenticador e inténtalo de nuevo.";
@@ -95,6 +97,7 @@ public partial class Settings : IDisposable
 
     private void HandleHttpError(HttpRequestException exception)
     {
+        if (!IsOwn) return;
         if (exception.StatusCode == HttpStatusCode.Unauthorized)
         {
             Session.Clear();

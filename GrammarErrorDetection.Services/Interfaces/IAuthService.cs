@@ -10,6 +10,7 @@ public interface IAuthService
     Task<ApiResponse<AuthSessionResponse>?> SignupAsync(SignupConfirmationRequest request, CancellationToken cancellationToken = default);
     Task<ApiResponse<AuthSessionResponse>?> VerifyLoginAsync(VerifyLoginRequest request, CancellationToken cancellationToken = default);
     Task<ApiResponse<AuthSessionResponse>?> VerifyTotpAsync(VerifyTotpLoginRequest request, CancellationToken cancellationToken = default);
+    Task<ApiResponse<AuthSessionResponse>?> CompletePasswordChangeAsync(CompletePasswordChangeRequest request, CancellationToken cancellationToken = default);
     Task<ApiResponse<TotpSetupResponse>?> SetupTotpAsync(CancellationToken cancellationToken = default);
     Task<ApiResponse<bool>?> ConfirmTotpAsync(TotpConfirmRequest request, CancellationToken cancellationToken = default);
 }

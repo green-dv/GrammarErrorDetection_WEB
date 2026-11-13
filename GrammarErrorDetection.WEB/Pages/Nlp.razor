@@ -37,6 +37,19 @@
         <div class="nlp-main">
             <article class="nlp-editor" aria-labelledby="nlp-editor-title" aria-busy="@(EditorBusy ? "true" : "false")">
                 <header><h2 id="nlp-editor-title">Tu párrafo</h2><span class="nlp-language">EN · Inglés</span></header>
+                @if (Session.IsInRole("Student"))
+                {
+                    @if (Session.IsInRole("Student"))
+                    {
+                    <label class="data-table-field nlp-upload-course"><span>Asociar al curso</span><select @bind="registrationId" disabled="@(EditorBusy || loadingCourses)"><option value="">Texto personal · Sin curso</option>@foreach (var course in uploadCourses) { <option value="@course.RegistrationId">@course.ModuleName · @course.Year / Bimestre @course.Bimester · @course.Parallel</option> }</select></label>
+                    }
+                    else
+                    {
+                    <p class="nlp-staff-note">Tus párrafos son de consulta y prueba: no se asocian a cursos ni cuentan en los reportes ni en la gamificación.</p>
+                    }
+                    @if (loadingCourses) { <p class="nlp-feedback" role="status">Consultando tus cursos…</p> }
+                    @if (coursesError is not null) { <p class="nlp-upload-error" role="alert">@coursesError <button type="button" class="data-table-text-button" disabled="@loadingCourses" @onclick="LoadUploadCoursesAsync">Reintentar cursos</button></p> }
+                }
                 <label class="ceti-sr-only" for="nlp-paragraph">Párrafo en inglés</label>
                 <textarea id="nlp-paragraph" rows="4" lang="en" spellcheck="false" maxlength="5000" placeholder="Write your paragraph here…" disabled="@EditorBusy" @bind="text" @bind:event="oninput"></textarea>
                 <p class="nlp-character-count">@text.Length / 5000 caracteres</p>
@@ -97,6 +110,13 @@
                             </li>
                         }
                     </ol>
+                    @if (Session.IsInRole("Student") && analysis.ErrorCount > 0)
+                    {
+                        <aside class="nlp-recommendation-cta" aria-label="Material recomendado">
+                            <div><strong>Refuerza estos errores</strong><span>Revisa el material de apoyo elegido según tus errores más frecuentes.</span></div>
+                            <a class="data-table-button" href="recommendations">Ver recomendaciones →</a>
+                        </aside>
+                    }
                 }
             </section>
         </div>
