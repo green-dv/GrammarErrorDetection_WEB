@@ -1,0 +1,396 @@
+@using System.Globalization
+@using GrammarErrorDetection.Models.Dashboards
+@using GrammarErrorDetection.Services.Interfaces
+@implements IDisposable
+@inject IDashboardService Dashboard
+
+@* Dashboard del estudiante: resumen sin paginar (Dashboard_Student) filtrado por curso, y pestañas con listados paginados. *@
+<section class="student-dashboard sh-dashboard @(loading && summary is not null ? "is-refreshing" : "")" aria-labelledby="sh-name" aria-busy="@(loading ? "true" : "false")">
+    <header class="sh-identity">
+        <div class="sh-avatar" style="--level:@Number(summary?.Kpis?.LevelProgressPercent)" title="@LevelTitle">
+            <span aria-hidden="true">@Initials</span>
+        </div>
+        <div class="sh-who">
+            <h2 id="sh-name">@(summary?.Kpis is { } who ? $"{who.FirstName} {who.LastName}".Trim() : "Tu progreso")</h2>
+            @if (summary?.Kpis is { } k)
+            {
+                <p>@(k.MemberSince is { } since ? $"Estudiante desde {since.ToString("MMMM 'de' yyyy", Culture)}" : "Estudiante")<span class="sh-level">Nivel @k.LevelNumber, @k.LevelName</span></p>
+            }
+        </div>
+        <div class="sh-identity-actions">
+            <label class="sh-course">
+                <span class="data-table-sr-only">Curso</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4m8-4v4" /></svg>
+                <select value="@(classId?.ToString() ?? "")" disabled="@(loading || courses.Count == 0)"
+                        @onchange="args => SelectCourseAsync(Guid.TryParse(args.Value?.ToString(), out var id) ? id : null)">
+                    <option value="">Todos mis cursos</option>
+                    @foreach (var course in courses.AsEnumerable().Reverse())
+                    {
+                        <option value="@course.ClassId">@CourseLabel(course)</option>
+                    }
+                </select>
+            </label>
+            <a class="data-table-button data-table-button-primary" href="process">Analizar un párrafo</a>
+        </div>
+    </header>
+
+    @if (loading && summary is null)
+    {
+        <p class="data-table-message" role="status">Cargando tu resumen…</p>
+    }
+    else if (error is not null && summary is null)
+    {
+        <div class="data-table-error" role="alert">@error <button type="button" class="data-table-text-button" @onclick="() => LoadAsync(classId)">Reintentar</button></div>
+    }
+    else if (summary?.Kpis is { } kpis)
+    {
+        @if (error is not null) { <div class="data-table-error" role="alert">@error</div> }
+
+        <DashboardSectionNav Items="StudentSections" />
+
+        <div class="sh-kpis" id="sh-sec-summary">
+            <article class="sh-kpi" style="--tone:var(--sh-blue);--tone-soft:var(--sh-blue-soft)">
+                <span class="sh-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6Z" /><path d="M14 2v6h6M9 13h7M9 17h5" /></svg></span>
+                <div>
+                    <strong>@kpis.AnalyzedTexts.ToString("N0", Culture)</strong>
+                    <span>Textos analizados</span>
+                </div>
+                <Trend Now="kpis.AnalyzedTexts" Before="kpis.PreviousTexts" Title="@CompareTitle(kpis)" />
+            </article>
+            <article class="sh-kpi" style="--tone:var(--sh-green);--tone-soft:var(--sh-green-soft)">
+                <span class="sh-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.5" /></svg></span>
+                <div>
+                    <strong>@Percent(kpis.AccuracyPercentage)</strong>
+                    <span>Precisión</span>
+                </div>
+                <Trend Now="kpis.AccuracyPercentage" Before="kpis.PreviousAccuracy" Points="true" Title="@CompareTitle(kpis)" />
+            </article>
+            <article class="sh-kpi" style="--tone:var(--sh-red);--tone-soft:var(--sh-red-soft)">
+                <span class="sh-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="m9 9 6 6m0-6-6 6" /></svg></span>
+                <div>
+                    <strong>@kpis.TotalErrors.ToString("N0", Culture)</strong>
+                    <span>Errores · @(kpis.ErrorsPerText?.ToString("0.#", Culture) ?? "0") por texto</span>
+                </div>
+                <Trend Now="kpis.TotalErrors" Before="kpis.PreviousErrors" LowerIsBetter="true" Title="@CompareTitle(kpis)" />
+            </article>
+            <article class="sh-kpi" style="--tone:var(--sh-amber);--tone-soft:var(--sh-amber-soft)">
+                <span class="sh-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z" /></svg></span>
+                <div>
+                    <strong>@((classId is null ? kpis.TotalPoints : kpis.ScopePoints).ToString("N0", Culture))</strong>
+                    <span>@(classId is null ? "Puntos" : "Puntos en este curso")</span>
+                </div>
+                <Trend Now="kpis.ScopePoints" Before="kpis.PreviousPoints" Title="@CompareTitle(kpis)" />
+            </article>
+            <article class="sh-kpi" style="--tone:var(--sh-flame);--tone-soft:var(--sh-flame-soft)">
+                <span class="sh-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 22c4 0 7-2.7 7-6.6 0-3.6-2.6-6-4.2-8.4-.5 2-1.6 3.2-2.8 3.6.4-3-1-5.9-3.5-7.6.2 3-1.6 5-3 7C4.4 11.6 5 13.7 5 15.4 5 19.3 8 22 12 22Z" /></svg></span>
+                <div>
+                    <strong>@kpis.CurrentStreak @(kpis.CurrentStreak == 1 ? "día" : "días")</strong>
+                    <span>Racha actual</span>
+                </div>
+                <span class="sh-chip @(kpis.CurrentStreak >= 3 ? "is-good" : "")">@StreakNote(kpis)</span>
+            </article>
+        </div>
+
+        <div class="sh-row sh-row-charts">
+            <section class="sh-card" id="sh-sec-errors" aria-labelledby="sh-compare-title">
+                <header class="sh-card-head">
+                    <h3 id="sh-compare-title">Tú frente a tu curso</h3>
+                    <ul class="sh-legend" aria-hidden="true"><li class="is-me">Tú</li><li class="is-course">Promedio del curso</li></ul>
+                </header>
+                @if (summary.TopCategories.Count == 0)
+                {
+                    <p class="sh-empty">Sin errores registrados @(classId is null ? "todavía" : "en este curso").</p>
+                }
+                else
+                {
+                    <div class="sh-bars" role="img" aria-label="@CompareLabel()">
+                        @foreach (var category in summary.TopCategories)
+                        {
+                            <div class="sh-bar-group" @key="category.ErrorClassificationId">
+                                <div class="sh-bar-pair">
+                                    <span class="sh-bar is-me" style="--v:@Height(category.ErrorCount)"><b>@category.ErrorCount</b></span>
+                                    @if (category.CourseAverage is { } average)
+                                    {
+                                        <span class="sh-bar is-course" style="--v:@Height(average)"><b>@average.ToString("0.#", Culture)</b></span>
+                                    }
+                                </div>
+                                <small title="@CategoryBars.Label(category.ErrorClassificationName)">@CategoryBars.Label(category.ErrorClassificationName)</small>
+                            </div>
+                        }
+                    </div>
+                    <p class="sh-note">Errores por categoría. El promedio considera a los compañeros que enviaron textos @(classId is null ? "en tus cursos" : "en este curso").</p>
+                }
+            </section>
+
+            <section class="sh-card" aria-labelledby="sh-donut-title">
+                <header class="sh-card-head"><h3 id="sh-donut-title">Categorías más frecuentes</h3></header>
+                @if (Slices.Count == 0)
+                {
+                    <p class="sh-empty">Cuando se analicen tus párrafos verás aquí en qué te equivocas más.</p>
+                }
+                else
+                {
+                    var top = Slices[0];
+                    <div class="sh-donut-wrap">
+                        <div class="sh-donut" style="background:@DonutGradient()" role="img" aria-label="@string.Join(", ", Slices.Select(s => $"{s.Name} {s.Percent:0} %"))">
+                            <div><strong>@top.Percent.ToString("0", Culture) %</strong><span>@top.Name</span></div>
+                        </div>
+                        <ul class="sh-donut-legend">
+                            @foreach (var slice in Slices)
+                            {
+                                <li style="--swatch:@slice.Color"><span>@slice.Name</span><b>@slice.Percent.ToString("0", Culture) %</b></li>
+                            }
+                        </ul>
+                    </div>
+                }
+            </section>
+
+            <section class="sh-card" id="sh-sec-achievements" aria-labelledby="sh-next-title">
+                <header class="sh-card-head">
+                    <h3 id="sh-next-title">Próximos logros</h3>
+                    <a class="sh-link" href="profile">Ver todos</a>
+                </header>
+                @if (summary.NextAchievements.Count == 0)
+                {
+                    <p class="sh-empty">Tienes @kpis.AchievementsObtained logros. No hay más alcanzables por ahora.</p>
+                }
+                else
+                {
+                    <ul class="sh-achievements">
+                        @foreach (var achievement in summary.NextAchievements)
+                        {
+                            <li @key="achievement.AchievementId">
+                                <span class="sh-medal" aria-hidden="true">
+                                    @if (!string.IsNullOrWhiteSpace(achievement.IconLink)) { <img src="@achievement.IconLink" alt="" loading="lazy" referrerpolicy="no-referrer" /> }
+                                    else { <svg viewBox="0 0 24 24"><path d="M8 21h8m-4-4v4M7 4h10v5a5 5 0 0 1-10 0ZM7 6H4v2a3 3 0 0 0 3 3m10-5h3v2a3 3 0 0 1-3 3" /></svg> }
+                                </span>
+                                <div>
+                                    <strong>@achievement.Name</strong>
+                                    @if (!string.IsNullOrWhiteSpace(achievement.Description)) { <p>@achievement.Description</p> }
+                                    <div class="sh-meter" role="progressbar" aria-label="Avance de @achievement.Name" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@Number(achievement.ProgressPercent)">
+                                        <span style="width:@Width(achievement.ProgressPercent)"></span>
+                                    </div>
+                                    <small>@achievement.ConditionsMet de @achievement.ConditionCount @(achievement.ConditionCount == 1 ? "condición" : "condiciones")</small>
+                                </div>
+                                <span class="sh-chip">+@achievement.Points pts</span>
+                            </li>
+                        }
+                    </ul>
+                }
+            </section>
+        </div>
+
+        <div class="sh-row sh-row-activity">
+            <section class="sh-card" id="sh-sec-activity" aria-labelledby="sh-activity-title">
+                <header class="sh-card-head">
+                    <h3 id="sh-activity-title">Tu actividad de la semana</h3>
+                    <span class="sh-muted">Textos analizados por día@(classId is null ? "" : ", en todos tus cursos")</span>
+                </header>
+                <div class="sh-days" role="img" aria-label="@ActivityLabel()">
+                    @foreach (var day in summary.DailyActivity)
+                    {
+                        var isToday = day.Day.Date == DateTime.Today;
+                        <div class="sh-day @(isToday ? "is-today" : "")" title="@($"{day.Day.ToString("dddd d", Culture)}: {day.AnalyzedTexts} textos, {day.TotalErrors} errores")">
+                            <b>@day.AnalyzedTexts</b>
+                            <span class="sh-day-bar" style="height:@DayHeight(day.AnalyzedTexts)"></span>
+                            <small>@(isToday ? "Hoy" : Capitalize(day.Day.ToString("ddd", Culture).TrimEnd('.')))</small>
+                        </div>
+                    }
+                </div>
+            </section>
+            <aside class="sh-coach @Coach(kpis).Tone" aria-label="Consejo de la semana">
+                <strong>@Coach(kpis).Title</strong>
+                <p>@Coach(kpis).Message</p>
+                <dl>
+                    <div><dt>Esta semana</dt><dd>@kpis.TextsThisWeek</dd></div>
+                    <div><dt>Semana anterior</dt><dd>@kpis.TextsPreviousWeek</dd></div>
+                    <div><dt>Mejor racha</dt><dd>@kpis.BestStreak d</dd></div>
+                </dl>
+            </aside>
+        </div>
+
+        <section class="sh-tabs-card" id="sh-sec-detail" aria-label="Detalle">
+            <div class="sh-tabs" role="tablist" aria-label="Secciones del detalle">
+                @foreach (var tab in Tabs)
+                {
+                    <button type="button" role="tab" id="sh-tab-@tab.Key" aria-controls="sh-panel" aria-selected="@(activeTab == tab.Key ? "true" : "false")"
+                            tabindex="@(activeTab == tab.Key ? 0 : -1)" class="sh-tab" @onclick="() => activeTab = tab.Key">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)tab.Icon)</svg>@tab.Label
+                    </button>
+                }
+            </div>
+            <div id="sh-panel" class="sh-tab-panel" role="tabpanel" aria-labelledby="sh-tab-@activeTab">
+                @switch (activeTab)
+                {
+                    case "errors":
+                        <div class="sh-detail">
+                            <div class="sh-detail-summary">
+                                <h4>Resumen de errores</h4>
+                                <dl>
+                                    <div><dt>Total de errores</dt><dd>@kpis.TotalErrors.ToString("N0", Culture)</dd></div>
+                                    <div><dt>Precisión general</dt><dd>@Percent(kpis.AccuracyPercentage)</dd></div>
+                                    <div><dt>Oraciones con errores</dt><dd>@kpis.SentencesWithErrors de @kpis.TotalSentences</dd></div>
+                                    <div><dt>Textos sin errores</dt><dd>@kpis.ErrorFreeTexts</dd></div>
+                                </dl>
+                            </div>
+                            <div class="sh-detail-categories">
+                                <h4>Principales categorías</h4>
+                                @if (summary.TopCategories.Count == 0) { <p class="sh-empty">Sin errores registrados.</p> }
+                                else
+                                {
+                                    <ul>
+                                        @foreach (var category in summary.TopCategories)
+                                        {
+                                            <li @key="category.ErrorClassificationId">
+                                                <span>@CategoryBars.Label(category.ErrorClassificationName)</span>
+                                                <span class="sh-meter"><span style="width:@Width(category.ErrorPercentage)"></span></span>
+                                                <b>@Percent(category.ErrorPercentage)</b>
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                            </div>
+                            <FrequentErrorsList ClassId="classId" />
+                        </div>
+                        break;
+                    case "texts":
+                        <StudentTextsPanel ClassId="classId" />
+                        break;
+                    case "challenges":
+                        <StudentChallengesPanel />
+                        break;
+                    default:
+                        <PointHistoryPanel />
+                        break;
+                }
+            </div>
+        </section>
+    }
+</section>
+
+@code {
+    internal static readonly CultureInfo Culture = CultureInfo.GetCultureInfo("es-BO");
+    private static readonly string[] Palette = ["#176b9f", "#c53736", "#d68a12", "#1f8a5b", "#6a5acd", "#9aa6bd"];
+    private static readonly (string Key, string Label, string Icon)[] Tabs =
+    [
+        ("errors", "Detalle de errores", "<path d='M5 20V12m7 8V7m7 13V4'/>"),
+        ("texts", "Historial de textos", "<path d='M6 2h9l5 5v15H6Z'/><path d='M14 2v6h6M9 13h7M9 17h5'/>"),
+        ("challenges", "Progreso en desafíos", "<path d='M8 21h8m-4-4v4M7 4h10v5a5 5 0 0 1-10 0ZM7 6H4v2a3 3 0 0 0 3 3m10-5h3v2a3 3 0 0 1-3 3'/>"),
+        ("points", "Historial de puntos", "<path d='m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z'/>")
+    ];
+
+    private static readonly (string, string)[] StudentSections =
+        [("sh-sec-summary", "Resumen"), ("sh-sec-errors", "Errores"), ("sh-sec-achievements", "Logros"), ("sh-sec-activity", "Actividad"), ("sh-sec-detail", "Detalle")];
+    private readonly CancellationTokenSource lifetime = new();
+    private StudentDashboardResponse? summary;
+    private List<StudentCourseErrors> courses = [];
+    private List<(string Name, decimal Percent, string Color)> Slices = [];
+    private Guid? classId;
+    private string activeTab = "errors";
+    private bool loading;
+    private string? error;
+
+    protected override Task OnInitializedAsync() => LoadAsync(null);
+
+    private Task SelectCourseAsync(Guid? id) => LoadAsync(id);
+
+    private async Task LoadAsync(Guid? id)
+    {
+        if (loading) return;
+        loading = true;
+        error = null;
+        try
+        {
+            summary = await Dashboard.GetStudentAsync(id, lifetime.Token);
+            classId = id;
+            if (summary.ErrorsByCourse.Count > 0) courses = summary.ErrorsByCourse;
+            Slices = BuildSlices(summary.TopCategories);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException or ArgumentException)
+        {
+            error = summary is null ? "No se pudo cargar tu resumen." : "No se pudo cambiar de curso. Se muestran los datos anteriores.";
+        }
+        finally { loading = false; }
+    }
+
+    private static List<(string, decimal, string)> BuildSlices(List<DashboardErrorCategory> categories)
+    {
+        var slices = categories.Take(4).Select((c, i) => (CategoryBars.Label(c.ErrorClassificationName), c.ErrorPercentage ?? 0, Palette[i])).ToList();
+        var rest = 100 - slices.Sum(s => s.Item2);
+        if (categories.Count > 4 && rest > 0.5m) slices.Add(("Otras", rest, Palette[^1]));
+        return slices;
+    }
+
+    private string DonutGradient()
+    {
+        decimal start = 0;
+        var stops = Slices.Select(s =>
+        {
+            var from = start;
+            start += s.Percent;
+            return $"{s.Color} {Invariant(from)}% {Invariant(start)}%";
+        });
+        return $"conic-gradient({string.Join(", ", stops)}, var(--sh-track) 0)";
+    }
+
+    internal static string CourseLabel(StudentCourseErrors course)
+        => $"{course.ModuleName} · Paralelo {(string.IsNullOrWhiteSpace(course.Parallel) ? "único" : course.Parallel)} · {course.Year} · Bimestre {course.Bimester}";
+
+    private string Initials => summary?.Kpis is { } k
+        ? string.Concat(new[] { k.FirstName, k.LastName }.Where(n => !string.IsNullOrWhiteSpace(n)).Select(n => char.ToUpper(n.Trim()[0], Culture)))
+        : "";
+
+    private string? LevelTitle => summary?.Kpis is { } k
+        ? k.NextLevelName is null ? "Nivel máximo alcanzado" : $"{k.PointsToNextLevel} pts para {k.NextLevelName}"
+        : null;
+
+    private static string StreakNote(StudentDashboardKpis k) => k.CurrentStreak switch
+    {
+        >= 7 => "¡Imparable!",
+        >= 3 => "¡Excelente!",
+        > 0 => "Sigue así",
+        _ => k.BestStreak > 0 ? $"Mejor: {k.BestStreak} d" : "Empieza hoy"
+    };
+
+    // Las tendencias solo existen con un curso elegido: se comparan con el curso aprobado anterior.
+    private static string CompareTitle(StudentDashboardKpis k) => $"Frente a tu curso anterior ({k.PreviousModuleName})";
+
+    private static (string Title, string Message, string Tone) Coach(StudentDashboardKpis k)
+    {
+        if (k.TextsThisWeek == 0)
+            return ("Esta semana aún no escribes", "Analiza un párrafo hoy para retomar tu racha y sumar puntos.", "is-idle");
+        if (k.TextsThisWeek >= k.TextsPreviousWeek)
+            return ("¡Vas muy bien!", $"Llevas {k.TextsThisWeek} {(k.TextsThisWeek == 1 ? "texto" : "textos")} en 7 días, igual o más que la semana anterior. Escribe a diario para cuidar tu racha.", "is-good");
+        var missing = k.TextsPreviousWeek - k.TextsThisWeek;
+        return ("Casi lo logras", $"Te faltan {missing} {(missing == 1 ? "texto" : "textos")} para igualar la semana anterior ({k.TextsPreviousWeek}).", "is-push");
+    }
+
+    private decimal MaxBar => summary?.TopCategories.Select(c => Math.Max(c.ErrorCount, c.CourseAverage ?? 0)).DefaultIfEmpty(0).Max() ?? 0;
+
+    private string Height(decimal value) => MaxBar == 0 ? "0%" : Invariant(Math.Max(value * 100 / MaxBar, 2)) + "%";
+
+    private string DayHeight(long texts)
+    {
+        var max = summary?.DailyActivity.Select(d => d.AnalyzedTexts).DefaultIfEmpty(0).Max() ?? 0;
+        return max == 0 ? "3%" : Invariant(Math.Max((decimal)texts * 100 / max, 3)) + "%";
+    }
+
+    private string CompareLabel() => string.Join(", ", summary?.TopCategories.Select(c =>
+        $"{CategoryBars.Label(c.ErrorClassificationName)}: tú {c.ErrorCount}, curso {c.CourseAverage?.ToString("0.#", Culture) ?? "sin datos"}") ?? []);
+
+    private string ActivityLabel() => "Textos por día: " + string.Join(", ",
+        summary?.DailyActivity.Select(d => $"{d.Day.ToString("dddd d", Culture)} {d.AnalyzedTexts}") ?? []);
+
+    private static string Capitalize(string text) => text.Length == 0 ? text : char.ToUpper(text[0], Culture) + text[1..];
+
+    private static string Invariant(decimal value) => value.ToString("0.##", CultureInfo.InvariantCulture);
+
+    internal static string Percent(decimal? value) => value is { } percent ? $"{percent.ToString("0.#", Culture)} %" : "—";
+
+    internal static string Number(decimal? value) => Math.Clamp(value ?? 0, 0, 100).ToString("0.##", CultureInfo.InvariantCulture);
+
+    internal static string Width(decimal? value) => Number(value) + "%";
+
+    public void Dispose() { lifetime.Cancel(); lifetime.Dispose(); }
+}
