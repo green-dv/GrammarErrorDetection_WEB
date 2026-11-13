@@ -1,0 +1,48 @@
+@* Valoración del estudiante: "¿Te resultó útil este material?" Sí / No, con comentario opcional al responder No. *@
+<section class="mv-feedback" aria-label="¿Te resultó útil este material?">
+    <span class="mv-feedback-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 10v11H3V10ZM7 10l4-7c1.7 0 3 1.3 3 3v3h5.5a2 2 0 0 1 2 2.4l-1.6 8A2 2 0 0 1 18 21H7"/></svg></span>
+    <div class="mv-feedback-body">
+        <strong>¿Te resultó útil este material?</strong>
+        <span>Tu opinión nos ayuda a mejorar las recomendaciones.</span>
+        <div class="mv-feedback-votes" role="group" aria-label="Valorar material">
+            <button type="button" class="mv-vote mv-vote-yes" aria-pressed="@(Helpful == true ? "true" : "false")" disabled="@Busy" @onclick="() => OnVote.InvokeAsync(true)">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10v11H3V10ZM7 10l4-7c1.7 0 3 1.3 3 3v3h5.5a2 2 0 0 1 2 2.4l-1.6 8A2 2 0 0 1 18 21H7"/></svg>Sí
+            </button>
+            <button type="button" class="mv-vote mv-vote-no" aria-pressed="@(Helpful == false ? "true" : "false")" disabled="@Busy" @onclick="() => OnVote.InvokeAsync(false)">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 14V3h4v11ZM17 14l-4 7c-1.7 0-3-1.3-3-3v-3H4.5a2 2 0 0 1-2-2.4l1.6-8A2 2 0 0 1 6 3h11"/></svg>No
+            </button>
+        </div>
+        @if (Helpful == true)
+        {
+            <small role="status">¡Gracias! Lo tendremos en cuenta para tus recomendaciones.</small>
+        }
+        else if (Helpful == false && CommentSent)
+        {
+            <small role="status">Gracias por contarnos. Usaremos tu comentario para mejorar el material.</small>
+        }
+        else if (Helpful == false && OnSendComment.HasDelegate)
+        {
+            <small role="status">No volveremos a recomendártelo. ¿Qué faltó? (opcional)</small>
+            <textarea aria-label="Comentario sobre el material" maxlength="500" rows="2" value="@Comment"
+                      @oninput="e => CommentChanged.InvokeAsync(e.Value?.ToString() ?? string.Empty)"
+                      placeholder="Por ejemplo: no entendí la explicación"></textarea>
+            <button type="button" class="mv-button mv-button-outline" disabled="@(Busy || string.IsNullOrWhiteSpace(Comment))" @onclick="() => OnSendComment.InvokeAsync()">Enviar comentario</button>
+        }
+        else if (Helpful == false)
+        {
+            <small role="status">No volveremos a recomendártelo.</small>
+        }
+        @if (Error is not null) { <small class="mv-feedback-error" role="alert">@Error</small> }
+    </div>
+</section>
+
+@code {
+    [Parameter] public bool? Helpful { get; set; }
+    [Parameter] public bool Busy { get; set; }
+    [Parameter] public string? Error { get; set; }
+    [Parameter] public EventCallback<bool> OnVote { get; set; }
+    [Parameter] public string Comment { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> CommentChanged { get; set; }
+    [Parameter] public EventCallback OnSendComment { get; set; }
+    [Parameter] public bool CommentSent { get; set; }
+}
