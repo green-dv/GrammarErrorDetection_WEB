@@ -7,6 +7,7 @@ namespace GrammarErrorDetection.Services.Interfaces;
 public interface IRegistrationService
 {
     Task<ApiResponse<List<StudentCourseResponse>>?> GetMyCoursesAsync(int pageNumber, int pageSize, CancellationToken cancellationToken = default);
+    Task<ApiResponse<List<StudentCourseResponse>>?> GetStudentCoursesAsync(Guid studentId, int pageNumber, int pageSize, CancellationToken cancellationToken = default);
     Task<ApiResponse<List<AvailableRegistrationCourse>>?> GetAvailableCoursesAsync(AvailableRegistrationCoursesRequest request, CancellationToken cancellationToken = default);
     Task<ApiResponse<RegistrationResponse>?> ApplyAsync(RegistrationApplyRequest request, CancellationToken cancellationToken = default);
     Task<ApiResponse<List<RegistrationListItem>>?> GetMineAsync(RegistrationSearchRequest request, CancellationToken cancellationToken = default);

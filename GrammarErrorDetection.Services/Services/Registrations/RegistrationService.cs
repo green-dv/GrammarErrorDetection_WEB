@@ -16,6 +16,13 @@ public sealed class RegistrationService(IApiClient apiClient) : IRegistrationSer
         ArgumentOutOfRangeException.ThrowIfLessThan(pageSize, 1);
         return apiClient.GetAsync<ApiResponse<List<StudentCourseResponse>>>($"api/Registration/mine/courses?PageNumber={Number(pageNumber)}&PageSize={Number(pageSize)}", cancellationToken);
     }
+    public Task<ApiResponse<List<StudentCourseResponse>>?> GetStudentCoursesAsync(Guid studentId, int pageNumber, int pageSize, CancellationToken cancellationToken = default)
+    {
+        if (studentId == Guid.Empty) throw new ArgumentException("Selecciona un estudiante válido.", nameof(studentId));
+        ArgumentOutOfRangeException.ThrowIfLessThan(pageNumber, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(pageSize, 1);
+        return apiClient.GetAsync<ApiResponse<List<StudentCourseResponse>>>($"api/Registration/students/{studentId:D}/courses?PageNumber={Number(pageNumber)}&PageSize={Number(pageSize)}", cancellationToken);
+    }
     public Task<ApiResponse<List<AvailableRegistrationCourse>>?> GetAvailableCoursesAsync(AvailableRegistrationCoursesRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
