@@ -1,0 +1,37 @@
+@page "/recommendations"
+@using GrammarErrorDetection.Services.Services.Auth
+@using GrammarErrorDetection.WEB.Components.Materials
+@inject AuthSessionState Session
+@inject NavigationManager Navigation
+
+<PageTitle>Plan de estudio | CETI La Paz</PageTitle>
+
+@if (Session.Current?.User is not null)
+{
+    @if (Session.IsInRole("Student"))
+    {
+        <div class="users-page recommendations-page">
+            <StudyPlan />
+        </div>
+    }
+    else
+    {
+        <section class="users-page recommendations-page" aria-labelledby="recommendations-title">
+            <header class="users-heading">
+                <div>
+                    <p class="users-eyebrow">CETI · APRENDIZAJE PERSONALIZADO</p>
+                    <h1 id="recommendations-title">Recomendaciones</h1>
+                    <p>Material de apoyo elegido según los errores gramaticales que más se repiten en los párrafos analizados.</p>
+                </div>
+            </header>
+            <p class="portal-empty">El plan de estudio personalizado está disponible para estudiantes. Para ver las recomendaciones de un estudiante, abre su reporte gramatical personal.</p>
+        </section>
+    }
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        if (Session.Current is null) Navigation.NavigateTo("/auth/login", replace: true);
+    }
+}
