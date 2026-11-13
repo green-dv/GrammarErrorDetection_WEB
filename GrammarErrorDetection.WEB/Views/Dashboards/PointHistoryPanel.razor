@@ -1,0 +1,90 @@
+@using GrammarErrorDetection.Models.Dashboards
+@using GrammarErrorDetection.Services.Interfaces
+@implements IDisposable
+@inject IDashboardService Dashboard
+
+@* Historial de puntos con filtro por origen (PointTransaction_History_List). *@
+<section class="sd-section sd-card" aria-labelledby="sd-points-title" aria-busy="@(loading ? "true" : "false")">
+    <header class="sd-section-heading">
+        <div><h3 id="sd-points-title">Historial de puntos</h3><p>De dónde vienen tus puntos.</p></div>
+        <label class="sd-select"><span class="data-table-sr-only">Origen</span>
+            <select value="@(source ?? "")" disabled="@loading" @onchange="ChangeSourceAsync">
+                <option value="">Todos los orígenes</option>
+                @foreach (var (value, label) in Sources) { <option value="@value">@label</option> }
+            </select>
+        </label>
+    </header>
+    @if (error is not null) { <div class="data-table-error" role="alert">@error <button type="button" class="data-table-text-button" @onclick="() => LoadAsync(pageNumber)">Reintentar</button></div> }
+    else if (results is null) { <p class="data-table-message" role="status">Cargando historial…</p> }
+    else if (results.Items.Count == 0) { <p class="sd-empty">Sin movimientos para este filtro.</p> }
+    else
+    {
+        <div class="data-table-scroll" role="region" aria-label="Historial de puntos" tabindex="0">
+            <table class="data-table">
+                <caption class="data-table-sr-only">Fecha, origen, motivo y puntos de cada movimiento.</caption>
+                <thead><tr><th scope="col">Fecha</th><th scope="col">Origen</th><th scope="col">Motivo</th><th scope="col">Puntos</th></tr></thead>
+                <tbody>
+                    @foreach (var entry in results.Items)
+                    {
+                        <tr @key="entry.Id">
+                            <td><time datetime="@entry.GrantedAt.ToString("s")">@entry.GrantedAt.ToString("dd/MM/yyyy HH:mm", StudentDashboard.Culture)</time></td>
+                            <td><span class="sd-badge">@SourceLabel(entry.Source)</span></td>
+                            <th scope="row">@entry.Reason @if (entry.ModuleName is not null) { <small class="sd-muted">· @entry.ModuleName</small> }</th>
+                            <td><span class="points-amount @(entry.Amount < 0 ? "points-amount-negative" : "")">@(entry.Amount > 0 ? $"+{entry.Amount}" : entry.Amount.ToString(StudentDashboard.Culture))</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (Pages > 1)
+        {
+            <nav class="sd-pager" aria-label="Páginas del historial de puntos">
+                <button type="button" class="data-table-button" disabled="@(loading || pageNumber == 1)" @onclick="() => LoadAsync(pageNumber - 1)">Anterior</button>
+                <span>Página @pageNumber de @Pages · @results.TotalCount movimientos</span>
+                <button type="button" class="data-table-button" disabled="@(loading || pageNumber >= Pages)" @onclick="() => LoadAsync(pageNumber + 1)">Siguiente</button>
+            </nav>
+        }
+    }
+</section>
+
+@code {
+    private const int PageSize = 8;
+    private static readonly (string Value, string Label)[] Sources =
+        [("Text", "Textos"), ("Evaluation", "Evaluaciones"), ("Achievement", "Logros"), ("Challenge", "Desafíos"), ("Course", "Cursos"), ("Other", "Otros")];
+    private readonly CancellationTokenSource lifetime = new();
+    private DashboardPage<PointHistoryItem>? results;
+    private string? source;
+    private int pageNumber = 1;
+    private bool loading;
+    private string? error;
+
+    private long Pages => results is null ? 0 : (results.TotalCount + PageSize - 1) / PageSize;
+
+    protected override Task OnInitializedAsync() => LoadAsync(1);
+
+    private Task ChangeSourceAsync(ChangeEventArgs args)
+    {
+        var value = args.Value?.ToString();
+        source = Sources.Any(s => s.Value == value) ? value : null;
+        return LoadAsync(1);
+    }
+
+    private async Task LoadAsync(int number)
+    {
+        if (loading || number < 1) return;
+        loading = true;
+        error = null;
+        try
+        {
+            results = await Dashboard.GetStudentPointsAsync(number, PageSize, source, lifetime.Token);
+            pageNumber = number;
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException) { error = "No se pudo cargar tu historial de puntos."; }
+        finally { loading = false; }
+    }
+
+    private static string SourceLabel(string value) => Sources.FirstOrDefault(s => s.Value == value).Label ?? "Otros";
+
+    public void Dispose() { lifetime.Cancel(); lifetime.Dispose(); }
+}
