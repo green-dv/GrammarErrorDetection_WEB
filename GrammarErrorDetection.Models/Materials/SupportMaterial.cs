@@ -2,6 +2,12 @@ using System.Text.Json.Serialization;
 
 namespace GrammarErrorDetection.Models.Materials;
 
+public sealed class MaterialFileUploadResponse
+{
+    public string FileLink { get; set; } = "";
+    public long FileSize { get; set; }
+}
+
 public sealed class ErrorClassificationResponse
 {
     public Guid Id { get; set; }
@@ -42,6 +48,8 @@ public sealed class SupportMaterialFilter
     public Guid? UploadedBy { get; set; }
     public bool? Active { get; set; }
     public DateOnly? CreatedAt { get; set; }
+    // Solo estudiantes: materiales que el usuario marcó como útiles.
+    public bool? OnlyHelpful { get; set; }
 }
 
 public sealed class SupportMaterialResponse
@@ -59,6 +67,9 @@ public sealed class SupportMaterialResponse
     public bool Active { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+    // Interacción del estudiante que consulta (null para docentes y coordinadores).
+    public bool? ViewerSeen { get; set; }
+    public bool? ViewerHelpful { get; set; }
 }
 
 public sealed class SupportMaterialCreateRequest

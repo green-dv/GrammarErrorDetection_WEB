@@ -1,0 +1,109 @@
+@using GrammarErrorDetection.WEB.Views.Materials
+@using Microsoft.AspNetCore.Components.Forms
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+@* Vista previa del archivo en el formulario: el archivo local elegido o, si no hay, el ya guardado. *@
+<div class="material-file-preview" aria-live="polite">
+    @if (File is not null)
+    {
+        @if (localUrl is null && localKind != MaterialPreviewKind.Download)
+        {
+            <div class="material-viewer-fallback"><span>Preparando vista previa…</span></div>
+        }
+        else
+        {
+            @RenderPreview(localUrl, localKind, MaterialPresentation.FormatFromExtension(File.Name), File.Name)
+        }
+    }
+    else if (ExistingLink is not null)
+    {
+        var kind = MaterialPresentation.PreviewKind(ExistingLink, ExistingExtension);
+        @RenderPreview(ExistingLink, kind, MaterialPresentation.FormatFromExtension(ExistingExtension ?? ExistingLink), "Archivo guardado")
+    }
+    else
+    {
+        <div class="material-viewer-fallback">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V3m-5 5 5-5 5 5M4 15v6h16v-6"/></svg>
+            <strong>Sin archivo</strong>
+            <span>Selecciona un archivo para revisarlo aquí antes de guardarlo.</span>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public IBrowserFile? File { get; set; }
+    [Parameter] public ElementReference? Input { get; set; }
+    [Parameter] public string? ExistingLink { get; set; }
+    [Parameter] public string? ExistingExtension { get; set; }
+
+    private IJSObjectReference? module;
+    private IBrowserFile? previewedFile;
+    private string? localUrl;
+    private MaterialPreviewKind localKind;
+    private bool disposed;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (ReferenceEquals(File, previewedFile)) return;
+        previewedFile = File;
+        await RevokeAsync();
+        if (File is null) return;
+        localKind = MaterialPresentation.LocalPreviewKind(File.Name);
+        // Solo se crea la URL temporal para formatos que el navegador puede mostrar.
+        if (localKind == MaterialPreviewKind.Download || Input is not { } input) return;
+        try
+        {
+            module ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/file-preview.js");
+            var url = await module.InvokeAsync<string?>("createUrl", input);
+            if (disposed || !ReferenceEquals(File, previewedFile)) { await module.InvokeVoidAsync("revokeUrl", url); return; }
+            localUrl = url;
+            if (localUrl is null) localKind = MaterialPreviewKind.Download;
+        }
+        catch (JSException) { localKind = MaterialPreviewKind.Download; }
+    }
+
+    private RenderFragment RenderPreview(string? url, MaterialPreviewKind kind, string format, string label) => __builder =>
+    {
+        switch (kind)
+        {
+            case MaterialPreviewKind.Image when url is not null:
+                <img src="@url" alt="Vista previa de @label" />
+                break;
+            case MaterialPreviewKind.Frame when url is not null:
+                <iframe src="@url" title="Vista previa de @label"></iframe>
+                break;
+            case MaterialPreviewKind.External:
+                <div class="material-viewer-fallback"><strong>Enlace externo</strong><span>Los enlaces externos no se previsualizan.</span></div>
+                break;
+            default:
+                <div class="material-viewer-fallback">
+                    <FileIcon Format="@format" Large="true" />
+                    <strong>Vista previa no disponible</strong>
+                    <span>Los archivos @format no se pueden mostrar en el navegador; revisa que sea el archivo correcto antes de guardar.</span>
+                </div>
+                break;
+        }
+    };
+
+    private async Task RevokeAsync()
+    {
+        if (localUrl is null) return;
+        var url = localUrl;
+        localUrl = null;
+        try { if (module is not null) await module.InvokeVoidAsync("revokeUrl", url); }
+        catch (JSException) { }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (disposed) return;
+        disposed = true;
+        try
+        {
+            await RevokeAsync();
+            if (module is not null) await module.DisposeAsync();
+        }
+        catch (JSDisconnectedException) { }
+    }
+}
