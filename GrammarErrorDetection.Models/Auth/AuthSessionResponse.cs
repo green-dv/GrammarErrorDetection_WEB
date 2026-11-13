@@ -6,6 +6,9 @@ public sealed class AuthSessionResponse
     public string TokenType { get; set; } = string.Empty;
     public DateTimeOffset ExpiresAt { get; set; }
     public AuthUserResponse? User { get; set; }
+    /// <summary>La cuenta debe cambiar su contraseña: no hay JWT, solo <see cref="PasswordChange"/>.</summary>
+    public bool RequiresPasswordChange { get; set; }
+    public PasswordChangeTicket? PasswordChange { get; set; }
 }
 
 public sealed class AuthUserResponse

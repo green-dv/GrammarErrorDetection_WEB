@@ -1,6 +1,7 @@
 namespace GrammarErrorDetection.Models.Texts;
 
-public sealed record TextUploadRequest(string OriginalContent);
+public sealed record TextUploadRequest(string OriginalContent,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] Guid? RegistrationId = null);
 
 public sealed class TextSearchRequest
 {
@@ -8,6 +9,7 @@ public sealed class TextSearchRequest
     public int PageSize { get; set; } = 5;
     public Guid? Id { get; set; }
     public Guid? UserId { get; set; }
+    public Guid? RegistrationId { get; set; }
     public string? OriginalContent { get; set; }
 }
 
@@ -15,6 +17,7 @@ public sealed class TextResponse
 {
     public Guid Id { get; set; }
     public Guid UserId { get; set; }
+    public Guid? RegistrationId { get; set; }
     public DateTime SubmissionDate { get; set; }
     public string OriginalContent { get; set; } = "";
     public string Status { get; set; } = "";

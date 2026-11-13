@@ -62,7 +62,7 @@ public partial class Register : IDisposable
                 status = "El código recibido ya venció. Solicita uno nuevo.";
                 return;
             }
-            Flow.BeginVerification(challenge, new SignupRequest { FirstName = model.FirstName.Trim(), LastName = model.LastName.Trim(), CI = model.CI.Trim(), Email = request.Email, Password = model.Password, Phone = string.IsNullOrWhiteSpace(model.Phone) ? null : model.Phone.Trim() });
+            Flow.BeginVerification(challenge, new SignupRequest { FirstName = model.FirstName.Trim(), LastName = model.LastName.Trim(), CI = model.CI.Trim(), Email = request.Email, Password = model.Password, Phone = string.IsNullOrWhiteSpace(model.Phone) ? null : model.Phone.Trim(), BirthDate = model.BirthDate });
             Navigation.NavigateTo("/auth/register/verification");
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Conflict)

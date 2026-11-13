@@ -11,6 +11,10 @@
                 <h1 id="users-title">Usuarios</h1>
                 <p>Datos de contacto y recorrido académico de los estudiantes.</p>
             </div>
+            @if (CanManageUsers)
+            {
+                <button type="button" class="data-table-button data-table-button-primary" disabled="@(busy || loadingCatalogs || roles.Count == 0)" @onclick="() => creatingUser = true" aria-haspopup="dialog">+ Nuevo usuario</button>
+            }
         </header>
     }
     <div class="data-table-card">
@@ -88,7 +92,7 @@
                                     <td><span class="data-table-chip">@PreviousCourse(user)</span></td>
                                     <td><span class="data-table-primary">@CurrentCourse(user)</span><span class="data-table-secondary">@Schedule(user)</span></td>
                                     <td><span class="data-table-grade">@(user.CurrentCourseFinalScore?.ToString("0.##") ?? "—")</span>@if (user.CurrentCourseFinalScore is not null) { <span class="data-table-grade-scale"> / 100</span> }</td>
-                                    <td><div class="points-user-actions"><RowActions Label="@FullName(user)" OnView="() => ViewProfile(user)" OnEdit="() => OpenEdit(user)" OnDelete="() => OpenStatus(user)" EditDisabled="@updatingStatus" DeleteDisabled="@updatingStatus" Restore="@(!user.Active)" DeleteTitle="@(user.Active ? "Desactivar" : "Reactivar")" />@if (CanAssignPoints) { <button type="button" class="data-table-button data-table-row-button points-assign-button" disabled="@resolvingPoints" @onclick="() => OpenPoints(user)" aria-label="Asignar puntos a @FullName(user)" aria-haspopup="dialog">+ Asignar puntos</button> }</div></td>
+                                    <td><div class="points-user-actions"><RowActions Label="@FullName(user)" OnView="() => ViewProfile(user)" OnEdit="() => OpenEdit(user)" OnDelete="() => OpenStatus(user)" EditDisabled="@updatingStatus" DeleteDisabled="@updatingStatus" Restore="@(!user.Active)" DeleteTitle="@(user.Active ? "Desactivar" : "Reactivar")" />@if (CanManageUsers && user.Active && user.Id != Session.Current?.User?.Id) { <button type="button" class="data-table-button data-table-row-button" disabled="@resending" @onclick="() => resendUser = user" aria-label="Reenviar credenciales a @FullName(user)" aria-haspopup="dialog">Reenviar credenciales</button> }@if (CanAssignPoints) { <button type="button" class="data-table-button data-table-row-button points-assign-button" disabled="@resolvingPoints" @onclick="() => OpenPoints(user)" aria-label="Asignar puntos a @FullName(user)" aria-haspopup="dialog">+ Asignar puntos</button> }</div></td>
                                 }
                             </tr>
                         }
@@ -108,9 +112,24 @@
     </div>
 </section>
 
+@if (CanManageUsers && creatingUser)
+{
+    <UserCreateModal Roles="roles" OnClose="() => creatingUser = false" OnCreated="UserCreatedAsync" />
+}
+@if (CanManageUsers && resendUser is not null)
+{
+    <ModalDialog Title="Reenviar credenciales" Busy="@resending" OnClose="() => { if (!resending) resendUser = null; }">
+        <div class="ceti-modal-body">
+            @if (resendError is not null) { <div class="ceti-modal-errors" role="alert"><p>@resendError</p></div> }
+            <p>Se generará una nueva contraseña temporal para <strong>@FullName(resendUser)</strong> y se enviará a <strong>@resendUser.Email</strong>.</p>
+            <p>La contraseña actual dejará de funcionar y deberá crear una nueva al iniciar sesión.</p>
+        </div>
+        <footer class="ceti-modal-footer"><span role="status">@(resending ? "Enviando…" : "")</span><div><button type="button" class="data-table-button" disabled="@resending" @onclick="() => resendUser = null">Cancelar</button><button type="button" class="data-table-button data-table-button-primary" disabled="@resending" @onclick="ConfirmResendAsync">Generar y enviar</button></div></footer>
+    </ModalDialog>
+}
 @if (CanManageUsers && editingUser is not null)
 {
-    <UserEditModal @key="editingUser.Id" User="editingUser" OnClose="CloseEdit" OnSaved="UserSavedAsync" />
+    <UserEditModal @key="editingUser.Id" User="editingUser" Roles="roles" IsSelf="@(editingUser.Id == Session.Current?.User?.Id)" OnClose="CloseEdit" OnSaved="UserSavedAsync" />
 }
 @if (CanManageUsers && statusUser is not null)
 {

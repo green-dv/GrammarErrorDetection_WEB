@@ -8,6 +8,9 @@ public class SignupRequest
     public string Email { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
     public string? Phone { get; set; }
+    /// <summary>Opcional.</summary>
+    [System.Text.Json.Serialization.JsonPropertyName("fechaNacimiento")]
+    public DateOnly? BirthDate { get; set; }
 }
 
 public sealed class SignupConfirmationRequest : SignupRequest

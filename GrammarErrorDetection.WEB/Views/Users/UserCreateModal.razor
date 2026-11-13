@@ -1,0 +1,98 @@
+@using System.Net
+@using GrammarErrorDetection.Models.Users
+@using GrammarErrorDetection.Services.Interfaces
+@using GrammarErrorDetection.WEB.Components.Dialogs
+@implements IDisposable
+@inject IUserService UserService
+
+@* Alta de usuario por el coordinador. No se pide contraseña: la API genera una temporal y la envía al correo. *@
+<ModalDialog Title="Nuevo usuario" Subtitle="Las credenciales se envían al correo de la persona" Busy="@saving" OnClose="OnClose">
+    <EditForm Model="model" OnValidSubmit="SaveAsync" OnInvalidSubmit="ShowErrors" novalidate>
+        <DataAnnotationsValidator />
+        <div class="ceti-modal-body">
+            @if (error is not null || validationErrors.Count > 0)
+            {
+                <div class="ceti-modal-errors" role="alert">
+                    @if (error is not null) { <p>@error</p> }
+                    @foreach (var validationError in validationErrors) { <p>@validationError</p> }
+                </div>
+            }
+            <fieldset disabled="@saving" class="users-edit-fields">
+                <div class="users-edit-grid">
+                    <label class="data-table-field"><span>Nombre *</span><input @bind="model.FirstName" maxlength="50" autofocus /></label>
+                    <label class="data-table-field"><span>Apellido *</span><input @bind="model.LastName" maxlength="50" /></label>
+                    <label class="data-table-field"><span>CI *</span><input @bind="model.CI" maxlength="15" /></label>
+                    <label class="data-table-field"><span>Correo *</span><input type="email" @bind="model.Email" maxlength="100" /></label>
+                    <label class="data-table-field"><span>Teléfono</span><input type="tel" @bind="model.Phone" maxlength="12" /></label>
+                    <label class="data-table-field"><span>Fecha de nacimiento <small>(opcional)</small></span><InputDate @bind-Value="model.BirthDate" max="@DateTime.Today.ToString("yyyy-MM-dd")" /></label>
+                    <label class="data-table-field"><span>Rol *</span>
+                        <select value="@(model.RoleId?.ToString() ?? "")" @onchange="args => model.RoleId = Guid.TryParse(args.Value?.ToString(), out var id) ? id : null">
+                            <option value="">Seleccionar rol</option>
+                            @foreach (var role in Roles.Where(r => r.Active)) { <option value="@role.Id">@RoleLabel(role.Name)</option> }
+                        </select>
+                    </label>
+                </div>
+                <p class="gamification-help">Se generará una contraseña temporal aleatoria. Al iniciar sesión por primera vez, la persona deberá crear una propia.</p>
+            </fieldset>
+        </div>
+        <footer class="ceti-modal-footer"><span role="status">@(saving ? "Creando usuario y enviando correo…" : "")</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">Cancelar</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@saving">Crear y enviar credenciales</button></div></footer>
+    </EditForm>
+</ModalDialog>
+
+@code {
+    [Parameter, EditorRequired] public List<UserLookupOption> Roles { get; set; } = [];
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<UserCredentialsResult> OnCreated { get; set; }
+    private readonly CancellationTokenSource lifetime = new();
+    private readonly UserCreateRequest model = new();
+    private List<string> validationErrors = [];
+    private string? error;
+    private bool saving;
+
+    internal static string RoleLabel(string role) => role switch
+    {
+        "Teacher" => "Docente",
+        "Coordinator" => "Coordinador",
+        "Student" => "Estudiante",
+        _ => role
+    };
+
+    private void ShowErrors(EditContext context)
+    {
+        error = null;
+        validationErrors = context.GetValidationMessages().Distinct().ToList();
+    }
+
+    private async Task SaveAsync()
+    {
+        if (saving) return;
+        saving = true;
+        error = null;
+        validationErrors.Clear();
+        try
+        {
+            var response = await UserService.CreateAsync(model, lifetime.Token);
+            if (response?.Data is not { } created || response.Error is { ErrorCode: not 0 })
+            {
+                error = response?.Error?.ErrorMessage ?? "No se pudo crear el usuario.";
+                return;
+            }
+            await OnCreated.InvokeAsync(created);
+        }
+        catch (HttpRequestException ex)
+        {
+            error = ex.StatusCode switch
+            {
+                HttpStatusCode.Conflict => "El correo o el CI ya están registrados.",
+                HttpStatusCode.BadRequest => "Revisa los datos: el rol debe estar activo y los campos tener un formato válido.",
+                HttpStatusCode.Forbidden => "Solo un coordinador puede crear usuarios.",
+                _ => "No se pudo crear el usuario. Inténtalo de nuevo."
+            };
+        }
+        catch (OperationCanceledException) { }
+        catch (ArgumentException ex) { error = ex.Message; }
+        finally { saving = false; }
+    }
+
+    public void Dispose() { lifetime.Cancel(); lifetime.Dispose(); }
+}
