@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="320" height="320" role="img" aria-label="Vista previa del badge personalizado">
+    @layers
+    <g mask="url(#badge-ribbon-mask)" display="@(Design.ShowRibbon ? null : "none")">
+        <g transform="rotate(-15 256 342)">
+            <text x="256" y="351" text-anchor="middle" font-family="Arial, sans-serif" font-size="@fontSize" font-weight="700" fill="#24323B">@text</text>
+        </g>
+    </g>
+</svg>
+
+@code {
+    [Parameter, EditorRequired] public BadgeDesign Design { get; set; } = new();
+    private BadgeDesign? geometryDesign;
+    private MarkupString layers;
+    private string text = "", fontSize = "25";
+    protected override void OnParametersSet()
+    {
+        var geometry = Design with { RibbonText = "" };
+        if (geometry != geometryDesign)
+        {
+            layers = new MarkupString(BadgeRenderer.PreviewLayers(geometry));
+            geometryDesign = geometry;
+        }
+        text = BadgeRenderer.CleanRibbonText(Design.RibbonText);
+        fontSize = BadgeRenderer.RibbonFontSize(text);
+    }
+}

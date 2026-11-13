@@ -16,19 +16,28 @@ public sealed class UserEditForm : IValidatableObject
     [StringLength(12, ErrorMessage = "El teléfono admite hasta 12 caracteres."), RegularExpression(@"^\+?[\d\s()-]*$", ErrorMessage = "Ingresa un teléfono válido.")]
     public string? Phone { get; set; }
     public DateOnly? BirthDate { get; set; }
+    public Guid? RoleId { get; set; }
+    private Guid? originalRoleId;
 
-    public static UserEditForm From(UserSearchResponse user) => new() { FirstName = user.FirstName, LastName = user.LastName, Ci = user.Ci, Email = user.Email, Phone = user.Phone, BirthDate = user.BirthDate };
+    public static UserEditForm From(UserSearchResponse user) => new()
+    {
+        FirstName = user.FirstName, LastName = user.LastName, Ci = user.Ci, Email = user.Email, Phone = user.Phone, BirthDate = user.BirthDate,
+        RoleId = user.RoleId, originalRoleId = user.RoleId
+    };
+
+    public bool RoleChanged => RoleId is { } role && role != Guid.Empty && role != originalRoleId;
 
     public bool HasChangesFrom(UserSearchResponse original) => Changed(FirstName, original.FirstName) is not null
         || Changed(LastName, original.LastName) is not null || Changed(Ci, original.Ci) is not null
         || Changed(Email, original.Email) is not null || Changed(Phone, original.Phone) is not null
-        || BirthDate != original.BirthDate;
+        || BirthDate != original.BirthDate || RoleChanged;
 
     public UserDetailsUpdateRequest ToRequest(Guid id) => new()
     {
         Id = id,
         FirstName = FirstName.Trim(), LastName = LastName.Trim(),
-        Ci = Ci.Trim(), Email = Email.Trim(), Phone = Phone?.Trim(), BirthDate = BirthDate
+        Ci = Ci.Trim(), Email = Email.Trim(), Phone = Phone?.Trim(), BirthDate = BirthDate,
+        RoleId = RoleChanged ? RoleId : null
     };
 
     private static string? Changed(string? value, string? original) => string.Equals(value?.Trim() ?? "", original?.Trim() ?? "", StringComparison.Ordinal) ? null : value?.Trim() ?? "";

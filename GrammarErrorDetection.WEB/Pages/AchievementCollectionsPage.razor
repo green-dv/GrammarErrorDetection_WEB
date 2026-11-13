@@ -1,0 +1,10 @@
+@page "/gamification/collections"
+@page "/gamification/collections/{CollectionId:guid}"
+@using GrammarErrorDetection.WEB.Views.Gamification
+
+<PageTitle>Colecciones de logros | CETI La Paz</PageTitle>
+<AchievementCollections CollectionId="CollectionId" @key="CollectionId" />
+
+@code {
+    [Parameter] public Guid? CollectionId { get; set; }
+}

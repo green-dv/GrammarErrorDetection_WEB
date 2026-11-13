@@ -41,6 +41,10 @@
             <label for="register-phone" class="auth-label">Teléfono <span class="auth-field-optional">(opcional)</span></label>
             <InputText id="register-phone" type="tel" @bind-Value="model.Phone" autocomplete="tel" placeholder="Tu número de teléfono" class="auth-control px-4" />
         </div>
+        <div>
+            <label for="register-birth-date" class="auth-label">Fecha de nacimiento <span class="auth-field-optional">(opcional)</span></label>
+            <InputDate id="register-birth-date" @bind-Value="model.BirthDate" autocomplete="bday" max="@DateTime.Today.ToString("yyyy-MM-dd")" class="auth-control px-4" />
+        </div>
         <div class="auth-register-email">
             <label for="register-email" class="auth-label">Correo electrónico</label>
             <InputText id="register-email" name="signup-contact-email" type="email" @bind-Value="model.Email" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="nombre@correo.com" class="auth-control px-4" />

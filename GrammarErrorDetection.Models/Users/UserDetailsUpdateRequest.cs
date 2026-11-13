@@ -13,4 +13,7 @@ public sealed class UserDetailsUpdateRequest
     public string? Phone { get; set; }
     [JsonPropertyName("fechaNacimiento")]
     public DateOnly? BirthDate { get; set; }
+    /// <summary>Solo cuando cambia: la API exige coordinador y que quede al menos un coordinador activo.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Guid? RoleId { get; set; }
 }

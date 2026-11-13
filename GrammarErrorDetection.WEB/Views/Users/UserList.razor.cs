@@ -310,6 +310,43 @@ public partial class UserList : IDisposable
 
     private void CloseStatus() { if (!updatingStatus) statusUser = null; }
 
+    private bool creatingUser, resending;
+    private UserSearchResponse? resendUser;
+    private string? resendError;
+
+    private async Task UserCreatedAsync(UserCredentialsResult created)
+    {
+        creatingUser = false;
+        await RefreshAfterUpdateAsync(created.CredentialsSent
+            ? $"{created.FullName} fue creado como {UserCreateModal.RoleLabel(created.RoleName)}. Las credenciales se enviaron a {created.Email}."
+            : created.Message);
+    }
+
+    private async Task ConfirmResendAsync()
+    {
+        if (resendUser is not { } user || resending || disposed || !CheckSession()) return;
+        resending = true;
+        resendError = null;
+        try
+        {
+            var response = await UserService.ResendCredentialsAsync(user.Id);
+            if (response?.Data is not { } result || response.Error is { ErrorCode: not 0 })
+            {
+                resendError = response?.Error?.ErrorMessage ?? "No se pudieron reenviar las credenciales.";
+                return;
+            }
+            if (!result.CredentialsSent) { resendError = result.Message; return; }
+            resendUser = null;
+            status = $"Se enviaron nuevas credenciales a {result.Email}.";
+        }
+        catch (HttpRequestException ex)
+        {
+            resendError = ex.StatusCode == HttpStatusCode.Forbidden ? "No tienes permiso para reenviar credenciales a esta cuenta." : HttpError(ex);
+        }
+        catch (OperationCanceledException) { resendError = "La solicitud tardó demasiado. Inténtalo de nuevo."; }
+        finally { resending = false; }
+    }
+
     private async Task UserSavedAsync(UserUpdateResponse response)
     {
         editingUser = null;

@@ -6,7 +6,10 @@
     <header class="users-heading">
         <div><p class="users-eyebrow">CETI · COMUNIDAD QUE APRENDE</p><h1 id="leaderboard-title">Leaderboard</h1><p>Celebra el esfuerzo y descubre quiénes lideran el aprendizaje.</p></div>
     </header>
-    <form class="leaderboard-toolbar data-filter-panel" @onsubmit="SearchAsync" @onsubmit:preventDefault>
+    <div class="data-table-card leaderboard-search-card">
+    <header class="data-table-heading"><div><h2>Clasificación de estudiantes</h2><p>Consulta los puntos por módulo y periodo académico.</p></div></header>
+    <form class="leaderboard-toolbar data-filter-panel data-filter-panel-inset" @onsubmit="SearchAsync" @onsubmit:preventDefault>
+        <div class="data-filter-heading"><span>Filtrar clasificación</span><span>Combina los campos que necesites</span></div>
         <div class="leaderboard-filters">
             <label class="data-table-field"><span>Módulo</span>
                 <select @bind="moduleId" disabled="@(loading || loadingModules)">
@@ -27,6 +30,7 @@
             <button type="button" class="data-table-button" @onclick="ClearAsync" disabled="@loading">Todos los tiempos</button>
         </div>
     </form>
+    </div>
     @if (moduleError is not null)
     {
         <div class="data-table-error" role="alert"><p>@moduleError</p><button class="data-table-text-button" @onclick="LoadModulesAsync" disabled="@loadingModules">Reintentar módulos</button></div>

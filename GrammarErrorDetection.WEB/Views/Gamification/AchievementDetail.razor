@@ -1,0 +1,36 @@
+@using GrammarErrorDetection.Models.Gamification
+
+@if (Allowed)
+{
+    <section class="users-page gamification-page">
+        <a class="data-table-text-button collection-back" href="@(achievement?.AchievementCollectionId is { } collectionId ? $"/gamification/collections/{collectionId:D}" : "/gamification")">← @(achievement?.AchievementCollectionId is not null ? "Volver a la colección" : "Volver a logros")</a>
+        <header class="users-heading"><div><p class="users-eyebrow">CETI · GAMIFICACIÓN</p><h1>Detalle del logro</h1><p>Información, recompensa y condición de obtención.</p></div>
+            @if (CanManage && achievement is not null) { <GamificationActions Label="@($"logro {achievement.Name}")" Active="achievement.Active" Disabled="loading" OnEdit="OpenEdit" OnToggleActive="OpenStatus" /> }
+        </header>
+        @if (error is not null) { <div class="data-table-error" role="alert">@error <button type="button" class="data-table-text-button" disabled="@loading" @onclick="LoadAsync">Reintentar</button></div> }
+        @if (message is not null) { <p class="data-table-message" role="status">@message</p> }
+        @if (loading) { <p class="data-table-empty" role="status">Cargando logro…</p> }
+        else if (achievement is not null && error is null)
+        {
+            <article class="gamification-detail">
+                <div class="gamification-detail-image">@if (GamificationAdmin.SafeIcon(achievement.IconLink) is { } icon) { <img src="@icon" alt="Imagen del logro @achievement.Name" /> } else { <span role="img" aria-label="Logro sin imagen">✦</span> }</div>
+                <div class="gamification-detail-content">
+                    <div class="collection-achievement-state"><span class="data-table-chip">@(achievement.Active ? "Activo" : "Inactivo")</span>@if (achievement.IsSecret) { <span class="data-table-chip">Secreto</span> }@if (achievement.TierOrder is { } tier) { <span class="data-table-chip">Nivel @tier</span> }</div>
+                    <h2>@achievement.Name</h2><p class="gamification-detail-description">@achievement.Description</p>
+                    <strong class="gamification-points">@achievement.Points puntos</strong>
+                    <dl class="gamification-detail-data">
+                        <div><dt>Categoría</dt><dd>@(achievement.AchievementCategoryName ?? "No informada")</dd></div>
+                        <div><dt>Colección</dt><dd>@if (achievement.AchievementCollectionId is { } id) { <a href="@($"/gamification/collections/{id:D}")">@(achievement.AchievementCollectionName ?? "Visualizar colección")</a> } else { <span>Sin colección</span> }</dd></div>
+                        <div><dt>Actividad</dt><dd>@(achievement.ConditionName ?? achievement.ConditionCode ?? "No informada")</dd></div>
+                        <div><dt>@(achievement.Conditions.Count > 1 ? "Condiciones (se cumplen todas)" : "Condición")</dt><dd>@ConditionConfiguration.Summary(achievement.Conditions)</dd></div>
+                        <div><dt>Fecha de registro</dt><dd>@achievement.CreatedAt.ToString("dd/MM/yyyy HH:mm")</dd></div>
+                        <div><dt>Última actualización</dt><dd>@achievement.UpdatedAt.ToString("dd/MM/yyyy HH:mm")</dd></div>
+                    </dl>
+                    <p class="gamification-detail-note">@ConditionConfiguration.Description(achievement.ConditionCode)</p>
+                </div>
+            </article>
+        }
+    </section>
+    @if (CanManage && showEdit && achievement is not null) { <GamificationEditor IsAchievement="true" Achievement="achievement" OnClose="CloseDialogsAsync" OnSaved="SavedAsync" /> }
+    @if (CanManage && showStatus && achievement is not null) { <GamificationStatusModal Achievement="achievement" OnClose="CloseDialogsAsync" OnChanged="SavedAsync" /> }
+}
