@@ -1,7 +1,9 @@
 @page "/materials"
+@using Microsoft.AspNetCore.Components.Forms
 @using GrammarErrorDetection.Models.Materials
 @using GrammarErrorDetection.WEB.Components.Dialogs
 @using GrammarErrorDetection.WEB.Views.Materials
+@using GrammarErrorDetection.WEB.Components.Materials
 
 <PageTitle>Material de apoyo | CETI La Paz</PageTitle>
 
@@ -14,11 +16,21 @@
         }
     </header>
 
-    <form class="materials-toolbar data-filter-panel" @onsubmit="SearchAsync" @onsubmit:preventDefault>
+    <div class="data-table-card materials-catalog">
+    <header class="data-table-heading"><div><h2>Listado de materiales</h2><p>Consulta los recursos y combina los filtros para encontrar lo que necesitas.</p></div></header>
+    <form class="materials-toolbar data-filter-panel data-filter-panel-inset" @onsubmit="SearchAsync" @onsubmit:preventDefault>
+        <div class="data-filter-heading"><span>Filtrar materiales</span><span>Combina los campos que necesites</span></div>
         <div class="materials-filters">
             <label class="data-table-field materials-search"><span>Nombre</span><input type="search" placeholder="Buscar material…" maxlength="255" @bind="name" @bind:event="oninput" /></label>
             <label class="data-table-field"><span>Clasificación del error</span><select @bind="categoryId" disabled="@loadingCategories"><option value="">@(loadingCategories ? "Cargando clasificaciones…" : "Todas las clasificaciones")</option>@foreach (var option in categories) { <option value="@option.Id">@option.Name</option> }</select></label>
             <label class="data-table-field"><span>Tipo de archivo</span><select @bind="fileTypeId" disabled="@loadingFileTypes"><option value="">@(loadingFileTypes ? "Cargando tipos…" : "Todos los tipos")</option>@foreach (var option in fileTypes) { <option value="@option.Id">@option.Name</option> }</select></label>
+            @if (IsStudent)
+            {
+                <label class="materials-helpful-toggle" title="Muestra solo los materiales que marcaste como útiles">
+                    <input type="checkbox" @bind="onlyHelpful" @bind:after="SearchAsync" disabled="@(loading || ActionBusy)" />
+                    <span class="switch" aria-hidden="true"></span>Solo mis útiles
+                </label>
+            }
             @if (CanManage)
             {
                 <label class="data-table-field"><span>Estado</span><select @bind="activeFilter"><option value="true">Activos</option><option value="false">Inactivos</option><option value="">Todos</option></select></label>
@@ -72,10 +84,20 @@
                             <button type="button" class="data-table-icon-button data-table-icon-danger material-trash" disabled="@ActionBusy" title="@(material.Active ? "Desactivar" : "Reactivar")" aria-label="@(material.Active ? $"Desactivar {material.Name}" : $"Reactivar {material.Name}")" @onclick="() => OpenStatus(material)"><svg viewBox="0 0 24 24" aria-hidden="true">@if (material.Active) { <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/> } else { <path d="M3 11a9 9 0 1 1 3 8M3 4v7h7"/> }</svg></button>
                             <button type="button" class="data-table-icon-button" disabled="@ActionBusy" title="Editar" aria-label="Editar @material.Name" @onclick="() => OpenDetailAsync(material, true)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 4 5 5M4 20l5-1L21 7l-5-5L4 14z"/></svg></button>
                         }
+                        @if (IsStudent && material.Active)
+                        {
+                            var marked = material.ViewerHelpful == true;
+                            <button type="button" class="helpful-button @(marked ? "is-marked" : "")" aria-pressed="@(marked ? "true" : "false")"
+                                    disabled="@(marked || voting.Contains(material.Id))" title="@(marked ? "Marcaste este material como útil" : "Marcar como útil")"
+                                    @onclick="() => VoteAsync(material, true)">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-9-8.5C1.6 8.3 3.6 5 7 5c2 0 3.2 1.2 5 3 1.8-1.8 3-3 5-3 3.4 0 5.4 3.3 4 6.5-2 4.1-9 8.5-9 8.5Z"/></svg>
+                                @(marked ? "Útil" : "Marcar útil")
+                            </button>
+                        }
                         <button type="button" class="data-table-icon-button" disabled="@ActionBusy" title="Ver material" aria-label="Ver @material.Name" @onclick="() => OpenDetailAsync(material, false)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button>
                         @if (link is not null)
                         {
-                            <a class="data-table-icon-button" href="@link" download target="_blank" rel="noopener noreferrer" title="Descargar o abrir archivo" aria-label="Descargar o abrir @material.Name"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></svg></a>
+                            <a class="data-table-icon-button" href="@MaterialPresentation.DownloadLink(link)" download target="_blank" rel="noopener noreferrer" title="@(MaterialPresentation.IsFileServerLink(link) ? "Descargar archivo" : "Abrir enlace")" aria-label="@(MaterialPresentation.IsFileServerLink(link) ? "Descargar" : "Abrir") @material.Name"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></svg></a>
                         }
                     </div>
                 </div>
@@ -84,52 +106,85 @@
     </div>
     @if (!loading && error is null && materials.Count == 0)
     {
-        <div class="materials-empty"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h7l2 2h9v11H3ZM3 7V4h7l2 3h9v2"/></svg><h2>No hay materiales con estos filtros</h2><p>Prueba otro nombre, clasificación o tipo de archivo.</p><button type="button" class="data-table-button" @onclick="ClearFiltersAsync">Limpiar filtros</button></div>
+        <div class="materials-empty"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h7l2 2h9v11H3ZM3 7V4h7l2 3h9v2"/></svg><h2>@EmptyTitle</h2><p>@EmptyHint</p><button type="button" class="data-table-button" @onclick="ClearFiltersAsync">Limpiar filtros</button></div>
     }
     <footer class="materials-pagination">
         <label class="data-table-page-size">Por página <select @bind="pageSize" @bind:after="ChangePageSizeAsync" disabled="@(loading || ActionBusy)"><option value="10">10</option><option value="20">20</option><option value="30">30</option></select></label>
         <span>@ResultRange</span>
         <nav class="data-table-pagination" aria-label="Paginación de materiales"><button type="button" disabled="@(loading || ActionBusy || page <= 1)" @onclick="PreviousPageAsync">Anterior</button><span>Página @(page)</span><button type="button" disabled="@(loading || ActionBusy || !hasNext)" @onclick="NextPageAsync">Siguiente</button></nav>
     </footer>
+    </div>
 </section>
 
 @if (dialogMode is not null)
 {
-    <ModalDialog Title="@DialogTitle" Class="material-upload-dialog" Busy="@(saving || loadingDetail)" OnClose="CloseDialog">
+    <ModalDialog Title="@DialogTitle" Subtitle="@DialogSubtitle" Class="@DialogClass" Busy="@(saving || loadingDetail)" OnClose="CloseDialog">
         @if (loadingDetail) { <p class="ceti-modal-description" role="status">Cargando material…</p> }
         @if (dialogError is not null) { <div class="ceti-modal-body materials-dialog-error" role="alert">@dialogError</div> }
         @if (!loadingDetail && (dialogMode is "create" or "edit") && CanManage && editForm is { } model)
         {
-            <p class="ceti-modal-description">Comparte el enlace de un documento, una imagen o un recurso ya alojado.</p>
+            <p class="ceti-modal-description">Sube un archivo o comparte el enlace de un recurso.</p>
             <form @onsubmit="SaveAsync" @onsubmit:preventDefault novalidate>
-                <fieldset class="material-upload-fields ceti-modal-body" disabled="@saving">
+                <fieldset class="material-upload-fields ceti-modal-body @(!useLink ? "has-preview" : "")" disabled="@saving">
+                    @if (!useLink)
+                    {
+                        <aside class="material-form-preview" aria-label="Vista previa del archivo">
+                            <span class="material-form-preview-label">Vista previa</span>
+                            <FilePreview File="pendingFile" Input="fileInput?.Element" ExistingLink="@(selected is not null && IsUploadedFile(model.FileLink) ? MaterialPresentation.ResolveLink(model.FileLink, ApiBaseUrl) : null)" ExistingExtension="@(selected is null ? null : FileType(selected)?.Extension)" />
+                        </aside>
+                    }
+                    <div class="material-form-fields">
                     <label class="data-table-field"><span>Nombre del material</span><input maxlength="255" placeholder="Ej. Guía de concordancia" @bind="model.Name" @bind:event="oninput" autofocus required /></label>
-                    <div class="material-file-picker"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 13 4-4m-6 5-2 2a3 3 0 0 0 4 4l4-4M10 10l4-4a3 3 0 0 1 4 4l-2 2"/></svg><label class="data-table-field"><span>Enlace o ruta del material</span><input placeholder="https://… o /materials/guia.pdf" @bind="model.FileLink" @bind:event="oninput" required /></label><p>El archivo debe estar disponible en el enlace indicado.</p></div>
+                    <div class="material-source-toggle" role="group" aria-label="Origen del material">
+                        <button type="button" class="@(!useLink ? "is-selected" : "")" aria-pressed="@(!useLink ? "true" : "false")" @onclick="() => ChangeSource(false)">Archivo</button>
+                        <button type="button" class="@(useLink ? "is-selected" : "")" aria-pressed="@(useLink ? "true" : "false")" @onclick="() => ChangeSource(true)">Enlace</button>
+                    </div>
+                    @if (useLink)
+                    {
+                        <label class="data-table-field"><span>Enlace del material</span><input type="url" placeholder="https://…" @bind="model.FileLink" @bind:event="oninput" @bind:after="UpdateLinkType" required /></label>
+                        <p class="material-field-help">El enlace se guarda directamente; no se subirá ningún archivo.</p>
+                    }
+                    else
+                    {
+                        <div class="material-file-picker">
+                            <label class="data-table-field"><span>@(dialogMode == "edit" ? "Reemplazar archivo (opcional)" : "Archivo del material")</span><InputFile @ref="fileInput" OnChange="SelectFile" disabled="@saving" /></label>
+                            <p>Máximo 25 MiB. El enlace y el tamaño se generan al subir el archivo.</p>
+                            @if (pendingFile is { } file) { <p role="status">@file.Name · @MaterialPresentation.Size(file.Size)</p> }
+                            else if (!string.IsNullOrWhiteSpace(model.FileLink)) { <p class="material-field-help">Archivo guardado: @model.FileLink</p> }
+                        </div>
+                    }
                     <label class="data-table-field"><span>Clasificación del error</span><select @bind="model.ErrorClassificationId" disabled="@loadingCategories" required><option value="">@(loadingCategories ? "Cargando clasificaciones…" : "Selecciona una clasificación")</option>@if (selected is { } currentCategory && !categories.Any(item => item.Id == currentCategory.ErrorClassificationId)) { <option value="@currentCategory.ErrorClassificationId">@CategoryName(currentCategory) (actual)</option> }@foreach (var option in categories) { <option value="@option.Id">@option.Name</option> }</select></label>
                     @if (categoryError is not null) { <div class="materials-dialog-error" role="alert">@categoryError <button type="button" class="data-table-text-button" disabled="@loadingCategories" @onclick="LoadCategoriesAsync">Reintentar</button></div> }
-                    <label class="data-table-field"><span>Tipo de archivo</span><select @bind="model.FileTypeId" disabled="@loadingFileTypes" required><option value="">@(loadingFileTypes ? "Cargando tipos…" : "Selecciona un tipo de archivo")</option>@if (selected is { } currentType && !fileTypes.Any(item => item.Id == currentType.FileTypeId)) { <option value="@currentType.FileTypeId">@(FileType(currentType)?.Name ?? MaterialPresentation.Format(currentType)) (actual)</option> }@foreach (var option in fileTypes) { <option value="@option.Id">@option.Name</option> }</select></label>
+                    <p class="material-field-help" role="status">Tipo de material: <strong>@(useLink ? "Enlace" : DetectedType)</strong> · Asignado automáticamente</p>
                     @if (fileTypeError is not null) { <div class="materials-dialog-error" role="alert">@fileTypeError <button type="button" class="data-table-text-button" disabled="@loadingFileTypes" @onclick="LoadFileTypesAsync">Reintentar</button></div> }
-                    <div class="material-upload-grid"><label class="data-table-field"><span>Fecha de subida</span><input type="datetime-local" step="1" @bind="model.UploadDate" @bind:format="yyyy-MM-ddTHH:mm:ss" required /></label><label class="data-table-field"><span>Tamaño en bytes (opcional)</span><input type="number" min="0" step="1" @bind="model.FileSize" @bind:event="oninput" /></label></div>
+                    <p class="material-field-help">@(useLink ? "La fecha de registro se asigna automáticamente." : "La fecha de subida y el tamaño se registran automáticamente.")</p>
                     @if (!loadingCategories && categoryError is null && categories.Count == 0) { <p class="material-field-help">No hay clasificaciones activas disponibles para nuevos materiales.</p> }
                     @if (!loadingFileTypes && fileTypeError is null && fileTypes.Count == 0) { <p class="material-field-help">No hay tipos de archivo activos disponibles para nuevos materiales.</p> }
+                    </div>
                 </fieldset>
-                <footer class="ceti-modal-footer"><span role="status">@(saving ? "Guardando material…" : loadingCategories || loadingFileTypes ? "Cargando opciones…" : "")</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="CloseDialog">Cancelar</button><button type="submit" class="material-upload-button" disabled="@(saving || loadingCategories || loadingFileTypes || !HasChanges)">@(dialogMode == "create" ? "Agregar material" : "Guardar cambios")</button></div></footer>
+                <footer class="ceti-modal-footer"><span role="status">@(saving ? useLink ? "Guardando enlace…" : "Subiendo archivo y guardando material…" : loadingCategories || loadingFileTypes ? "Cargando opciones…" : "")</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="CloseDialog">Cancelar</button><button type="submit" class="material-upload-button" disabled="@(saving || loadingCategories || loadingFileTypes || !HasChanges)">@(dialogMode == "create" ? "Agregar material" : "Guardar cambios")</button></div></footer>
             </form>
         }
         else if (!loadingDetail && dialogMode == "preview" && selected is { } detail)
         {
-            <div class="ceti-modal-body material-detail">
-                <span class="material-category">@CategoryName(detail)</span><h3>@detail.Name</h3>
-                @if (ResolveLink(detail) is { } detailLink)
-                {
-                    @if (MaterialPresentation.Kind(detail, FileType(detail)) == "Imagen") { <img class="material-detail-image" src="@detailLink" alt="@detail.Name" referrerpolicy="no-referrer" /> }
-                    <a class="material-upload-button" href="@detailLink" target="_blank" rel="noopener noreferrer">Abrir material ↗</a>
-                }
-                else { <p>El enlace de este material no es válido.</p> }
-                <dl class="material-metadata"><div><dt>Fecha de subida</dt><dd>@detail.UploadDate.ToString("dd/MM/yyyy HH:mm")</dd></div><div><dt>Peso</dt><dd>@MaterialPresentation.Size(detail.FileSize)</dd></div></dl>
-                <p class="material-author">Subido por @(string.IsNullOrWhiteSpace(detail.UploadedByName) ? "Usuario" : detail.UploadedByName)</p>
+            <div class="ceti-modal-body">
+                <MaterialViewer Material="ViewOf(detail)">
+                    <Feedback>
+                        @if (IsStudent)
+                        {
+                            <MaterialFeedback Helpful="detail.ViewerHelpful" Busy="@voting.Contains(detail.Id)" Error="@feedbackError"
+                                              OnVote="helpful => VoteAsync(detail, helpful)"
+                                              @bind-Comment="commentDraft" OnSendComment="() => VoteAsync(detail, false, commentDraft)" CommentSent="commentSent" />
+                        }
+                    </Feedback>
+                    <Actions>
+                        @if (CanManage)
+                        {
+                            <button type="button" class="mv-button mv-button-outline" @onclick="() => OpenDetailAsync(detail, true)">Editar material</button>
+                        }
+                    </Actions>
+                </MaterialViewer>
             </div>
-            <footer class="ceti-modal-footer"><div><button type="button" class="data-table-button" @onclick="CloseDialog">Cerrar</button></div></footer>
         }
         else if (dialogMode == "status" && selected is { } statusMaterial && CanManage)
         {
