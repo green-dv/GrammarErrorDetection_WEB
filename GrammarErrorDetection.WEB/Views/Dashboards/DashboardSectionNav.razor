@@ -1,0 +1,16 @@
+@inject NavigationManager Navigation
+
+@* Solo en celular (CSS): accesos fijos a las secciones del dashboard para no recorrer una columna muy larga. *@
+<nav class="sh-section-nav" aria-label="Secciones del panel">
+    @foreach (var (id, label) in Items)
+    {
+        <a href="@($"{CurrentPage}#{id}")">@label</a>
+    }
+</nav>
+
+@code {
+    [Parameter, EditorRequired] public (string Id, string Label)[] Items { get; set; } = [];
+
+    // Blazor resuelve los enlaces contra la base del sitio: el ancla necesita la URL actual completa.
+    private string CurrentPage => Navigation.Uri.Split('#')[0];
+}

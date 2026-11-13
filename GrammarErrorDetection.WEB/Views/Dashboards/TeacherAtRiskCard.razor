@@ -1,0 +1,165 @@
+@using GrammarErrorDetection.Models.Dashboards
+@using GrammarErrorDetection.Services.Interfaces
+@implements IDisposable
+@inject IDashboardService Dashboard
+
+@* Estudiantes en riesgo (Dashboard_AtRisk_List) separados por motivo y paginados en el servidor.
+   Docente: sus cursos (ClassId opcional). Coordinador: toda la institución en el periodo (Year/Bimester). *@
+<section class="sh-card td-risk" id="@AnchorId" aria-labelledby="td-risk-title" aria-busy="@(loading ? "true" : "false")">
+    <header class="sh-card-head">
+        <h3 id="td-risk-title"><span class="td-risk-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 2 21h20ZM12 10v5m0 3v.01" /></svg></span>Estudiantes en riesgo</h3>
+    </header>
+    <div class="td-pills" role="tablist" aria-label="Motivo">
+        <button type="button" role="tab" aria-selected="@(reason == "NoTexts" ? "true" : "false")" @onclick='() => ChangeReasonAsync("NoTexts")'>Sin textos (@NoTextsCount)</button>
+        <button type="button" role="tab" aria-selected="@(reason == "LowScore" ? "true" : "false")" @onclick='() => ChangeReasonAsync("LowScore")'>Nota baja (@LowScoreCount)</button>
+    </div>
+    @if (error is not null) { <div class="data-table-error" role="alert">@error <button type="button" class="data-table-text-button" @onclick="() => LoadAsync(pageNumber)">Reintentar</button></div> }
+    else if (results is null) { <p class="data-table-message" role="status">Cargando estudiantes…</p> }
+    else if (results.Items.Count == 0)
+    {
+        <p class="sh-empty">@(reason == "NoTexts" ? "Todos tus estudiantes ya analizaron al menos un texto." : "Ningún estudiante tiene nota menor a 70.")</p>
+    }
+    else
+    {
+        <ul class="m-cards">
+            @foreach (var student in results.Items)
+            {
+                <li @key="(student.UserId, student.ClassId)">
+                    <div class="m-card-head">
+                        <div><strong>@student.StudentName</strong>@if (ShowCourse) { <small>@student.ModuleName · @(student.Parallel is { Length: > 0 } p ? p + " · " : "")B@(student.Bimester)</small> }</div>
+                    </div>
+                    <dl class="m-facts">
+                        <div><dt>Motivo</dt><dd>@Reason(student)</dd></div>
+                        <div><dt>Última actividad</dt><dd>@LastActivity(student.LastTextAt)</dd></div>
+                    </dl>
+                    <div class="m-actions">
+                        @if (!string.IsNullOrWhiteSpace(student.Email))
+                        {
+                            <a class="td-action" href="@($"mailto:{student.Email}")" aria-label="Escribir a @student.StudentName"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>Contactar</a>
+                        }
+                        <a class="td-action" href="@($"users/{student.UserId:D}")" aria-label="Ver detalle de @student.StudentName"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" /></svg>Ver detalle</a>
+                    </div>
+                </li>
+            }
+        </ul>
+        <div class="data-table-scroll m-table" role="region" aria-label="Estudiantes en riesgo" tabindex="0">
+            <table class="td-table">
+                <thead><tr><th scope="col">Estudiante</th>@if (ShowCourse) { <th scope="col">Curso</th> }<th scope="col">Motivo</th><th scope="col">Última actividad</th><th scope="col"><span class="data-table-sr-only">Acciones</span></th></tr></thead>
+                <tbody>
+                    @foreach (var student in results.Items)
+                    {
+                        <tr @key="(student.UserId, student.ClassId)">
+                            <th scope="row">@student.StudentName</th>
+                            @if (ShowCourse) { <td>@student.ModuleName <small>@(student.Parallel is { Length: > 0 } p ? p + " · " : "")B@(student.Bimester)</small></td> }
+                            <td>@Reason(student)</td>
+                            <td>@LastActivity(student.LastTextAt)</td>
+                            <td class="td-actions">
+                                @if (!string.IsNullOrWhiteSpace(student.Email))
+                                {
+                                    <a class="td-action" href="@($"mailto:{student.Email}")" aria-label="Escribir a @student.StudentName"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>Contactar</a>
+                                }
+                                <a class="td-action" href="@($"users/{student.UserId:D}")" aria-label="Ver detalle de @student.StudentName"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" /></svg>Ver detalle</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <nav class="sh-pager" aria-label="Páginas de estudiantes en riesgo">
+            <span>Mostrando @((pageNumber - 1) * PageSize + 1)–@((pageNumber - 1) * PageSize + results.Items.Count) de @results.TotalCount</span>
+            @if (Pages > 1)
+            {
+                <div>
+                    <button type="button" aria-label="Página anterior" disabled="@(loading || pageNumber == 1)" @onclick="() => LoadAsync(pageNumber - 1)">‹</button>
+                    @foreach (var number in PageWindow())
+                    {
+                        <button type="button" aria-current="@(number == pageNumber ? "page" : null)" disabled="@loading" @onclick="() => LoadAsync(number)">@number</button>
+                    }
+                    <button type="button" aria-label="Página siguiente" disabled="@(loading || pageNumber >= Pages)" @onclick="() => LoadAsync(pageNumber + 1)">›</button>
+                </div>
+            }
+        </nav>
+    }
+</section>
+
+@code {
+    [Parameter] public string? AnchorId { get; set; }
+    [Parameter] public Guid? ClassId { get; set; }
+    [Parameter] public long NoTextsCount { get; set; }
+    [Parameter] public long LowScoreCount { get; set; }
+    [Parameter] public bool ShowCourse { get; set; }
+    [Parameter] public int? Year { get; set; }
+    [Parameter] public int? Bimester { get; set; }
+    private const int PageSize = 5;
+    private readonly CancellationTokenSource lifetime = new();
+    private DashboardPage<AtRiskStudent>? results;
+    private (Guid?, int?, int?) loadedScope;
+    private bool initialized;
+    private string reason = "NoTexts";
+    private int pageNumber = 1;
+    private bool loading;
+    private string? error;
+
+    private int Pages => results is null ? 0 : (int)((results.TotalCount + PageSize - 1) / PageSize);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (initialized && loadedScope == (ClassId, Year, Bimester)) return;
+        // Abre la pestaña con estudiantes; si no hay sin textos pero sí con nota baja, empieza por esa.
+        if (NoTextsCount == 0 && LowScoreCount > 0) reason = "LowScore";
+        else if (LowScoreCount == 0 && NoTextsCount > 0) reason = "NoTexts";
+        initialized = true;
+        loadedScope = (ClassId, Year, Bimester);
+        await LoadAsync(1);
+    }
+
+    private Task ChangeReasonAsync(string value)
+    {
+        if (reason == value) return Task.CompletedTask;
+        reason = value;
+        return LoadAsync(1);
+    }
+
+    private IEnumerable<int> PageWindow()
+    {
+        var first = Math.Max(1, Math.Min(pageNumber - 2, Pages - 4));
+        return Enumerable.Range(first, Math.Min(5, Pages));
+    }
+
+    private async Task LoadAsync(int number)
+    {
+        if (loading || number < 1) return;
+        loading = true;
+        error = null;
+        try
+        {
+            results = await Dashboard.GetAtRiskAsync(number, PageSize, ClassId, reason, cancellationToken: lifetime.Token, year: Year, bimester: Bimester);
+            pageNumber = number;
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException) { error = "No se pudo cargar la lista de estudiantes en riesgo."; }
+        finally { loading = false; }
+    }
+
+    private static string Reason(AtRiskStudent student)
+    {
+        var score = student.FinalScore ?? new[] { student.Exam1Score, student.Exam2Score }.Where(s => s is not null).Min();
+        var low = score is { } s ? $"Nota baja ({s.ToString("0.#", StudentDashboard.Culture)})" : "Nota baja";
+        return student.Reason switch
+        {
+            "LowScoreNoTexts" => $"{low} y sin textos",
+            "LowScore" => low,
+            "NoTexts" => "Sin textos analizados",
+            _ => student.Reason
+        };
+    }
+
+    private static string LastActivity(DateTime? at)
+    {
+        if (at is not { } value) return "—";
+        var days = (DateTime.Today - value.Date).Days;
+        return days switch { <= 0 => "Hoy", 1 => "Ayer", < 30 => $"Hace {days} días", _ => value.ToString("dd/MM/yyyy", StudentDashboard.Culture) };
+    }
+
+    public void Dispose() { lifetime.Cancel(); lifetime.Dispose(); }
+}

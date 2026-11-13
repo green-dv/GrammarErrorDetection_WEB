@@ -59,6 +59,12 @@ Bootstrap y los estilos existentes siguen presentes mientras se adaptan las pág
 
 ## Arquitectura del sistema
 
+### Integración de gamificación
+
+Los modelos y llamadas de logros, desafíos, categorías y condiciones están
+disponibles mediante `IGamificationService`. Consultar [la guía de uso](docs/gamification.md)
+para filtros, actualizaciones parciales, imágenes multipart y comprobaciones del contrato HTTP.
+
 El frontend se organiza por capas para separar la presentación, la coordinación de operaciones, la comunicación HTTP y los modelos de datos.
 
 ```text
@@ -186,6 +192,16 @@ Reiniciar la API después de aplicar esta configuración. No se requiere permiti
 
 ### Listado de cursos
 
+La configuración de cuenta se encuentra en «Perfil → Configuración» (`/profile?tab=settings`). El menú de cuenta y el enlace de seguridad del perfil abren esa pestaña. `/settings` y el enlace antiguo `/profile?tab=totp` redirigen a ella. `Views/Profiles/ProfileSettings` conserva la preparación y confirmación TOTP y solo se monta para el propietario del perfil; no aparece al consultar a otro usuario. Las pestañas del perfil propio actualizan el parámetro `tab` para que el enlace directo seleccione siempre la sección solicitada.
+
+El menú «Reportes» (`/reports`, para docentes y coordinadores) y «Perfil → Gramática» consumen los endpoints reales de `IGrammarReportService`: resumen, categorías y comparación, con `ClassId` para un curso, `UserId` para un reporte personal o ambos para consultar a un estudiante dentro del curso. La guía vigente es `docs/grammar-reports-api-integration.md`. No se envían fechas ni paginación: la BD resuelve los cursos anteriores de la cohorte actual y devuelve las dos bases, la disponibilidad de historial y las tendencias. Se conservan categorías históricas aunque el listado actual esté vacío y se muestran los porcentajes sin recalcularlos. Las selecciones de categoría solo filtran la vista; la cabecera y el Excel mantienen el alcance completo. «Descargar Excel» obtiene el reporte unificado del servidor con JWT, valida el estado HTTP y el formato, usa Content-Disposition para el nombre y lo guarda mediante un Blob del navegador. Los cambios de curso o perfil cancelan las consultas y descargas anteriores. En «Procesar», los estudiantes pueden seleccionar una inscripción aprobada para asociar un párrafo al curso mediante RegistrationId, o dejarlo como texto personal. El detalle de oraciones del perfil usa UserId para incluir los cursos y las prácticas personales.
+
+La pestaña «Gramática» del perfil lista las oraciones de los párrafos del usuario visitado. `StudentGrammarList` envía siempre `Filter.UserId` con el ID del perfil a `GET /api/Text`, valida la identidad de cada párrafo y muestra fecha, original, corrección, categorías y errores. Como el endpoint no tiene filtro por categoría, lee todas las páginas de párrafos de ese usuario antes de filtrar y paginar las oraciones localmente. Las categorías disponibles se obtienen del propio historial. Permite consultar el historial propio y, para profesores o coordinadores, el de otro usuario; un estudiante no solicita textos ajenos. Cambiar de perfil o perder la sesión cancela las solicitudes y limpia el listado.
+
+Para un profesor que abre su propio perfil, la pestaña «Cursos» muestra `TeacherCourseList`: sus cursos impartidos con periodo, horario, aula, estudiantes, promedios del grupo y enlace al listado de estudiantes. Utiliza `GET /api/Class` y fija `Filter.TeacherId` al usuario autenticado en cada consulta, paginación y reintento. No filtra por activo para conservar los cursos de periodos anteriores. Rechaza respuestas con cursos de otro docente y limpia los datos si cambia la sesión.
+
+En la pestaña «Cursos» del perfil, `StudentCourseList` muestra el historial paginado con módulo, docente, paralelo, horario, año/bimestre, fecha de inscripción y notas de ambos exámenes. El estudiante consulta su historial con `GET /api/Registration/mine/courses`. Un coordinador que visita otro perfil utiliza `GET /api/Registration/students/{studentId}/courses`; los demás visitantes no consultan ese historial privado. Ambos endpoints reciben `PageNumber` y `PageSize`. Se conservan los cursos anteriores e inactivos, se excluyen las inscripciones rechazadas o canceladas y las notas ausentes aparecen como pendientes. Las consultas se cancelan al cambiar de perfil o cerrar la vista.
+
 La acción Ver abre `/courses/{classId}` (también `/teaching-courses/{classId}`), adaptando la vista de detalle de `Failed`: módulo, paralelo, docente, aula, horario, fechas y tarjetas con el total inscrito y promedios de exámenes disponibles. La media de ambos exámenes es su promedio aritmético y solo aparece si existen ambas notas. Reutiliza `Views/Users/UserList` con un contexto `Course`, que impone `filter.classId` en cada `POST /api/User/search`, incluso al buscar, limpiar, paginar o reintentar. No carga los catálogos globales ni ofrece cambios de cuentas desde el curso. Coordinadores pueden consultar cualquier curso; Teacher debe ser su docente tanto al cargar el detalle como al consultar sus estudiantes. El listado global `/users` sigue reservado a coordinadores. Las notas e inscripción individuales se muestran solo si `currentCourse.classId` coincide con el curso seleccionado, para no atribuir notas de otro periodo. No se simulan reportes gramaticales ni calificaciones no incluidas en la respuesta.
 
 «Generar cursos automáticamente» abre `GenerateCoursesModal` para coordinadores. Solicita año, bimestre y fechas de destino, muestra el periodo anterior de origen (incluyendo el salto de año) y valida fechas ordenadas dentro del año elegido. Envía únicamente esos cuatro campos a `POST /api/Registration/generate-next-bimester`, con el JWT del cliente API. Bloquea doble envío y cierre durante la operación. Conserva el resultado en el modal con cantidades de cursos creados/reutilizados, inscripciones creadas y motivos de las omisiones; no vuelve a enviar desde esa pantalla. Al completarse, consulta la primera página del periodo de destino. Ante un resultado incierto, pide revisar el listado antes de reenviar porque la operación puede haber guardado cambios parciales.
@@ -200,13 +216,37 @@ El rol `Teacher` también puede abrir `/courses` y la ruta anterior `/teaching-c
 
 Los filtros se aplican al pulsar Buscar o Enter. Los selectores recorren sus catálogos en páginas de 100: módulos mediante `GET /api/ModuleName`, profesores mediante `POST /api/User/search` con `filter.roleId = f2700000-0000-4000-8000-000000000002` y aulas mediante `GET /api/Classroom` con `PageNumber` y `PageSize` en query. Cada catálogo puede reintentarse sin bloquear los que sí cargaron. La paginación consulta al servidor. En el backend local, `ClassController` devuelve `count = data.Count`, por lo que se muestran el rango y la página actual; Siguiente se habilita al recibir una página completa y conserva la anterior si la siguiente está vacía. Las tarjetas resumen únicamente la página cargada, sin presentar esos cálculos como estadísticas globales. Las notas conservan decimales, los nulos aparecen como pendientes y las horas aceptan la terminación `Z` sin convertir la zona horaria. Se reutiliza el JWT del cliente API y se manejan carga, errores, reintentos, cancelación y expiración de sesión. La creación, edición y generación automática están habilitadas para coordinadores. Ver abre los estudiantes del curso para coordinadores y su docente; enviar a papelera sigue deshabilitado.
 
+### Leaderboard y puntos
+
+`/leaderboard` consulta la clasificación con filtros de módulo, bimestre y año.
+El perfil propio (`/profile`) conserva la información y las medallas e incluye,
+para estudiantes, el total de puntos, el nivel, la siguiente meta y el historial
+paginado de movimientos. La configuración TOTP también está en `/settings`.
+Coordinadores y docentes pueden asignar puntos desde los listados de usuarios
+y estudiantes de cursos, usando la inscripción activa del estudiante.
+
+Las comprobaciones de esta integración están en `checks/PointChecks`,
+`checks/LeaderboardChecks`, `checks/SupportMaterialChecks` y `checks/UserEditChecks`.
+
 ### Material de apoyo
 
 `/materials` adapta las tarjetas y el modal de `Failed`. Todos los usuarios autenticados pueden consultar el listado y el detalle; solo `Teacher` y `Coordinator` pueden registrar, editar, desactivar y reactivar materiales. El rol también se comprueba antes de cada escritura. `ISupportMaterialService` reutiliza el cliente autenticado y consume los GET, POST y PUT de `/api/SupportMaterial`. La búsqueda usa parámetros de query, omite filtros vacíos y conserva valores como `false` y tamaño cero. La paginación trata `count` como registros de la página, sin inventar un total global.
 
 Los selectores consultan `/api/ErrorClassification` y `/api/FileType` en páginas de 100 con `Filter.Active=true`, y tienen carga y reintento independientes. El tipo y la vista previa usan la extensión y el MIME del catálogo, con una alternativa basada en el enlace. Las rutas relativas de archivos se resuelven contra `Api:BaseUrl` y solo se abren enlaces HTTP/HTTPS. La descarga usa un enlace al recurso; su servidor determina si lo entrega como archivo o lo abre en el navegador.
 
-El formulario registra un enlace o ruta de un archivo ya alojado: los endpoints proporcionados aceptan JSON, no bytes de archivos. El autor sale de la sesión, la fecha inicia con la hora actual y el tamaño es opcional. Editar envía solo los campos modificados y conserva el autor original; dejar el tamaño vacío conserva su valor porque `null` no lo borra en esta API. Desactivar solicita confirmación y envía exclusivamente `{ id, active: false }`; reactivar usa `true`. Un guardado confirmado y un fallo posterior del listado se muestran por separado.
+El formulario ofrece un toggle entre Archivo y Enlace. En modo Enlace registra una URL HTTP/HTTPS mediante JSON sin subir bytes al servidor de archivos, asignando el tipo de enlaces del catálogo. En modo Archivo detecta automáticamente el tipo por extensión o MIME (incluidas categorías de imágenes, audio y vídeo), sin selector manual; un tipo sin correspondencia activa bloquea el guardado. Selecciona un archivo real (hasta 25 MiB) y lo envía como multipart a `POST /api/SupportMaterial/file`, restringido a Teacher y Coordinator. La API conserva una copia física y hace PUT al contenedor de archivos en `http://localhost:8081/archivos/{uuid}.ext`. Solo después de confirmar la subida registra el material con el enlace HTTP y el tamaño devueltos; ante un fallo del registro conserva el enlace para reintentar sin volver a subir los bytes. El autor sale de la sesión y la fecha y el tamaño se registran automáticamente. Editar permite reemplazar el archivo y envía solo los campos modificados, conservando el autor original. Los archivos anteriores se conservan al reemplazar o desactivar un material. Desactivar solicita confirmación y envía exclusivamente `{ id, active: false }`; reactivar usa `true`. Un guardado confirmado y un fallo posterior del listado se muestran por separado.
+
+En el `appsettings.json` del proyecto **API**, `SupportMaterialFiles` configura:
+
+```json
+"SupportMaterialFiles": {
+  "StoragePath": "D:/files/SupportMaterial",
+  "BaseUrl": "http://localhost:8081/",
+  "PublicBaseUrl": "http://localhost:8081/"
+}
+```
+
+`StoragePath` es la carpeta de la copia física en el equipo de la API, que debe tener permiso de escritura. El contenedor mantiene su volumen `/data` y la ruta HTTP `/archivos/`; no se ha cambiado el volumen de Docker. `BaseUrl` es la dirección de subida desde la API y `PublicBaseUrl` la dirección accesible por el navegador. Una ruta de disco como `D:/files/SupportMaterial` no es un enlace web. Para un despliegue fuera de localhost debe configurarse el host público correspondiente. Si nginx exige clave, configura `SupportMaterialFiles:ApiKey` en el entorno de la API. Reinicia la API después de incorporar el nuevo controlador.
 
 Las comprobaciones de contratos y permisos se ejecutan desde la raíz, después de compilar la solución:
 
