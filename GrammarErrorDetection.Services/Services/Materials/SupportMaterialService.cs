@@ -8,6 +8,16 @@ namespace GrammarErrorDetection.Services.Services.Materials;
 
 public sealed class SupportMaterialService(IApiClient apiClient) : ISupportMaterialService
 {
+    public async Task<ApiResponse<MaterialFileUploadResponse>?> UploadFileAsync(Stream file, string fileName, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(file);
+        if (string.IsNullOrWhiteSpace(fileName)) throw new ArgumentException("Selecciona un archivo.");
+        using var form = new MultipartFormDataContent();
+        var content = new StreamContent(file);
+        content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+        form.Add(content, "file", Path.GetFileName(fileName.Replace('\\', '/')));
+        return await apiClient.PostContentAsync<ApiResponse<MaterialFileUploadResponse>>("api/SupportMaterial/file", form, cancellationToken);
+    }
     public Task<ApiResponse<List<ErrorClassificationResponse>>?> GetClassificationsAsync(int pageNumber, CancellationToken cancellationToken = default)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(pageNumber, 1);
@@ -61,6 +71,7 @@ public sealed class SupportMaterialService(IApiClient apiClient) : ISupportMater
             Add("UploadedBy", filter.UploadedBy?.ToString("D"));
             Add("Active", filter.Active?.ToString().ToLowerInvariant());
             Add("CreatedAt", filter.CreatedAt?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+            if (filter.OnlyHelpful == true) Add("OnlyHelpful", "true");
         }
         return apiClient.GetAsync<ApiResponse<List<SupportMaterialResponse>>>($"api/SupportMaterial?{string.Join("&", query)}", cancellationToken);
     }
@@ -92,6 +103,44 @@ public sealed class SupportMaterialService(IApiClient apiClient) : ISupportMater
         if (request.FileSize < 0) throw new ArgumentException("El tamaño no puede ser negativo.");
         if (request.UploadDate == default(DateTime)) throw new ArgumentException("Indica una fecha válida.");
         return apiClient.PutAsync<SupportMaterialUpdateRequest, ApiResponse<SupportMaterialResponse>>("api/SupportMaterial", request, cancellationToken);
+    }
+
+    public Task<ApiResponse<List<SupportMaterialRecommendationResponse>>?> GetRecommendationsAsync(Guid? userId, Guid? classId,
+        int categoryLimit = 3, int materialsPerCategory = 3, CancellationToken cancellationToken = default)
+    {
+        ValidateGuid(userId); ValidateGuid(classId);
+        ArgumentOutOfRangeException.ThrowIfLessThan(categoryLimit, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(categoryLimit, 50);
+        ArgumentOutOfRangeException.ThrowIfLessThan(materialsPerCategory, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(materialsPerCategory, 10);
+        var query = new List<string>
+        {
+            $"CategoryLimit={categoryLimit.ToString(CultureInfo.InvariantCulture)}",
+            $"MaterialsPerCategory={materialsPerCategory.ToString(CultureInfo.InvariantCulture)}"
+        };
+        if (userId.HasValue) query.Add($"UserId={userId.Value:D}");
+        if (classId.HasValue) query.Add($"ClassId={classId.Value:D}");
+        return apiClient.GetAsync<ApiResponse<List<SupportMaterialRecommendationResponse>>>(
+            $"api/SupportMaterial/recommendations?{string.Join("&", query)}", cancellationToken);
+    }
+
+    public Task<ApiResponse<SupportMaterialInteractionResponse>?> RegisterViewAsync(Guid materialId, bool downloaded,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateGuid(materialId);
+        return apiClient.PostAsync<SupportMaterialViewRequest, ApiResponse<SupportMaterialInteractionResponse>>(
+            $"api/SupportMaterial/{materialId:D}/view", new SupportMaterialViewRequest { Downloaded = downloaded }, cancellationToken);
+    }
+
+    public Task<ApiResponse<SupportMaterialInteractionResponse>?> SetFeedbackAsync(Guid materialId, bool helpful, string? comment,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateGuid(materialId);
+        var text = helpful || string.IsNullOrWhiteSpace(comment) ? null : comment.Trim();
+        if (text?.Length > 500) throw new ArgumentException("El comentario admite hasta 500 caracteres.");
+        return apiClient.PutAsync<SupportMaterialFeedbackRequest, ApiResponse<SupportMaterialInteractionResponse>>(
+            $"api/SupportMaterial/{materialId:D}/feedback", new SupportMaterialFeedbackRequest { Helpful = helpful, Comment = text },
+            cancellationToken);
     }
 
     private static void ValidateGuid(Guid? value)
