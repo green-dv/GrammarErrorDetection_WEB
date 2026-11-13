@@ -5,11 +5,6 @@
 @using System.Globalization
 @using System.Text
 
-@* Celular: el menú queda oculto y solo se muestra este botón; al abrirlo, el menú completo se desliza encima del contenido. *@
-<button type="button" class="ceti-mobile-toggle" @onclick="Toggle" aria-label="@(expanded ? "Cerrar menú" : "Abrir menú")"
-        aria-expanded="@(expanded ? "true" : "false")" aria-controls="ceti-navigation">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="@(expanded ? "M6 6l12 12M18 6 6 18" : "M4 6h16M4 12h16M4 18h16")" /></svg>
-</button>
 @if (expanded)
 {
     <button type="button" class="ceti-nav-backdrop" @onclick="Collapse" aria-label="Cerrar navegación"></button>
@@ -27,6 +22,7 @@
                 <label class="ceti-sr-only" for="ceti-menu-search">Buscar opciones</label>
                 <input id="ceti-menu-search" type="search" placeholder="Buscar opciones…" autocomplete="off" @bind="search" @bind:event="oninput" />
             </div>
+            <p class="ceti-menu-label">NAVEGACIÓN</p>
         }
         else
         {
@@ -37,24 +33,15 @@
         @if (Session.Current is not null)
         {
                 <nav aria-label="Navegación principal">
-                    @foreach (var group in VisibleSections())
+                    @foreach (var option in VisibleOptions())
                     {
-                        <section class="ceti-menu-section" aria-labelledby="@($"nav-section-{group.Section.Id}")" @key="group.Section.Id">
-                            <h2 id="@($"nav-section-{group.Section.Id}")" class="ceti-section-heading">
-                                <span class="@(expanded ? "ceti-section-title" : "ceti-sr-only")">@group.Section.Label</span>
-                                <span class="ceti-section-line" aria-hidden="true"></span>
-                            </h2>
-                            @foreach (var option in group.Options)
-                            {
-                                <NavLink class="ceti-menu-link" href="@option.Path" Match="NavLinkMatch.All" @onclick="Collapse" title="@option.Label" aria-label="@option.Label">
-                                    <svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)option.Icon)</svg>
-                                    <span class="ceti-option-title">@option.Label</span>
-                                </NavLink>
-                            }
-                        </section>
+                        <NavLink class="ceti-menu-link" href="@option.Path" Match="NavLinkMatch.All" @onclick="Collapse" title="@option.Label" aria-label="@option.Label">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)option.Icon)</svg>
+                            <span class="ceti-option-title">@option.Label</span>
+                        </NavLink>
                     }
                 </nav>
-                @if (expanded && !VisibleSections().Any())
+                @if (expanded && !VisibleOptions().Any())
                 {
                     <p class="ceti-menu-empty" role="status">No se encontraron opciones.</p>
                 }
@@ -74,18 +61,9 @@
 @code {
     private bool expanded;
     private string search = string.Empty;
-    private IEnumerable<(PortalMenuSection Section, PortalMenuOption[] Options)> VisibleSections()
-    {
-        var query = Normalize(search);
-        foreach (var section in PortalNavigation.Sections.Where(section => PortalNavigation.CanViewSection(section, Session.Roles)))
-        {
-            var options = section.Paths.Select(path => PortalNavigation.Options.Single(option => option.Path == path))
-                .Where(option => PortalNavigation.CanAccess(option.Path, Session.Roles) &&
-                    Normalize($"{section.Label} {option.Label} {option.Path} {option.Keywords}").Contains(query, StringComparison.OrdinalIgnoreCase))
-                .ToArray();
-            if (options.Length > 0) yield return (section, options);
-        }
-    }
+    private IEnumerable<PortalMenuOption> VisibleOptions() => PortalNavigation.Options.Where(option =>
+        PortalNavigation.CanAccess(option.Path, Session.Roles) &&
+        Normalize($"{option.Label} {option.Path} {option.Keywords}").Contains(Normalize(search), StringComparison.OrdinalIgnoreCase));
     private static string Normalize(string value) => new string(value.Trim().Normalize(NormalizationForm.FormD)
         .Where(character => CharUnicodeInfo.GetUnicodeCategory(character) != UnicodeCategory.NonSpacingMark).ToArray());
 
