@@ -1,0 +1,85 @@
+@using GrammarErrorDetection.Models.Dashboards
+@using GrammarErrorDetection.Models.Gamification
+@using GrammarErrorDetection.Services.Interfaces
+@implements IDisposable
+@inject IDashboardService Dashboard
+
+@* Desafíos vigentes con el avance de la ronda actual (UserChallenge_Progress_List). *@
+<section class="sd-section sd-card" aria-labelledby="sd-challenges-title" aria-busy="@(loading ? "true" : "false")">
+    <header class="sd-section-heading">
+        <div><h3 id="sd-challenges-title">Desafíos vigentes</h3><p>Solo cuenta la actividad desde el inicio de cada ronda.</p></div>
+        <label class="sd-toggle"><input type="checkbox" checked="@onlyPending" disabled="@loading" @onchange="TogglePendingAsync" /> Solo pendientes</label>
+    </header>
+    @if (error is not null) { <div class="data-table-error" role="alert">@error <button type="button" class="data-table-text-button" @onclick="() => LoadAsync(pageNumber)">Reintentar</button></div> }
+    else if (results is null) { <p class="data-table-message" role="status">Cargando desafíos…</p> }
+    else if (results.Items.Count == 0) { <p class="sd-empty">@(onlyPending ? "No tienes desafíos pendientes." : "No hay desafíos vigentes por ahora.")</p> }
+    else
+    {
+        <ul class="sd-progress-list">
+            @foreach (var challenge in results.Items)
+            {
+                <li @key="challenge.Id" class="@(challenge.IsCompleted ? "is-done" : "")">
+                    <div class="sd-progress-head">
+                        <strong>@challenge.Title @if (challenge.Round > 1) { <small class="sd-muted">· ronda @challenge.Round</small> }</strong>
+                        <span>@(challenge.IsCompleted ? "Completado" : $"+{challenge.Points} pts")</span>
+                    </div>
+                    <div class="sd-meter @(challenge.IsCompleted ? "sd-meter-good" : "")" role="progressbar" aria-label="Avance de @challenge.Title" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@StudentDashboard.Number(challenge.ProgressPercent)">
+                        <span style="width:@StudentDashboard.Width(challenge.ProgressPercent)"></span>
+                    </div>
+                    <small class="sd-muted">@ConditionConfiguration.Summary(challenge.Conditions) · @Deadline(challenge)</small>
+                </li>
+            }
+        </ul>
+        @if (Pages > 1)
+        {
+            <nav class="sd-pager" aria-label="Páginas de desafíos">
+                <button type="button" class="data-table-button" disabled="@(loading || pageNumber == 1)" @onclick="() => LoadAsync(pageNumber - 1)">Anterior</button>
+                <span>Página @pageNumber de @Pages</span>
+                <button type="button" class="data-table-button" disabled="@(loading || pageNumber >= Pages)" @onclick="() => LoadAsync(pageNumber + 1)">Siguiente</button>
+            </nav>
+        }
+    }
+</section>
+
+@code {
+    private const int PageSize = 4;
+    private readonly CancellationTokenSource lifetime = new();
+    private DashboardPage<ChallengeProgressItem>? results;
+    private int pageNumber = 1;
+    private bool onlyPending, loading;
+    private string? error;
+
+    private long Pages => results is null ? 0 : (results.TotalCount + PageSize - 1) / PageSize;
+
+    protected override Task OnInitializedAsync() => LoadAsync(1);
+
+    private Task TogglePendingAsync(ChangeEventArgs args)
+    {
+        onlyPending = args.Value is true;
+        return LoadAsync(1);
+    }
+
+    private async Task LoadAsync(int number)
+    {
+        if (loading || number < 1) return;
+        loading = true;
+        error = null;
+        try
+        {
+            results = await Dashboard.GetStudentChallengesAsync(number, PageSize, onlyPending, lifetime.Token);
+            pageNumber = number;
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException) { error = "No se pudieron cargar los desafíos."; }
+        finally { loading = false; }
+    }
+
+    private static string Deadline(ChallengeProgressItem challenge) => challenge switch
+    {
+        { IsCompleted: true, CompletedAt: { } done } => $"completado el {done.ToString("dd/MM", StudentDashboard.Culture)}",
+        { EndDate: { } end } => $"hasta el {end.ToString("dd/MM HH:mm", StudentDashboard.Culture)}",
+        _ => "sin fecha de cierre"
+    };
+
+    public void Dispose() { lifetime.Cancel(); lifetime.Dispose(); }
+}

@@ -1,0 +1,85 @@
+@using GrammarErrorDetection.Models.Dashboards
+@using GrammarErrorDetection.Services.Interfaces
+@implements IDisposable
+@inject IDashboardService Dashboard
+
+@* Errores concretos que más se repiten (Dashboard_StudentFrequentErrors_List), paginados en el servidor. *@
+<div class="sh-frequent" aria-busy="@(loading ? "true" : "false")">
+    <h4>Errores que más repites</h4>
+    @if (error is not null) { <div class="data-table-error" role="alert">@error <button type="button" class="data-table-text-button" @onclick="() => LoadAsync(pageNumber)">Reintentar</button></div> }
+    else if (results is null) { <p class="data-table-message" role="status">Cargando…</p> }
+    else if (results.Items.Count == 0) { <p class="sh-empty">Aún no hay errores repetidos.</p> }
+    else
+    {
+        <ol start="@((pageNumber - 1) * PageSize + 1)">
+            @foreach (var item in results.Items)
+            {
+                <li @key="(item.ErrorToken, item.SuggestedCorrection, item.ErrorClassificationId)">
+                    <div>
+                        <span class="sh-token"><s>@item.ErrorToken</s>@if (item.SuggestedCorrection is { } fix) { <svg viewBox="0 0 24 24" aria-label="se corrige como"><path d="M5 12h14m-5-5 5 5-5 5" /></svg><ins>@fix</ins> }</span>
+                        <small>@CategoryBars.Label(item.ErrorClassificationName) · en @item.RelatedTextCount @(item.RelatedTextCount == 1 ? "texto" : "textos")</small>
+                    </div>
+                    <b title="Veces">@item.ErrorCount</b>
+                </li>
+            }
+        </ol>
+        <nav class="sh-pager" aria-label="Páginas de errores frecuentes">
+            <span>Mostrando @((pageNumber - 1) * PageSize + 1)–@((pageNumber - 1) * PageSize + results.Items.Count) de @results.TotalCount</span>
+            @if (Pages > 1)
+            {
+                <div>
+                    <button type="button" aria-label="Página anterior" disabled="@(loading || pageNumber == 1)" @onclick="() => LoadAsync(pageNumber - 1)">‹</button>
+                    @foreach (var number in PageWindow())
+                    {
+                        <button type="button" aria-current="@(number == pageNumber ? "page" : null)" disabled="@loading" @onclick="() => LoadAsync(number)">@number</button>
+                    }
+                    <button type="button" aria-label="Página siguiente" disabled="@(loading || pageNumber >= Pages)" @onclick="() => LoadAsync(pageNumber + 1)">›</button>
+                </div>
+            }
+        </nav>
+    }
+</div>
+
+@code {
+    [Parameter] public Guid? ClassId { get; set; }
+    private const int PageSize = 4;
+    private readonly CancellationTokenSource lifetime = new();
+    private DashboardPage<FrequentErrorItem>? results;
+    private Guid? loadedClass;
+    private int pageNumber = 1;
+    private bool loading;
+    private string? error;
+
+    private int Pages => results is null ? 0 : (int)((results.TotalCount + PageSize - 1) / PageSize);
+
+    protected override Task OnParametersSetAsync()
+    {
+        if (results is not null && loadedClass == ClassId) return Task.CompletedTask;
+        loadedClass = ClassId;
+        results = null;
+        return LoadAsync(1);
+    }
+
+    private IEnumerable<int> PageWindow()
+    {
+        var first = Math.Max(1, Math.Min(pageNumber - 2, Pages - 4));
+        return Enumerable.Range(first, Math.Min(5, Pages));
+    }
+
+    private async Task LoadAsync(int number)
+    {
+        if (loading || number < 1) return;
+        loading = true;
+        error = null;
+        try
+        {
+            results = await Dashboard.GetStudentFrequentErrorsAsync(number, PageSize, ClassId, lifetime.Token);
+            pageNumber = number;
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException) { error = "No se pudieron cargar tus errores frecuentes."; }
+        finally { loading = false; }
+    }
+
+    public void Dispose() { lifetime.Cancel(); lifetime.Dispose(); }
+}
