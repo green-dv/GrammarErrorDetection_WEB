@@ -1,3 +1,8 @@
+/* Escala de letra del portal: 1 en celular y tablet; mayor en escritorio.
+   Todos los font-size en px se multiplican por esta variable. */
+:root { --ui-scale: 1; }
+@media (min-width: 1024px) { :root { --ui-scale: 1.12; } }
+
 html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
@@ -7,7 +12,7 @@ h1:focus {
 }
 
 a, .btn-link {
-    color: #0071c1;
+    color: var(--t-accent);
 }
 
 .btn-primary {
