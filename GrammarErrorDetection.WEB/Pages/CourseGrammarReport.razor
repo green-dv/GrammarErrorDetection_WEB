@@ -1,0 +1,10 @@
+@page "/courses/{ClassId:guid}/grammar-report"
+@using GrammarErrorDetection.WEB.Views.Reports
+
+<PageTitle>Reporte gramatical del curso | CETI La Paz</PageTitle>
+<GrammarDashboard @key="ClassId" ClassId="ClassId" CourseName="@CourseName" />
+
+@code {
+    [Parameter] public Guid ClassId { get; set; }
+    [SupplyParameterFromQuery(Name = "courseName")] public string? CourseName { get; set; }
+}
