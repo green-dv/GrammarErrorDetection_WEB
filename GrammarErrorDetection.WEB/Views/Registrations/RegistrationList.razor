@@ -19,7 +19,6 @@
             <EditForm Model="filters" OnValidSubmit="SearchAsync" novalidate>
                 <DataAnnotationsValidator />
                 <fieldset class="data-filter-panel data-filter-panel-inset" disabled="@(loading || deciding)">
-                <div class="data-filter-heading"><span>Filtrar inscripciones</span><span>Combina los campos que necesites</span></div>
                     <div class="data-table-toolbar registration-filters">
                         <label class="data-table-field"><span>Fecha de inscripción</span><InputDate @bind-Value="filters.RegistrationDate" /></label>
                         @if (!Mine) { <RegistrationFilterLookup Students="true" @bind-Value="filters.UserId" Disabled="@(loading || deciding)" /> }

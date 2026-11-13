@@ -22,7 +22,6 @@
         <EditForm Model="filters" OnValidSubmit="SearchAsync" OnInvalidSubmit="ShowValidationErrors" novalidate>
             <DataAnnotationsValidator />
             <fieldset class="data-filter-panel data-filter-panel-inset" disabled="@busy">
-                <div class="data-filter-heading"><span>Filtrar cursos</span><span>Combina los campos que necesites</span></div>
                 <div class="data-table-toolbar courses-filters">
                     <label class="data-table-field"><span>Módulo</span><InputSelect @bind-Value="filters.ModuleNameId" disabled="@(loadingCatalogs || modules.Count == 0)"><option value="">Todos los módulos</option>@foreach (var module in modules) { <option value="@module.Id">@module.Name</option> }</InputSelect></label>
                     @if (IsTeacher)

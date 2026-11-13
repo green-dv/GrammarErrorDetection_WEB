@@ -7,32 +7,6 @@
     <title>GrammarErrorDetection.WEB</title>
     <base href="/" />
     <link rel="preload" id="webassembly" />
-    <script>
-        // Tema antes de que cargue Blazor (evita el destello blanco). Preferencia: system | light | dark.
-        (function () {
-            var key = 'ceti-theme', media = window.matchMedia('(prefers-color-scheme: dark)');
-            function preference() {
-                try { var value = localStorage.getItem(key); return value === 'light' || value === 'dark' ? value : 'system'; }
-                catch (e) { return 'system'; }
-            }
-            function apply() {
-                var choice = preference(), theme = choice === 'system' ? (media.matches ? 'dark' : 'light') : choice;
-                document.documentElement.setAttribute('data-theme', theme);
-                document.documentElement.setAttribute('data-bs-theme', theme);
-                return theme;
-            }
-            apply();
-            if (media.addEventListener) media.addEventListener('change', function () { if (preference() === 'system') apply(); });
-            window.cetiTheme = {
-                get: preference,
-                set: function (choice) {
-                    try { if (choice === 'light' || choice === 'dark') localStorage.setItem(key, choice); else localStorage.removeItem(key); }
-                    catch (e) { }
-                    return apply();
-                }
-            };
-        })();
-    </script>
     <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="css/app.css" />
@@ -42,9 +16,6 @@
     <link rel="stylesheet" href="css/course-detail.css" />
     <link rel="stylesheet" href="css/registrations.css" />
     <link rel="stylesheet" href="css/modals.css" />
-    <link rel="stylesheet" href="css/gamification.css" />
-    <link rel="stylesheet" href="css/badge-designer.css" />
-    <link rel="stylesheet" href="css/member-profile.css" />
     <link rel="stylesheet" href="css/create-course.css" />
     <link rel="stylesheet" href="css/generate-courses.css" />
     <link rel="stylesheet" href="css/auth.css" />
@@ -52,13 +23,6 @@
     <link rel="stylesheet" href="css/nlp.css" />
     <link rel="stylesheet" href="css/materials.css" />
     <link rel="stylesheet" href="css/leaderboard.css" />
-    <link rel="stylesheet" href="css/portal/screens.css" />
-    <link rel="stylesheet" href="css/grammar-reports.css" />
-    <link rel="stylesheet" href="css/material-recommendations.css" />
-    <link rel="stylesheet" href="css/study-plan.css" />
-    <link rel="stylesheet" href="css/student-dashboard.css" />
-    <link rel="stylesheet" href="css/student-home.css" />
-    <link rel="stylesheet" href="css/theme.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
     <link href="GrammarErrorDetection.WEB.styles.css" rel="stylesheet" />
     <script type="importmap"></script>

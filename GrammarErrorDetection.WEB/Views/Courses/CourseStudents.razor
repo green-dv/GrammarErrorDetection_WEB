@@ -13,7 +13,6 @@
     else if (course is not null)
     {
         <header class="users-heading"><div><p class="users-eyebrow">CETI · DETALLE ACADÉMICO</p><h1 id="course-detail-title">Módulo @Text(course.ModuleName, "no informado")</h1><p>Paralelo @Text(course.Parallel, "—") · Bimestre @course.Bimester · @course.Year</p></div><span class="data-table-badge">@(course.Active ? "Curso activo" : "Curso inactivo")</span></header>
-        <p><a class="data-table-button" href="@($"/courses/{course.Id:D}/grammar-report?courseName={Uri.EscapeDataString(course.ModuleName ?? "Curso seleccionado")}")">Reporte gramatical del curso</a></p>
         <article class="course-detail-info" aria-label="Datos del curso">
             <div class="course-detail-teacher"><span class="data-table-avatar" aria-hidden="true">@TeacherInitials(course.TeacherName)</span><div><span>Profesor del curso</span><strong>@Text(course.TeacherName, "Sin profesor asignado")</strong></div></div>
             <dl><div><dt>Nivel</dt><dd>@(course.ModuleLevel?.ToString() ?? "—")</dd></div><div><dt>Horario</dt><dd>@Hour(course.StartTime) – @Hour(course.EndTime)</dd></div><div><dt>Aula</dt><dd>@Text(course.ClassroomName, "Sin aula asignada")<small>Capacidad: @(course.ClassroomCapacity?.ToString() ?? "—")</small></dd></div><div><dt>Fechas</dt><dd>@(course.StartDate?.ToString("dd/MM/yyyy") ?? "—")<small>al @(course.EndDate?.ToString("dd/MM/yyyy") ?? "—")</small></dd></div></dl>

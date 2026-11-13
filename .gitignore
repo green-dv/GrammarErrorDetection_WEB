@@ -9,12 +9,10 @@ appsettings.*.Local.json
 *.p12
 *.key
 
-# Tests, documentation and markdown files
+# Tests and documentation
 [Tt]est/
 [Tt]ests/
 [Dd]ocs/
-docs/
-*.md
 TestResults/
 coverage/
 *.coverage
