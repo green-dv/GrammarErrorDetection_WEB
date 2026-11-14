@@ -13,6 +13,10 @@ public partial class UserEditModal : IDisposable
 {
     [Parameter, EditorRequired] public UserSearchResponse User { get; set; } = default!;
     [Parameter] public EventCallback OnClose { get; set; }
+    /// <summary>Roles para el selector. Vacío deshabilita el cambio de rol.</summary>
+    [Parameter] public List<UserLookupOption> Roles { get; set; } = [];
+    /// <summary>La cuenta editada es la del propio coordinador: no puede cambiarse el rol a sí mismo.</summary>
+    [Parameter] public bool IsSelf { get; set; }
     [Parameter] public EventCallback<UserUpdateResponse> OnSaved { get; set; }
     [Inject] private IUserService UserService { get; set; } = default!;
     [Inject] private AuthSessionState Session { get; set; } = default!;

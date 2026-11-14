@@ -1,0 +1,116 @@
+@using GrammarErrorDetection.Models.Materials
+@using GrammarErrorDetection.WEB.Views.Materials
+@using GrammarErrorDetection.WEB.Components.Dialogs
+
+<article class="recommended-materials" aria-labelledby="@headingId" aria-busy="@(loading ? "true" : "false")">
+    <header class="recommended-heading">
+        <div>
+            <p class="portal-eyebrow">MATERIAL DE APOYO</p>
+            <h2 id="@headingId">@Title</h2>
+            <p>Seleccionado según los errores gramaticales más frecuentes en los párrafos analizados.</p>
+        </div>
+        <button type="button" class="data-table-button" disabled="@loading" @onclick="LoadAsync">Actualizar</button>
+    </header>
+
+    @if (loading)
+    {
+        <p class="recommended-notice" role="status">Buscando material para tus dificultades…</p>
+    }
+    else if (error is not null)
+    {
+        <div class="recommended-notice is-error" role="alert"><p>@error</p><button type="button" class="data-table-button" @onclick="LoadAsync">Reintentar</button></div>
+    }
+    else if (recommendations.Count == 0)
+    {
+        <div class="recommended-empty" role="status">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5V5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2Zm0 0A2 2 0 0 0 6 22h12M8 7h6"/></svg>
+            <strong>Aún no hay recomendaciones</strong>
+            <span>Cuando se analicen párrafos con errores y exista material para esas categorías, aparecerá aquí. Sigue enviando textos.</span>
+        </div>
+    }
+    else
+    {
+        <ol class="recommended-list">
+            @foreach (var category in recommendations)
+            {
+                <li class="recommended-category">
+                    <header>
+                        <span class="recommended-rank" aria-label="Prioridad @category.Rank">@category.Rank</span>
+                        <div>
+                            <h3>@category.ErrorClassificationName</h3>
+                            @if (!string.IsNullOrWhiteSpace(category.ErrorClassificationDescription)) { <p>@category.ErrorClassificationDescription</p> }
+                        </div>
+                        <div class="recommended-stats">
+                            <span class="recommended-badge">@category.ErrorCount @(category.ErrorCount == 1 ? "error" : "errores")@(category.ErrorPercentage is { } pct ? $" · {pct.ToString("0.#", Spanish)} %" : "")</span>
+                            <small>@category.RelatedTextCount @(category.RelatedTextCount == 1 ? "párrafo" : "párrafos")@(category.LastErrorAt is { } last ? $" · último {last.ToString("d MMM yyyy", Spanish)}" : "")</small>
+                        </div>
+                    </header>
+                    <ul class="recommended-cards">
+                        @foreach (var material in category.Materials)
+                        {
+                            var link = MaterialPresentation.ResolveLink(material.FileLink, ApiBaseUrl);
+                            var format = Format(material);
+                            var isFile = MaterialPresentation.IsFileServerLink(link);
+                            <li class="recommended-card" @key="material.Id">
+                                <div class="recommended-card-head">
+                                    <FileIcon Format="@format" />
+                                    <strong class="recommended-card-name" title="@material.Name">@material.Name</strong>
+                                </div>
+                                <span class="recommended-card-meta">@(string.IsNullOrWhiteSpace(material.FileTypeName) ? "Recurso" : material.FileTypeName) · @(isFile ? MaterialPresentation.Size(material.FileSize) : "Enlace")</span>
+                                @if (TracksInteractions && (material.Seen || ReasonLabel(material) is not null))
+                                {
+                                    <span class="recommended-card-reason">
+                                        @if (material.Seen) { <span class="recommended-seen">Visto</span> }
+                                        @if (ReasonLabel(material) is { } reason && !material.Seen) { <span>@reason</span> }
+                                    </span>
+                                }
+                                @if (TracksInteractions && material.Seen)
+                                {
+                                    <div class="recommended-feedback" role="group" aria-label="¿Te sirvió @material.Name?">
+                                        @if (material.Helpful is null) { <span>¿Te ayudó?</span> }
+                                        else if (material.Helpful == true) { <span>Te sirvió</span> }
+                                        else { <span>No te sirvió</span> }
+                                        <button type="button" class="recommended-vote" aria-label="Me sirvió" aria-pressed="@(material.Helpful == true ? "true" : "false")"
+                                                disabled="@voting.Contains(material.Id)" @onclick="() => VoteAsync(material, true)">👍</button>
+                                        <button type="button" class="recommended-vote" aria-label="No me sirvió" aria-pressed="@(material.Helpful == false ? "true" : "false")"
+                                                disabled="@voting.Contains(material.Id)" @onclick="() => VoteAsync(material, false)">👎</button>
+                                    </div>
+                                }
+                                <div class="recommended-card-actions">
+                                    <button type="button" class="recommended-card-button" disabled="@(link is null)" @onclick="() => Open(category, material)" aria-label="Ver @material.Name">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>Ver
+                                    </button>
+                                    @if (link is not null)
+                                    {
+                                        <a class="recommended-card-button" href="@MaterialPresentation.DownloadLink(link)" download target="_blank" rel="noopener noreferrer" @onclick="() => TrackView(material, true)" aria-label="@(isFile ? "Descargar" : "Abrir") @material.Name">
+                                            @if (isFile) { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></svg><span>Descargar</span> }
+                                            else { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6m0-6L10 14M18 14v6H4V6h6"/></svg><span>Abrir</span> }
+                                        </a>
+                                    }
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                </li>
+            }
+        </ol>
+    }
+</article>
+
+@if (viewing is { } view)
+{
+    <ModalDialog Title="@view.Name" Subtitle="@(view.Category is null ? null : $"Material recomendado para {view.Category}")" Class="material-viewer-dialog" OnClose="Close">
+        <div class="ceti-modal-body">
+            <MaterialViewer Material="view">
+                <Feedback>
+                    @if (TracksInteractions && viewingMaterial is { } current)
+                    {
+                        <MaterialFeedback Helpful="current.Helpful" Busy="@voting.Contains(current.Id)" Error="@feedbackError"
+                                          OnVote="helpful => VoteAsync(current, helpful)"
+                                          @bind-Comment="commentDraft" OnSendComment="SendCommentAsync" CommentSent="commentSent" />
+                    }
+                </Feedback>
+            </MaterialViewer>
+        </div>
+    </ModalDialog>
+}

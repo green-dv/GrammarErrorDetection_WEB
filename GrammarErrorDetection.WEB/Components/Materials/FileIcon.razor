@@ -1,0 +1,57 @@
+@* Ícono de archivo según el formato: PDF, Word, PowerPoint, Excel, imagen, enlace u otro. *@
+<span class="file-icon file-icon-@kind @(Large ? "is-large" : "")" role="img" aria-label="@AriaLabel">
+    @switch (kind)
+    {
+        case "image":
+            <svg viewBox="0 0 40 48" aria-hidden="true">
+                <path class="file-icon-sheet" d="M4 2h22l10 10v34H4Z"/><path class="file-icon-fold" d="M26 2v10h10"/>
+                <rect class="file-icon-band" x="9" y="20" width="22" height="17" rx="2"/>
+                <circle cx="15" cy="25" r="2.2" fill="#fff"/><path d="m11 35 6-6 4 4 3-3 5 5Z" fill="#fff"/>
+            </svg>
+            break;
+        case "link":
+            <svg viewBox="0 0 40 48" aria-hidden="true">
+                <path class="file-icon-sheet" d="M4 2h22l10 10v34H4Z"/><path class="file-icon-fold" d="M26 2v10h10"/>
+                <g class="file-icon-stroke"><path d="m17 31 6-6m-8.5 4.5-2 2a3.5 3.5 0 0 0 5 5l2-2m4-9 2-2a3.5 3.5 0 0 0-5-5l-2 2"/></g>
+            </svg>
+            break;
+        default:
+            <svg viewBox="0 0 40 48" aria-hidden="true">
+                <path class="file-icon-sheet" d="M4 2h22l10 10v34H4Z"/><path class="file-icon-fold" d="M26 2v10h10"/>
+                <rect class="file-icon-band" x="0" y="24" width="30" height="14" rx="2.5"/>
+                <text x="15" y="34" text-anchor="middle">@Label</text>
+            </svg>
+            break;
+    }
+</span>
+
+@code {
+    /// <summary>Formato o extensión (PDF, DOCX, PPTX, PNG, URL…).</summary>
+    [Parameter] public string? Format { get; set; }
+    [Parameter] public bool Large { get; set; }
+
+    private string kind = "file";
+    private string Label = "";
+    private string AriaLabel => kind switch
+    {
+        "pdf" => "Documento PDF", "word" => "Documento de Word", "powerpoint" => "Presentación de PowerPoint",
+        "excel" => "Hoja de cálculo de Excel", "image" => "Imagen", "link" => "Enlace", "text" => "Archivo de texto",
+        _ => $"Archivo {Format}"
+    };
+
+    protected override void OnParametersSet()
+    {
+        var format = (Format ?? "").Trim().TrimStart('.').ToUpperInvariant();
+        (kind, Label) = format switch
+        {
+            "PDF" => ("pdf", "PDF"),
+            "DOC" or "DOCX" or "ODT" or "RTF" => ("word", "W"),
+            "PPT" or "PPTX" or "ODP" => ("powerpoint", "P"),
+            "XLS" or "XLSX" or "ODS" or "CSV" => ("excel", "X"),
+            "PNG" or "JPG" or "JPEG" or "GIF" or "WEBP" or "AVIF" or "SVG" or "IMG" => ("image", ""),
+            "URL" or "LINK" or "" => ("link", ""),
+            "TXT" => ("text", "TXT"),
+            _ => ("file", format.Length <= 4 ? format : "?")
+        };
+    }
+}

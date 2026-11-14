@@ -1,0 +1,126 @@
+@using GrammarErrorDetection.WEB.Components.Dialogs
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@inject HttpClient AssetClient
+
+<ModalDialog Title="Crear imagen del logro" Busy="exporting" OnClose="OnClose" Class="badge-designer-dialog">
+    <p class="ceti-modal-description">Combina una base, elementos y una cinta diagonal para crear tu badge.</p>
+    <div class="badge-designer-body">
+        <aside class="badge-designer-preview">
+            <div class="badge-preview-canvas"><BadgePreview Design="design" /></div>
+            <strong>Vista previa</strong><p>El color se aplica a la base blanca y a las estrellas. El dibujo central y la cinta conservan sus colores.</p><small>PNG · 512 × 512 · fondo transparente</small>
+        </aside>
+        <fieldset disabled="@exporting" class="badge-designer-options">
+            <section aria-labelledby="badge-center-title"><h3 id="badge-center-title">Centro del badge</h3><div class="badge-choice-grid">
+                @foreach (var asset in BadgeCatalog.Centers)
+                {
+                    <button type="button" class="badge-choice @(design.CenterId == asset.Id ? "is-selected" : "")" aria-pressed="@(design.CenterId == asset.Id ? "true" : "false")" @onclick="async () => { design.CenterId = asset.Id; await RefreshPreviewAsync(); }"><img src="@asset.Path" alt="" loading="lazy" /><span>@asset.Name</span></button>
+                }
+            </div></section>
+            <section aria-labelledby="badge-icon-title"><h3 id="badge-icon-title">Elemento central <small>Opcional</small></h3><div class="badge-choice-grid">
+                <button type="button" class="badge-choice @(design.IconId is null ? "is-selected" : "")" aria-pressed="@(design.IconId is null ? "true" : "false")" @onclick="async () => { design.IconId = null; await RefreshPreviewAsync(); }"><span class="badge-none" aria-hidden="true">∅</span><span>Ninguno</span></button>
+                @foreach (var asset in BadgeCatalog.Icons)
+                {
+                    <button type="button" class="badge-choice @(design.IconId == asset.Id ? "is-selected" : "")" aria-pressed="@(design.IconId == asset.Id ? "true" : "false")" @onclick="async () => { design.IconId = asset.Id; await RefreshPreviewAsync(); }"><img src="@asset.Path" alt="" loading="lazy" /><span>@asset.Name</span></button>
+                }
+            </div></section>
+            <section aria-labelledby="badge-top-title"><h3 id="badge-top-title">Elemento superior <small>Opcional</small></h3><div class="badge-choice-grid badge-top-choices">
+                <button type="button" class="badge-choice @(design.TopId is null ? "is-selected" : "")" aria-pressed="@(design.TopId is null ? "true" : "false")" @onclick="async () => { design.TopId = null; await RefreshPreviewAsync(); }"><span class="badge-none" aria-hidden="true">∅</span><span>Ninguno</span></button>
+                @foreach (var asset in BadgeCatalog.Tops)
+                {
+                    <button type="button" class="badge-choice @(design.TopId == asset.Id ? "is-selected" : "")" aria-pressed="@(design.TopId == asset.Id ? "true" : "false")" @onclick="async () => { design.TopId = asset.Id; await RefreshPreviewAsync(); }"><img src="@asset.Path" alt="" loading="lazy" /><span>@asset.Name</span></button>
+                }
+            </div><p class="badge-help">Las estrellas son decorativas; no modifican el orden del nivel del logro.</p></section>
+            <section aria-labelledby="badge-ribbon-title"><h3 id="badge-ribbon-title">Cinta con texto <small>Opcional</small></h3>
+                <label class="badge-ribbon-toggle"><input type="checkbox" @bind="design.ShowRibbon" @bind:after="RefreshPreviewAsync" /> Agregar cinta</label>
+                @if (design.ShowRibbon)
+                {
+                    <label class="data-table-field"><span>Texto corto</span><input @bind="design.RibbonText" @bind:event="oninput" @bind:after="RefreshPreviewAsync" maxlength="@BadgeRenderer.RibbonTextLimit" placeholder="Ej.: BRONCE" /><small>@design.RibbonText.Length / @BadgeRenderer.RibbonTextLimit caracteres</small></label>
+                }
+            </section>
+            <section aria-labelledby="badge-color-title"><h3 id="badge-color-title">Color de la base y las estrellas</h3><div class="badge-color-palette">
+                @foreach (var color in BadgeCatalog.Colors)
+                {
+                    <button type="button" class="badge-swatch @(design.BaseColor.Equals(color, StringComparison.OrdinalIgnoreCase) ? "is-selected" : "")" style="@($"--badge-swatch: {color}")" aria-label="Color @color" title="@color" aria-pressed="@(design.BaseColor.Equals(color, StringComparison.OrdinalIgnoreCase) ? "true" : "false")" @onclick="async () => { design.BaseColor = color; await RefreshPreviewAsync(); }"></button>
+                }
+                <label class="badge-custom-color">Personalizado <input type="color" @bind="design.BaseColor" @bind:event="oninput" @bind:after="RefreshPreviewAsync" aria-label="Color personalizado para la base" /></label>
+            </div></section>
+        </fieldset>
+    </div>
+    @if (errors.Count > 0) { <div class="badge-designer-errors ceti-modal-errors" role="alert">@foreach (var error in errors) { <p>@error</p> }</div> }
+    <footer class="ceti-modal-footer"><span role="status">@(exporting ? "Preparando imagen…" : "La imagen se adjuntará al guardar el logro.")</span><div><button type="button" class="data-table-button" disabled="@exporting" @onclick="OnClose">Cancelar</button><button type="button" class="data-table-button data-table-button-primary" disabled="@exporting" @onclick="UseImageAsync">Usar esta imagen</button></div></footer>
+</ModalDialog>
+
+@code {
+    [Parameter] public BadgeDesign? InitialDesign { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<GeneratedBadge> OnGenerated { get; set; }
+    private BadgeDesign design = new();
+    private List<string> errors = [];
+    private bool exporting, disposed;
+    private IJSObjectReference? module;
+    private readonly CancellationTokenSource lifetime = new();
+    private readonly Dictionary<string, Task<string>> assetCache = [];
+    private readonly Dictionary<string, string> images = [];
+    protected override void OnInitialized()
+    {
+        design = InitialDesign is null ? new() : InitialDesign with { };
+    }
+    private Task RefreshPreviewAsync() { errors = []; return Task.CompletedTask; }
+    private async Task LoadSelectedAssetsAsync(BadgeDesign snapshot)
+    {
+            var selected = BadgeCatalog.SelectedAssets(snapshot).ToArray();
+            var results = await Task.WhenAll(selected.Select(async asset =>
+            {
+                if (!assetCache.TryGetValue(asset.Path, out var task))
+                    assetCache[asset.Path] = task = LoadAssetAsync(asset.Path);
+                try { return (asset.Path, Data: await task); }
+                catch { assetCache.Remove(asset.Path); throw; }
+            }));
+            if (disposed) return;
+            foreach (var (path, data) in results) images[path] = data;
+    }
+    private async Task<string> LoadAssetAsync(string path)
+    {
+        var bytes = await AssetClient.GetByteArrayAsync(path, lifetime.Token);
+        if (bytes.Length is < 8 or > 5 * 1024 * 1024 || !bytes.AsSpan(0, 8).SequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }))
+            throw new InvalidOperationException("Pieza PNG no válida.");
+        return "data:image/png;base64," + Convert.ToBase64String(bytes);
+    }
+    private async Task UseImageAsync()
+    {
+        if (exporting || disposed) return;
+        errors = BadgeRenderer.Validate(design);
+        if (errors.Count > 0) return;
+        exporting = true;
+        var snapshot = design with { };
+        try
+        {
+            await LoadSelectedAssetsAsync(snapshot);
+            if (disposed) return;
+            if (module is null)
+            {
+                var imported = await JS.InvokeAsync<IJSObjectReference>("import", "./js/badge-designer.js");
+                if (disposed) { await imported.DisposeAsync(); return; }
+                module = imported;
+            }
+            var bytes = await module.InvokeAsync<byte[]>("renderPng", BadgeRenderer.Render(snapshot, images));
+            if (disposed) return;
+            if (bytes.Length is < 8 or > 5 * 1024 * 1024 || !bytes.AsSpan(0, 8).SequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }))
+                throw new InvalidOperationException("La imagen generada no es un PNG válido.");
+            await OnGenerated.InvokeAsync(new GeneratedBadge(bytes, snapshot with { RibbonText = snapshot.RibbonText.Trim() }));
+        }
+        catch (HttpRequestException) { if (!disposed) errors = ["No se pudieron cargar las piezas del badge. Intenta de nuevo."]; }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or ArgumentException)
+        { if (!disposed) errors = ["No se pudo generar la imagen. Intenta de nuevo."]; }
+        catch (OperationCanceledException) { if (!disposed) errors = ["La generación tardó demasiado. Intenta de nuevo."]; }
+        finally { exporting = false; }
+    }
+    public async ValueTask DisposeAsync()
+    {
+        disposed = true;
+        lifetime.Cancel(); lifetime.Dispose();
+        if (module is null) return;
+        try { await module.DisposeAsync(); } catch (JSException) { }
+    }
+}

@@ -1,0 +1,89 @@
+@using GrammarErrorDetection.Models.Dashboards
+@using GrammarErrorDetection.Services.Interfaces
+@implements IDisposable
+@inject IDashboardService Dashboard
+
+@* Historial liviano de textos (Text_History_List), paginado en el servidor. *@
+<div class="sd-card" aria-busy="@(loading ? "true" : "false")">
+    <div class="sd-card-heading">
+        <h4>Textos enviados</h4>
+        @if (results is not null) { <span class="sd-muted">@results.TotalCount en total</span> }
+    </div>
+    @if (error is not null) { <div class="data-table-error" role="alert">@error <button type="button" class="data-table-text-button" @onclick="() => LoadAsync(pageNumber)">Reintentar</button></div> }
+    else if (results is null) { <p class="data-table-message" role="status">Cargando textos…</p> }
+    else if (results.Items.Count == 0) { <p class="sd-empty">Aún no enviaste textos. <a href="process">Analiza tu primer párrafo</a>.</p> }
+    else
+    {
+        <ul class="sd-text-list">
+            @foreach (var text in results.Items)
+            {
+                <li @key="text.Id">
+                    <div class="sd-progress-head">
+                        <time datetime="@text.SubmittedAt.ToString("s")">@text.SubmittedAt.ToString("dd/MM/yyyy HH:mm", StudentDashboard.Culture)</time>
+                        @if (!string.Equals(text.Status, "Procesado", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <span class="sd-badge">@text.Status</span>
+                        }
+                        else if (text.ErrorCount == 0)
+                        {
+                            <span class="sd-badge is-good">Sin errores</span>
+                        }
+                        else
+                        {
+                            <span class="sd-badge is-warn">@text.ErrorCount @(text.ErrorCount == 1 ? "error" : "errores")</span>
+                        }
+                    </div>
+                    <p>@text.Preview@(text.Preview.Length >= 140 ? "…" : "")</p>
+                    <small class="sd-muted">@(text.ModuleName ?? "Práctica personal") · @text.WordCount palabras · @text.SentenceCount oraciones · precisión @StudentDashboard.Percent(text.AccuracyPercentage)</small>
+                </li>
+            }
+        </ul>
+        @if (Pages > 1)
+        {
+            <nav class="sd-pager" aria-label="Páginas de textos">
+                <button type="button" class="data-table-button" disabled="@(loading || pageNumber == 1)" @onclick="() => LoadAsync(pageNumber - 1)">Anterior</button>
+                <span>Página @pageNumber de @Pages</span>
+                <button type="button" class="data-table-button" disabled="@(loading || pageNumber >= Pages)" @onclick="() => LoadAsync(pageNumber + 1)">Siguiente</button>
+            </nav>
+        }
+    }
+</div>
+
+@code {
+    /// <summary>Curso elegido en el dashboard; null muestra todo el historial.</summary>
+    [Parameter] public Guid? ClassId { get; set; }
+    private const int PageSize = 5;
+    private Guid? loadedClass;
+    private readonly CancellationTokenSource lifetime = new();
+    private DashboardPage<TextHistoryItem>? results;
+    private int pageNumber = 1;
+    private bool loading;
+    private string? error;
+
+    private long Pages => results is null ? 0 : (results.TotalCount + PageSize - 1) / PageSize;
+
+    protected override Task OnParametersSetAsync()
+    {
+        if (results is not null && loadedClass == ClassId) return Task.CompletedTask;
+        loadedClass = ClassId;
+        results = null;
+        return LoadAsync(1);
+    }
+
+    private async Task LoadAsync(int number)
+    {
+        if (loading || number < 1) return;
+        loading = true;
+        error = null;
+        try
+        {
+            results = await Dashboard.GetStudentTextsAsync(number, PageSize, ClassId, lifetime.Token);
+            pageNumber = number;
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException) { error = "No se pudo cargar tu historial de textos."; }
+        finally { loading = false; }
+    }
+
+    public void Dispose() { lifetime.Cancel(); lifetime.Dispose(); }
+}

@@ -1,31 +1,15 @@
 @page "/profile"
-@using GrammarErrorDetection.Services.Services.Auth
-@using GrammarErrorDetection.WEB.Views.Points
-@inject AuthSessionState Session
-@inject NavigationManager Navigation
+@using GrammarErrorDetection.WEB.Views.Profiles
 
 <PageTitle>Mi perfil | CETI La Paz</PageTitle>
 @if (Session.Current?.User is { } user)
 {
     <section class="profile-page" aria-labelledby="profile-title">
-        <header class="portal-heading"><p class="portal-eyebrow">CETI · MI CUENTA</p><h1 id="profile-title">Mi perfil</h1><p>Tu información y tu progreso de aprendizaje.</p></header>
-        <div class="profile-overview">
-            <article class="profile-person">
-                <div class="profile-large-avatar" aria-hidden="true">@Initials(user.Name)</div>
-                <h2>@user.Name</h2><p>@string.Join(", ", Session.Roles)</p>
-                <dl><div><dt>Correo electrónico</dt><dd>@user.Email</dd></div><div><dt>Rol</dt><dd>@string.Join(", ", Session.Roles)</dd></div></dl>
-            </article>
-            @if (Session.IsInRole("Student")) { <PointsDashboard /> }
-        </div>
+        <header class="portal-heading">
+            <p class="portal-eyebrow">CETI · MI CUENTA</p>
+            <h1 id="profile-title">Mi perfil</h1>
+            <p>Tu información, cursos, progreso académico y configuración de cuenta.</p>
+        </header>
+        <ProfileSections UserId="user.Id" InitialTab="@Tab" />
     </section>
-}
-@code {
-    // Mantiene compatibles los enlaces antiguos a la configuración TOTP.
-    [SupplyParameterFromQuery(Name = "tab")] public string? Tab { get; set; }
-    protected override void OnParametersSet()
-    {
-        if (Session.Current is null) Navigation.NavigateTo("/auth/login", replace: true);
-        else if (Tab == "totp") Navigation.NavigateTo("/settings", replace: true);
-    }
-    private static string Initials(string name) => string.Concat(name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(part => part[0])).ToUpperInvariant();
 }

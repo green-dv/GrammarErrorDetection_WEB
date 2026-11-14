@@ -1,0 +1,94 @@
+@using System.Net
+@using System.Text.Json
+@using GrammarErrorDetection.Models.Gamification
+@using GrammarErrorDetection.Services.Interfaces
+@using GrammarErrorDetection.Services.Services.Auth
+@using GrammarErrorDetection.WEB.Components.Dialogs
+@implements IDisposable
+@inject IGamificationService Service
+@inject AuthSessionState Session
+@inject NavigationManager Navigation
+
+<ModalDialog Title="@(IsEdit ? "Editar colección" : "Registrar colección")" Busy="saving" OnClose="OnClose">
+    <p class="ceti-modal-description">@(IsEdit ? "Actualiza el nombre, la descripción y el estado de la colección." : "Crea una colección para agrupar los niveles y logros de una misma actividad.")</p>
+    <EditForm Model="model" OnValidSubmit="SaveAsync" OnInvalidSubmit="InvalidSubmit" novalidate>
+        <DataAnnotationsValidator />
+        <div class="ceti-modal-body">
+            <div class="ceti-modal-errors" role="alert">@if (error is not null) { <p>@error</p> }<ValidationSummary /></div>
+            <fieldset class="gamification-fields gamification-grid" disabled="@(saving || uncertain)">
+                <label class="data-table-field gamification-full"><span>Nombre *</span><InputText @bind-Value="model.Name" maxlength="150" autofocus /></label>
+                <label class="data-table-field gamification-full"><span>Descripción</span><InputTextArea @bind-Value="model.Description" rows="4" /></label>
+                <label class="gamification-checks gamification-full"><InputCheckbox @bind-Value="model.Active" /> Colección activa</label>
+            </fieldset>
+        </div>
+        <footer class="ceti-modal-footer"><span role="status">@(saving ? "Guardando colección…" : "* Campo obligatorio")</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">@(uncertain ? "Cerrar y revisar colecciones" : "Cancelar")</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@(saving || uncertain)">@(IsEdit ? "Guardar cambios" : "Registrar colección")</button></div></footer>
+    </EditForm>
+</ModalDialog>
+
+@code {
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<AchievementCollectionResponse> OnCreated { get; set; }
+    [Parameter] public EventCallback<AchievementCollectionResponse> OnSaved { get; set; }
+    [Parameter] public AchievementCollectionResponse? Collection { get; set; }
+    private AchievementCollectionCreateRequest model = new();
+    private bool IsEdit => Collection is not null;
+    protected override void OnInitialized()
+    {
+        if (Collection is { } item) model = new() { Name = item.Name, Description = item.Description, Active = item.Active };
+    }
+    private readonly CancellationTokenSource lifetime = new();
+    private bool saving, uncertain, disposed;
+    private string? error;
+    private const string UncertainResult = "No se pudo confirmar el guardado. Cierra y consulta las colecciones antes de volver a guardar.";
+    private void InvalidSubmit(EditContext _) => error = null;
+    private async Task SaveAsync()
+    {
+        if (saving || uncertain || disposed) return;
+        if (Session.Current is null) { Navigation.NavigateTo("/auth/login", replace: true); return; }
+        if (!Session.IsInRole("Coordinator")) { error = "No tienes permiso para registrar colecciones."; return; }
+        saving = true; error = null;
+        AchievementCollectionResponse? result = null;
+        try
+        {
+            model.Name = model.Name.Trim();
+            GrammarErrorDetection.Models.Responses.ApiResponse<AchievementCollectionResponse>? response;
+            if (Collection is { } original)
+            {
+                var request = new AchievementCollectionUpdateRequest
+                {
+                    Id = original.Id, Name = model.Name == original.Name ? null : model.Name,
+                    Description = model.Description == original.Description ? null : model.Description ?? "",
+                    Active = model.Active == original.Active ? null : model.Active
+                };
+                if (request.Name is null && request.Description is null && request.Active is null)
+                { error = "No hay cambios para guardar."; return; }
+                response = await Service.UpdateAchievementCollectionAsync(request, lifetime.Token);
+            }
+            else response = await Service.CreateAchievementCollectionAsync(model, lifetime.Token);
+            if (response?.Error is { ErrorCode: not 0 }) error = response.Error.ErrorMessage ?? "No se pudo guardar la colección.";
+            else if (response?.Data is not { Id: var id } || id == Guid.Empty || (Collection is not null && id != Collection.Id)) { uncertain = true; error = UncertainResult; }
+            else result = response.Data;
+        }
+        catch (HttpRequestException ex)
+        {
+            if (ex.StatusCode == HttpStatusCode.Unauthorized) { Session.Clear(); Navigation.NavigateTo("/auth/login", replace: true); }
+            uncertain = ex.StatusCode is null || (int)ex.StatusCode >= 500 || ex.StatusCode == HttpStatusCode.RequestTimeout;
+            error = uncertain ? UncertainResult : ex.StatusCode switch
+            {
+                HttpStatusCode.Forbidden => "No tienes permiso para registrar colecciones.",
+                HttpStatusCode.Conflict => "Ya existe una colección con estos datos. Revisa el nombre.",
+                _ => "El guardado fue rechazado. Revisa los datos e inténtalo de nuevo."
+            };
+        }
+        catch (OperationCanceledException) { if (!disposed) { uncertain = true; error = UncertainResult; } }
+        catch (JsonException) { uncertain = true; error = UncertainResult; }
+        catch (System.ComponentModel.DataAnnotations.ValidationException ex) { error = ex.Message; }
+        finally { saving = false; }
+        if (!disposed && result is not null)
+        {
+            if (IsEdit) await OnSaved.InvokeAsync(result);
+            else await OnCreated.InvokeAsync(result);
+        }
+    }
+    public void Dispose() { disposed = true; lifetime.Cancel(); lifetime.Dispose(); }
+}

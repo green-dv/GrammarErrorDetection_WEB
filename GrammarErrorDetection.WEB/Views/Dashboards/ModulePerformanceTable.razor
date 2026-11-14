@@ -1,0 +1,93 @@
+@using GrammarErrorDetection.Models.Dashboards
+
+@* Notas y errores por tipo de módulo (docente: su historial; coordinador: el periodo). La nota final es la columna principal. *@
+<section class="sh-card cd-perf" id="@AnchorId" aria-labelledby="@headingId">
+    <header class="sh-card-head">
+        <div>
+            <h3 id="@headingId">@Title</h3>
+            <p class="sh-muted">@Subtitle</p>
+        </div>
+        <ul class="sh-legend" aria-hidden="true"><li class="is-pass">70 o más</li><li class="is-fail">Menos de 70</li></ul>
+    </header>
+    @if (Items.Count == 0)
+    {
+        <p class="sh-empty">@Empty</p>
+    }
+    else
+    {
+        @* Celular: una tarjeta por módulo en lugar de la tabla. *@
+        <ul class="m-cards">
+            @foreach (var module in Items)
+            {
+                <li @key="module.ModuleNameId">
+                    <div class="m-card-head">
+                        <div><strong>@module.ModuleName</strong><small>@module.CourseCount @(module.CourseCount == 1 ? "curso" : "cursos") · @module.GradedStudents de @module.EnrolledStudents con nota</small></div>
+                    </div>
+                    @if (module.FinalAverage is { } final)
+                    {
+                        <div class="cd-score @(final >= 70 ? "is-pass" : "is-fail")"><strong>@final.ToString("0.#", StudentDashboard.Culture)</strong><span class="sh-meter" aria-hidden="true"><span style="width:@StudentDashboard.Width(final)"></span></span></div>
+                    }
+                    else { <span class="sh-muted">Sin notas</span> }
+                    <dl class="m-facts">
+                        <div><dt>Aprobación</dt><dd>@StudentDashboard.Percent(module.PassRatePercentage)</dd></div>
+                        <div><dt>Examen 1 · 2</dt><dd>@Score(module.Exam1Average) · @Score(module.Exam2Average)</dd></div>
+                        <div><dt>Errores por texto</dt><dd>@(module.ErrorsPerText?.ToString("0.##", StudentDashboard.Culture) ?? "—")</dd></div>
+                        <div><dt>Precisión</dt><dd>@StudentDashboard.Percent(module.AccuracyPercentage)</dd></div>
+                        <div class="is-wide"><dt>Error principal</dt><dd>@(module.TopErrorClassificationName is { } topError ? CategoryBars.Label(topError) : "—")</dd></div>
+                    </dl>
+                </li>
+            }
+        </ul>
+        <div class="data-table-scroll m-table" role="region" aria-label="@Title" tabindex="0">
+            <table class="td-table cd-perf-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Módulo</th>
+                        <th scope="col">Nota final promedio</th>
+                        <th scope="col">Aprobación</th>
+                        <th scope="col">Examen 1</th>
+                        <th scope="col">Examen 2</th>
+                        <th scope="col">Errores por texto</th>
+                        <th scope="col">Precisión</th>
+                        <th scope="col">Error principal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var module in Items)
+                    {
+                        <tr @key="module.ModuleNameId">
+                            <th scope="row">@module.ModuleName<small>@module.CourseCount @(module.CourseCount == 1 ? "curso" : "cursos") · @module.GradedStudents de @module.EnrolledStudents con nota</small></th>
+                            <td>
+                                @if (module.FinalAverage is { } final)
+                                {
+                                    <div class="cd-score @(final >= 70 ? "is-pass" : "is-fail")">
+                                        <strong>@final.ToString("0.#", StudentDashboard.Culture)</strong>
+                                        <span class="sh-meter" aria-hidden="true"><span style="width:@StudentDashboard.Width(final)"></span></span>
+                                    </div>
+                                }
+                                else { <span class="sh-muted">Sin notas</span> }
+                            </td>
+                            <td>@StudentDashboard.Percent(module.PassRatePercentage)</td>
+                            <td>@Score(module.Exam1Average)</td>
+                            <td>@Score(module.Exam2Average)</td>
+                            <td>@(module.ErrorsPerText?.ToString("0.##", StudentDashboard.Culture) ?? "—")<small>@module.TotalErrors.ToString("N0", StudentDashboard.Culture) en @module.AnalyzedTexts.ToString("N0", StudentDashboard.Culture) textos</small></td>
+                            <td>@StudentDashboard.Percent(module.AccuracyPercentage)</td>
+                            <td>@(module.TopErrorClassificationName is { } top ? CategoryBars.Label(top) : "—")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired] public List<ModulePerformanceItem> Items { get; set; } = [];
+    [Parameter] public string? AnchorId { get; set; }
+    [Parameter] public string Title { get; set; } = "Rendimiento por tipo de módulo";
+    [Parameter] public string Subtitle { get; set; } = string.Empty;
+    [Parameter] public string Empty { get; set; } = "No hay cursos en este alcance.";
+    private readonly string headingId = $"perf-{Guid.NewGuid():N}";
+
+    private static string Score(decimal? value) => value?.ToString("0.#", StudentDashboard.Culture) ?? "—";
+}

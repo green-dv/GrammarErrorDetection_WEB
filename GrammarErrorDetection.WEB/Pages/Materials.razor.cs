@@ -7,6 +7,7 @@ using GrammarErrorDetection.Services.Services.Auth;
 using GrammarErrorDetection.WEB.Views.Materials;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Components.Forms;
 
 namespace GrammarErrorDetection.WEB.Pages;
 
@@ -28,20 +29,60 @@ public partial class Materials : IDisposable
     private SupportMaterialFilter appliedFilter = new() { Active = true };
     private SupportMaterialResponse? selected;
     private MaterialEditForm? editForm;
+    private IBrowserFile? pendingFile;
+    private InputFile? fileInput;
+    private bool useLink;
+    private string DialogClass => dialogMode switch
+    {
+        "preview" => "material-viewer-dialog",
+        "create" or "edit" when !useLink => "material-upload-dialog has-preview",
+        _ => "material-upload-dialog"
+    };
+
+    private MaterialView ViewOf(SupportMaterialResponse material)
+    {
+        var type = FileType(material);
+        var link = ResolveLink(material);
+        return new MaterialView(material.Name, CategoryName(material), null,
+            MaterialPresentation.Format(material, type), MaterialPresentation.Kind(material, type),
+            material.FileSize, material.UploadDate,
+            string.IsNullOrWhiteSpace(material.UploadedByName) ? null : material.UploadedByName,
+            link, type?.Extension);
+    }
+    private string DetectedType => fileTypes.FirstOrDefault(item => item.Id.ToString("D") == editForm?.FileTypeId)?.Name
+        ?? (selected is not null && selected.FileTypeId.ToString("D") == editForm?.FileTypeId ? FileType(selected)?.Name : null)
+        ?? "Se detectará al seleccionar el archivo";
+    private const long MaxFileBytes = 25 * 1024 * 1024;
     private bool loading, loadingDetail, loadingCategories, loadingFileTypes, saving, hasNext, disposed;
     private int page = 1, pageSize = 10, loadedPageSize = 10, requestVersion;
     private bool CanManage => Session.IsInRole("Teacher") || Session.IsInRole("Coordinator");
+    // Solo los estudiantes registran vistas y marcan materiales como útiles (la API lo restringe al rol Student).
+    private bool IsStudent => Session.IsInRole("Student");
+    private bool onlyHelpful;
+    private readonly HashSet<Guid> voting = [];
+    private string commentDraft = "";
+    private bool commentSent;
+    private string? feedbackError;
+    private Task? pendingView;
     private bool ActionBusy => saving || loadingDetail;
     private string ApiBaseUrl => Configuration["Api:BaseUrl"]!;
     private string DialogTitle => dialogMode switch
     {
         "create" => "Agregar material", "edit" => "Editar material",
         "status" => selected?.Active == true ? "Desactivar material" : "Reactivar material",
+        "preview" when selected is { } current => current.Name,
         _ => "Material de apoyo"
     };
+    private string? DialogSubtitle => dialogMode == "preview" && selected is { } current
+        ? $"{CategoryName(current)} · {MaterialPresentation.Kind(current, FileType(current))}" : null;
+    private string EmptyTitle => appliedFilter.OnlyHelpful == true
+        ? "Aún no marcaste materiales como útiles" : "No hay materiales con estos filtros";
+    private string EmptyHint => appliedFilter.OnlyHelpful == true
+        ? "Usa «Marcar útil» en los materiales que te ayuden para encontrarlos aquí rápidamente."
+        : "Prueba otro nombre, clasificación o tipo de archivo.";
     private string ResultRange => materials.Count == 0 ? "0 resultados"
         : $"Mostrando {(page - 1) * loadedPageSize + 1}–{(page - 1) * loadedPageSize + materials.Count}";
-    private bool HasChanges => editForm is not null && (dialogMode == "create" || selected is not null && (
+    private bool HasChanges => editForm is not null && (pendingFile is not null || dialogMode == "create" || selected is not null && (
         editForm.Name.Trim() != selected.Name || editForm.FileLink.Trim() != selected.FileLink
         || !Guid.TryParse(editForm.ErrorClassificationId, out var category) || category != selected.ErrorClassificationId
         || !Guid.TryParse(editForm.FileTypeId, out var type) || type != selected.FileTypeId
@@ -132,7 +173,8 @@ public partial class Materials : IDisposable
         {
             Name = string.IsNullOrWhiteSpace(name) ? null : name.Trim(),
             ErrorClassificationId = category, FileTypeId = type,
-            Active = CanManage ? bool.TryParse(activeFilter, out var active) ? active : null : true
+            Active = CanManage ? bool.TryParse(activeFilter, out var active) ? active : null : true,
+            OnlyHelpful = IsStudent && onlyHelpful ? true : null
         };
         return LoadAsync(1);
     }
@@ -142,6 +184,7 @@ public partial class Materials : IDisposable
         if (loading || ActionBusy) return Task.CompletedTask;
         name = categoryId = fileTypeId = "";
         activeFilter = "true";
+        onlyHelpful = false;
         return SearchAsync();
     }
     private Task RetryAsync() => loading || ActionBusy ? Task.CompletedTask : LoadAsync(page);
@@ -194,6 +237,8 @@ public partial class Materials : IDisposable
     {
         if (ActionBusy || !CheckSession(manage: true)) return;
         selected = null;
+        pendingFile = null;
+        useLink = false;
         editForm = new();
         dialogError = null;
         dialogMode = "create";
@@ -203,6 +248,7 @@ public partial class Materials : IDisposable
     {
         if (ActionBusy || !CheckSession(edit)) return;
         selected = null; editForm = null; dialogError = null;
+        pendingFile = null;
         dialogMode = edit ? "edit" : "preview";
         loadingDetail = true;
         try
@@ -212,7 +258,16 @@ public partial class Materials : IDisposable
             if (detail.Id != material.Id) throw new InvalidOperationException("No se recibió el material solicitado.");
             selected = detail;
             RememberOptions(detail);
-            if (edit) editForm = MaterialEditForm.From(detail);
+            commentDraft = "";
+            commentSent = false;
+            feedbackError = null;
+            // Abrir la vista previa cuenta como vista del estudiante (habilita su valoración y alimenta las recomendaciones).
+            if (!edit && IsStudent && detail.Active && detail.ViewerSeen != true) pendingView = RegisterViewAsync(detail);
+            if (edit)
+            {
+                editForm = MaterialEditForm.From(detail);
+                useLink = !IsUploadedFile(detail.FileLink);
+            }
         }
         catch (OperationCanceledException) { if (!disposed) dialogError = "La consulta del material tardó demasiado. Cierra la ventana e inténtalo de nuevo."; }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or InvalidOperationException)
@@ -230,19 +285,69 @@ public partial class Materials : IDisposable
     {
         if (ActionBusy) return;
         dialogMode = null; selected = null; editForm = null; dialogError = null;
+        pendingFile = null;
+    }
+
+    private void SelectFile(InputFileChangeEventArgs args)
+    {
+        if (saving || useLink || editForm is null) return;
+        pendingFile = null;
+        dialogError = null;
+        if (args.File.Size is <= 0 or > MaxFileBytes)
+        { dialogError = "Selecciona un archivo con contenido de hasta 25 MiB."; return; }
+        pendingFile = args.File;
+        if (string.IsNullOrWhiteSpace(editForm.Name)) editForm.Name = Path.GetFileNameWithoutExtension(args.File.Name);
+        DetectFileType();
+    }
+
+    private static bool IsUploadedFile(string link) => link.StartsWith("/archivos/", StringComparison.OrdinalIgnoreCase)
+        || Uri.TryCreate(link, UriKind.Absolute, out var uri) && uri.AbsolutePath.StartsWith("/archivos/", StringComparison.OrdinalIgnoreCase);
+
+    private void ChangeSource(bool link)
+    {
+        if (saving || editForm is null || useLink == link) return;
+        useLink = link;
+        pendingFile = null;
+        dialogError = null;
+        var restore = selected is not null && useLink == !IsUploadedFile(selected.FileLink);
+        editForm.FileLink = restore ? selected!.FileLink : "";
+        editForm.FileSize = restore ? selected!.FileSize : null;
+        editForm.FileTypeId = restore ? selected!.FileTypeId.ToString("D") : "";
+        if (useLink && !restore) UpdateLinkType();
+    }
+
+    private void DetectFileType()
+    {
+        if (editForm is null || pendingFile is null) return;
+        editForm.FileTypeId = MaterialFileTypes.ForFile(fileTypes, pendingFile.Name, pendingFile.ContentType)?.Id.ToString("D") ?? "";
+    }
+
+    private void UpdateLinkType()
+    {
+        if (!useLink || editForm is null) return;
+        editForm.FileTypeId = MaterialFileTypes.ForLink(fileTypes)?.Id.ToString("D") ?? "";
+        // La API interpreta null en PUT como "conservar"; cero elimina el peso del archivo reemplazado.
+        editForm.FileSize = 0;
     }
 
     private async Task SaveAsync()
     {
         if (disposed || ActionBusy || loadingCategories || loadingFileTypes || editForm is null || !CheckSession(manage: true)
             || dialogMode is not ("create" or "edit")) return;
-        var errors = editForm.Validate(ApiBaseUrl);
+        if (useLink && (dialogMode == "create" || editForm.FileLink.Trim() != selected?.FileLink)) UpdateLinkType();
+        if (!useLink) DetectFileType();
+        var errors = editForm.Validate(ApiBaseUrl, !useLink && pendingFile is not null);
+        if (useLink && (dialogMode == "create" || editForm.FileLink.Trim() != selected?.FileLink)
+            && (!Uri.TryCreate(editForm.FileLink.Trim(), UriKind.Absolute, out var linkUri)
+            || linkUri.Scheme is not ("https" or "http"))) errors.Add("Ingresa un enlace HTTP o HTTPS completo.");
+        if (dialogMode == "create" && pendingFile is null && string.IsNullOrWhiteSpace(editForm.FileLink))
+            errors.Add("Selecciona el archivo que deseas subir.");
         if (!categories.Any(item => item.Id.ToString("D") == editForm.ErrorClassificationId)
             && selected?.ErrorClassificationId.ToString("D") != editForm.ErrorClassificationId)
             errors.Add("Selecciona una clasificación disponible.");
         if (!fileTypes.Any(item => item.Id.ToString("D") == editForm.FileTypeId)
             && selected?.FileTypeId.ToString("D") != editForm.FileTypeId)
-            errors.Add("Selecciona un tipo de archivo disponible.");
+            errors.Add(useLink ? "No hay un tipo de enlace activo en el catálogo." : "No se encontró un tipo activo para este archivo en el catálogo.");
         if (errors.Count > 0) { dialogError = string.Join(" ", errors); return; }
         if (!HasChanges) return;
         var creating = dialogMode == "create";
@@ -251,6 +356,20 @@ public partial class Materials : IDisposable
         dialogError = null;
         try
         {
+            if (!useLink && pendingFile is { } file)
+            {
+                await using var stream = file.OpenReadStream(MaxFileBytes, lifetime.Token);
+                var uploaded = RequireData(await MaterialService.UploadFileAsync(stream, file.Name, lifetime.Token));
+                if (disposed) return;
+                if (MaterialPresentation.ResolveLink(uploaded.FileLink, ApiBaseUrl) is null || uploaded.FileSize != file.Size)
+                    throw new InvalidOperationException("El servidor no confirmó el archivo subido.");
+                editForm.FileLink = uploaded.FileLink;
+                editForm.FileSize = uploaded.FileSize;
+                editForm.UploadDate = DateTime.Now;
+                pendingFile = null;
+            }
+            else if (useLink && (creating || editForm.FileLink.Trim() != original?.FileLink))
+                editForm.UploadDate = DateTime.Now;
             var response = creating
                 ? await MaterialService.CreateAsync(editForm.CreateRequest(Session.Current!.User!.Id), lifetime.Token)
                 : await MaterialService.UpdateAsync(editForm.ChangesFrom(original!), lifetime.Token);
@@ -261,7 +380,7 @@ public partial class Materials : IDisposable
         }
         catch (OperationCanceledException)
         { if (!disposed) dialogError = "El guardado tardó demasiado. Revisa el listado antes de reintentar: el material podría haberse guardado."; return; }
-        catch (Exception ex) when (ex is HttpRequestException or JsonException or InvalidOperationException or ArgumentException)
+        catch (Exception ex) when (ex is HttpRequestException or JsonException or InvalidOperationException or ArgumentException or IOException)
         { if (!disposed) dialogError = ErrorMessage(ex, mutation: true); return; }
         finally { saving = false; }
 
@@ -312,6 +431,56 @@ public partial class Materials : IDisposable
     private string CategoryName(SupportMaterialResponse material) => string.IsNullOrWhiteSpace(material.ErrorClassificationName)
         ? knownCategoryNames.GetValueOrDefault(material.ErrorClassificationId, "Sin clasificación") : material.ErrorClassificationName;
 
+    private async Task RegisterViewAsync(SupportMaterialResponse material)
+    {
+        try
+        {
+            var response = await MaterialService.RegisterViewAsync(material.Id, false, lifetime.Token);
+            if (response?.Error is null) SetInteraction(material.Id, seen: true, helpful: null);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or JsonException or OperationCanceledException or ArgumentException) { }
+    }
+
+    // "Marcar útil" solo marca (nunca desmarca): responder "No" excluye el material de las recomendaciones,
+    // por eso cambiar de opinión se hace explícitamente con Sí / No en la vista previa.
+    private async Task VoteAsync(SupportMaterialResponse material, bool helpful, string? comment = null)
+    {
+        if (!IsStudent || disposed || !voting.Add(material.Id)) return;
+        feedbackError = null;
+        try
+        {
+            if (pendingView is { } view) await view;
+            if (material.ViewerSeen != true)
+            {
+                var viewResponse = await MaterialService.RegisterViewAsync(material.Id, false, lifetime.Token);
+                if (viewResponse?.Error is { } viewError) throw new InvalidOperationException(viewError.ErrorMessage);
+            }
+            var response = await MaterialService.SetFeedbackAsync(material.Id, helpful, comment, lifetime.Token);
+            if (response?.Error is { } apiError) throw new InvalidOperationException(apiError.ErrorMessage);
+            SetInteraction(material.Id, seen: true, helpful: helpful);
+            if (comment is not null) commentSent = true;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or JsonException or InvalidOperationException or ArgumentException)
+        {
+            feedbackError = "No se pudo guardar tu respuesta. Inténtalo de nuevo.";
+            if (dialogMode != "preview") status = feedbackError;
+        }
+        catch (OperationCanceledException) { }
+        finally { voting.Remove(material.Id); }
+    }
+
+    // La tarjeta del listado y el detalle abierto son objetos distintos: se actualizan ambos.
+    private void SetInteraction(Guid id, bool seen, bool? helpful)
+    {
+        var targets = materials.Where(item => item.Id == id).ToList();
+        if (selected is { } current && current.Id == id && !targets.Contains(current)) targets.Add(current);
+        foreach (var item in targets)
+        {
+            if (seen) item.ViewerSeen = true;
+            if (helpful is { } value) item.ViewerHelpful = value;
+        }
+    }
+
     private string ErrorMessage(Exception exception, bool mutation = false)
     {
         if (exception is HttpRequestException http)
@@ -322,6 +491,7 @@ public partial class Materials : IDisposable
             {
                 HttpStatusCode.Forbidden => mutation ? "Solo docentes y coordinadores pueden modificar el material." : "No tienes permiso para consultar el material.",
                 HttpStatusCode.NotFound => "El material ya no está disponible.",
+                HttpStatusCode.MethodNotAllowed => "La API en ejecución no tiene habilitada esta operación. Reinicia la API con la versión que incluye la subida de archivos.",
                 HttpStatusCode.BadRequest or HttpStatusCode.UnprocessableEntity => "Revisa el nombre, enlace, clasificación y tipo de archivo e inténtalo de nuevo.",
                 HttpStatusCode.TooManyRequests => "Hay demasiadas solicitudes. Espera un momento antes de reintentar.",
                 _ => mutation ? "No se pudo confirmar el guardado. Revisa el listado antes de reintentar." : "No se pudo consultar el material de apoyo. Inténtalo de nuevo."

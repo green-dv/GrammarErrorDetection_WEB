@@ -1,0 +1,332 @@
+@using System.Globalization
+@using System.Net
+@using System.Text
+@using System.Text.Json
+@using GrammarErrorDetection.Models.Reports
+@using GrammarErrorDetection.Models.Users
+@using GrammarErrorDetection.Services.Interfaces
+@using GrammarErrorDetection.Services.Services.Auth
+@using GrammarErrorDetection.WEB.Views.Users
+@implements IDisposable
+@inject IGrammarReportService Reports
+@inject IUserService Users
+@inject ICourseService Courses
+@inject IEvaluationService Evaluations
+@inject AuthSessionState Session
+@inject NavigationManager Navigation
+
+<article class="grammar-card student-progress">
+    <header>
+        <div><h3>Evolución de las notas finales</h3><p>Cada color representa a un estudiante. Los módulos se muestran en orden cronológico.</p></div>
+        <label class="data-table-field">
+            <span>Estudiante</span>
+            <select @bind="selectedStudent" @bind:after="ClearPoint" disabled="@(loading || series.Count == 0)">
+                <option value="">Todos los estudiantes</option>
+                @foreach (var student in series)
+                {
+                    <option value="@student.Id">@student.Name</option>
+                }
+            </select>
+        </label>
+    </header>
+    @if (loading)
+    {
+        <p class="grammar-footnote" role="status">Cargando historial de notas…</p>
+    }
+    else if (error is not null)
+    {
+        <div class="data-table-error" role="alert">@error <button type="button" class="data-table-text-button" @onclick="LoadAsync">Reintentar</button></div>
+    }
+    else
+    {
+        var visible = series.Where(student => selectedStudent is null || student.Id == selectedStudent).ToList();
+        var columns = visible.SelectMany(student => student.Attempts).Select(attempt => attempt.Course).Distinct()
+            .OrderBy(course => course.Current).ThenBy(course => course.Year).ThenBy(course => course.Bimester)
+            .ThenBy(course => course.Level).ThenBy(course => course.Name).ThenBy(course => course.Parallel).ThenBy(course => course.Id).ToList();
+        var scores = visible.SelectMany(student => student.Attempts).Select(attempt => attempt.Score).OfType<decimal>().ToList();
+        if (scores.Count == 0)
+        {
+            <p class="grammar-footnote" role="status">No hay notas finales disponibles para esta selección.</p>
+        }
+        else
+        {
+            var axisMin = scores.Min() > 80 ? 80 : 0;
+            var ticks = axisMin == 80 ? new[] { 80, 85, 90, 95, 100 } : new[] { 0, 25, 50, 75, 100 };
+            var width = Math.Max(740, 128 * columns.Count + 80);
+            var positions = columns.Select((course, index) => (course, x: columns.Count == 1 ? width / 2 : 80 + index * (width - 160d) / (columns.Count - 1)))
+                .ToDictionary(item => item.course, item => item.x);
+            <div class="data-table-scroll" tabindex="0" role="region" aria-label="Gráfica desplazable de notas finales">
+                <svg class="student-progress-chart" width="@width" height="276" viewBox="0 0 @width 276" role="group" aria-label="@($"Notas finales por módulo y estudiante. Escala de {axisMin} a 100.")">
+                    @foreach (var tick in ticks)
+                    {
+                        var y = Coordinate(Y(tick, axisMin));
+                        <g><line x1="42" x2="@(width - 20)" y1="@y" y2="@y" class="grammar-radar-grid" /><text x="32" y="@y" text-anchor="end" dominant-baseline="middle">@tick</text></g>
+                    }
+                    @foreach (var student in visible)
+                    {
+                        var path = new StringBuilder();
+                        var continues = false;
+                        foreach (var attempt in student.Attempts.OrderBy(attempt => positions[attempt.Course]))
+                        {
+                            if (attempt.Score is not { } score)
+                            {
+                                continues = false;
+                                continue;
+                            }
+                            path.Append(continues ? 'L' : 'M').Append(Coordinate(positions[attempt.Course])).Append(' ').Append(Coordinate(Y(score, axisMin))).Append(' ');
+                            continues = true;
+                        }
+                        <path d="@path" fill="none" stroke="@student.Color" stroke-width="2" />
+                        @foreach (var attempt in student.Attempts.Where(attempt => attempt.Score.HasValue))
+                        {
+                            var point = new ChartPoint(student.Name, attempt);
+                            <g class="student-progress-point" tabindex="0" aria-label="@($"{student.Name} · {attempt.Course.Name} · Nota final: {Score(attempt.Score)}")"
+                               @onmouseenter="() => ShowPointAsync(point)" @onmouseleave="() => HidePoint(point)"
+                               @onfocus="() => ShowPointAsync(point)" @onblur="() => HidePoint(point)">
+                                <circle cx="@Coordinate(positions[attempt.Course])" cy="@Coordinate(Y(attempt.Score!.Value, axisMin))" r="9" fill="transparent" />
+                                <circle cx="@Coordinate(positions[attempt.Course])" cy="@Coordinate(Y(attempt.Score.Value, axisMin))" r="4" fill="@student.Color" />
+                            </g>
+                        }
+                    }
+                    @if (activePoint is { } active && positions.TryGetValue(active.Attempt.Course, out var pointX))
+                    {
+                        var pointY = Y(active.Attempt.Score!.Value, axisMin);
+                        var (first, second) = GetExamScores(active.Attempt);
+                        <foreignObject class="student-progress-tooltip" x="@Coordinate(pointX + 204 > width ? pointX - 204 : pointX + 10)"
+                                       y="@Coordinate(Math.Clamp(pointY - 40, 4, 166))" width="194" height="108">
+                            <div xmlns="http://www.w3.org/1999/xhtml" class="student-progress-tooltip-box" role="tooltip">
+                                <strong>@active.Name</strong>
+                                <div>Examen 1 <b>@(first is null ? "—" : Score(first))</b></div>
+                                <div>Examen 2 <b>@(second is null ? "—" : Score(second))</b></div>
+                                <div>Total <b>@Score(active.Attempt.Score)</b></div>
+                            </div>
+                        </foreignObject>
+                    }
+                    @foreach (var course in columns)
+                    {
+                        var x = Coordinate(positions[course]);
+                        <g><title>@course.Name · @course.Period</title><text x="@x" y="235" text-anchor="middle">@ShortName(course.Name)</text><text x="@x" y="253" text-anchor="middle">@course.Period</text></g>
+                    }
+                </svg>
+            </div>
+            <ul class="student-progress-legend" aria-label="Series de estudiantes">
+                @foreach (var student in visible)
+                {
+                    <li><span class="grammar-dot" style="background:@student.Color"></span>@student.Name</li>
+                }
+            </ul>
+        }
+        @if (visible.Count > 0)
+        {
+            <p class="grammar-footnote">Las notas finales pendientes dejan un hueco en la línea.</p>
+            <details class="student-progress-details">
+                <summary>Ver notas por estudiante y módulo</summary>
+                <div class="data-table-scroll">
+                    <table class="data-table">
+                        <thead><tr><th scope="col">Estudiante</th><th scope="col">Módulo</th><th scope="col">Periodo</th><th scope="col">Nota final</th></tr></thead>
+                        <tbody>
+                            @foreach (var student in visible)
+                            {
+                                @foreach (var attempt in student.Attempts.OrderBy(attempt => columns.IndexOf(attempt.Course)))
+                                {
+                                    <tr><th scope="row">@student.Name</th><td>@attempt.Course.Name</td><td>@attempt.Course.Period</td><td>@Score(attempt.Score)</td></tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </details>
+        }
+    }
+</article>
+
+@code {
+    [Parameter, EditorRequired] public Guid ClassId { get; set; }
+    [Parameter, EditorRequired] public string ModuleName { get; set; } = "";
+    [Parameter] public int Year { get; set; }
+    [Parameter] public int Bimester { get; set; }
+    [Parameter] public string? Parallel { get; set; }
+
+    private readonly CancellationTokenSource lifetime = new();
+    private IReadOnlyList<StudentSeries> series = [];
+    private Guid? selectedStudent;
+    private ChartPoint? activePoint;
+    private readonly Dictionary<Guid, Task<(decimal? First, decimal? Second)>> referenceExams = [];
+    private bool loading;
+    private bool disposed;
+    private string? error;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        if (disposed || loading) return;
+        loading = true;
+        error = null;
+        try
+        {
+            var token = lifetime.Token;
+            var history = Reports.GetStudentProgressAsync(new(ClassId), token);
+            var roster = ReadRosterAsync(token);
+            await Task.WhenAll(history, roster);
+            if (disposed) return;
+
+            var students = await roster;
+            var current = new CoursePoint(ClassId, ModuleName, Year, Bimester, 0, Parallel, true);
+            var historical = (await history).ToLookup(row => row.UserId);
+            var ordered = students.Values.OrderBy(student => student.FirstName).ThenBy(student => student.LastName).ThenBy(student => student.Id);
+            var registrations = students.Values.Any(student => student.CurrentCourse is not { RegistrationId: { } id } course ||
+                course.ClassId != ClassId || id == Guid.Empty)
+                ? await ReadCourseRegistrationsAsync(token)
+                : new Dictionary<Guid, Guid>();
+            var loaded = new List<StudentSeries>();
+            foreach (var student in ordered)
+            {
+                token.ThrowIfCancellationRequested();
+                var attempts = historical[student.Id].Select(row => new Attempt(
+                    new(row.ClassId, row.ModuleName, row.Year, row.Bimester, row.Level, row.Parallel, false),
+                    row.FinalScore, row.Exam1Score, row.Exam2Score)).ToList();
+                var exactCourse = student.CurrentCourse?.ClassId == ClassId ? student.CurrentCourse : null;
+                var registrationId = registrations.GetValueOrDefault(student.Id, exactCourse?.RegistrationId ?? Guid.Empty);
+                var final = exactCourse is null ? null : student.CurrentCourseFinalScore;
+                if (final is null && registrationId != Guid.Empty)
+                {
+                    var (first, second) = await ReadExamsAsync(registrationId, token);
+                    final = first.HasValue && second.HasValue ? (first.Value + second.Value) / 2m : null;
+                    attempts.Add(new(current, final, first, second));
+                }
+                else
+                {
+                    attempts.Add(new(current, final, RegistrationId: registrationId));
+                }
+                loaded.Add(new(student.Id, $"{student.FirstName} {student.LastName}".Trim(),
+                    $"hsl({Coordinate(loaded.Count * 137.508 % 360)}, 68%, 39%)", attempts));
+            }
+            if (!disposed) series = loaded;
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            if (disposed) return;
+            Session.Clear();
+            Navigation.NavigateTo("/auth/login", replace: true);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or JsonException or InvalidOperationException or OperationCanceledException)
+        {
+            if (!disposed)
+                error = ex is HttpRequestException { StatusCode: HttpStatusCode.Forbidden }
+                    ? "No tienes permiso para consultar las notas de este curso."
+                    : "No se pudo cargar la evolución de las notas.";
+        }
+        finally { loading = false; }
+    }
+
+    private async Task<Dictionary<Guid, Guid>> ReadCourseRegistrationsAsync(CancellationToken token)
+    {
+        var registrations = new Dictionary<Guid, Guid>();
+        var seen = new HashSet<Guid>();
+        for (var page = 1; ; page++)
+        {
+            var response = await Courses.GetRegistrationsAsync(ClassId, page, token);
+            token.ThrowIfCancellationRequested();
+            if (response?.Data is not { } rows || response.Error is { ErrorCode: not 0 })
+                throw new InvalidOperationException("No se pudieron consultar las inscripciones del curso.");
+            var previousCount = seen.Count;
+            foreach (var row in rows)
+            {
+                if (row.ClassId != ClassId || row.Id == Guid.Empty || row.UserId == Guid.Empty)
+                    throw new InvalidOperationException("La API devolvió una inscripción ajena al curso.");
+                if (seen.Add(row.Id) && row.Active && !registrations.TryAdd(row.UserId, row.Id))
+                    throw new InvalidOperationException("El estudiante tiene más de una inscripción activa en el curso.");
+            }
+            if (rows.Count < 100) return registrations;
+            if (seen.Count == previousCount) throw new InvalidOperationException("El listado de inscripciones no avanzó de página.");
+        }
+    }
+
+    private async Task<Dictionary<Guid, UserSearchResponse>> ReadRosterAsync(CancellationToken token)
+    {
+        const int pageSize = 100;
+        var students = new Dictionary<Guid, UserSearchResponse>();
+        var seen = new HashSet<Guid>();
+        for (var page = 1; ; page++)
+        {
+            var response = await Users.SearchAsync(new()
+            {
+                PageNumber = page, PageSize = pageSize, Filter = new() { ClassId = ClassId }
+            }, token);
+            token.ThrowIfCancellationRequested();
+            if (response?.Data is not { } rows || response.Error is { ErrorCode: not 0 })
+                throw new InvalidOperationException("No se pudo consultar la lista de estudiantes.");
+            var added = 0;
+            foreach (var row in rows)
+            {
+                if (row.Id == Guid.Empty || !seen.Add(row.Id)) continue;
+                added++;
+                if (string.Equals(row.RoleName, "Student", StringComparison.OrdinalIgnoreCase))
+                    students.Add(row.Id, row);
+            }
+            if (rows.Count < pageSize) return students;
+            if (added == 0) throw new InvalidOperationException("El listado de estudiantes no avanzó de página.");
+        }
+    }
+
+    private async Task ShowPointAsync(ChartPoint point)
+    {
+        activePoint = point;
+        if (point.Attempt.RegistrationId is not { } id || id == Guid.Empty) return;
+        if (!referenceExams.TryGetValue(id, out var request))
+            referenceExams[id] = request = ReadTooltipExamsAsync(id);
+        await request;
+    }
+
+    private void HidePoint(ChartPoint point)
+    {
+        if (activePoint == point) activePoint = null;
+    }
+    private void ClearPoint() => activePoint = null;
+
+    private (decimal?, decimal?) GetExamScores(Attempt attempt) =>
+        attempt.RegistrationId is { } id && referenceExams.TryGetValue(id, out var request) && request.IsCompletedSuccessfully
+            ? request.Result
+            : (attempt.Exam1, attempt.Exam2);
+
+    private async Task<(decimal?, decimal?)> ReadExamsAsync(Guid registrationId, CancellationToken token)
+    {
+        var draft = new StudentGradeDraft();
+        foreach (var group in (await Evaluations.GetAsync(registrationId, token)).GroupBy(row => row.Period))
+            if (group.Count() == 1) draft.Set(group.Single());
+        return (draft.Total(0), draft.Total(1));
+    }
+
+    private async Task<(decimal?, decimal?)> ReadTooltipExamsAsync(Guid registrationId)
+    {
+        try
+        {
+            return await ReadExamsAsync(registrationId, lifetime.Token);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or JsonException or InvalidOperationException or OperationCanceledException)
+        {
+            return (null, null);
+        }
+    }
+
+    private static string Coordinate(double value) => value.ToString("0.##", CultureInfo.InvariantCulture);
+    private static double Y(decimal score, int minimum) => (double)(212 - (score - minimum) * 190 / (100 - minimum));
+    private static string Score(decimal? score) => score?.ToString("0.##", CultureInfo.GetCultureInfo("es-BO")) ?? "Sin nota final";
+    private static string ShortName(string name) => name.Length > 20 ? name[..19] + "…" : name;
+
+    public void Dispose()
+    {
+        disposed = true;
+        lifetime.Cancel();
+        lifetime.Dispose();
+    }
+
+    private sealed record CoursePoint(Guid Id, string Name, int Year, int Bimester, int Level, string? Parallel, bool Current)
+    {
+        public string Period => $"{Year} · B{Bimester}" + (Current ? " · Referencia" : string.IsNullOrWhiteSpace(Parallel) ? "" : $" · {Parallel}");
+    }
+    private sealed record Attempt(CoursePoint Course, decimal? Score, decimal? Exam1 = null, decimal? Exam2 = null, Guid? RegistrationId = null);
+    private sealed record ChartPoint(string Name, Attempt Attempt);
+    private sealed record StudentSeries(Guid Id, string Name, string Color, List<Attempt> Attempts);
+}

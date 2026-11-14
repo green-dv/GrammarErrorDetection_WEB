@@ -1,0 +1,16 @@
+@* Miniatura de una página del portal (barra lateral, barra superior, indicadores y gráfica) en un tema fijo. *@
+<div class="theme-preview @(Dark ? "is-dark" : "")" aria-hidden="true">
+    <div class="theme-preview-side"><i></i><i></i><i></i><i></i></div>
+    <div class="theme-preview-main">
+        <div class="theme-preview-top"></div>
+        <div class="theme-preview-body">
+            <div class="theme-preview-title"></div>
+            <div class="theme-preview-kpis"><span><b></b><em></em></span><span><b></b><em></em></span><span><b></b><em></em></span></div>
+            <div class="theme-preview-chart"><i style="height:90%"></i><i style="height:40%"></i><i style="height:65%"></i><i style="height:25%"></i><i style="height:55%"></i><i style="height:30%"></i></div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public bool Dark { get; set; }
+}
