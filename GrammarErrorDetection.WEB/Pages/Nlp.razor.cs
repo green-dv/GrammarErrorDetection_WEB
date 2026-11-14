@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using GrammarErrorDetection.Models.Texts;
+using GrammarErrorDetection.Models.Courses;
 using GrammarErrorDetection.Services.Interfaces;
 using GrammarErrorDetection.Services.Services.Auth;
 using Microsoft.AspNetCore.Components;
@@ -12,6 +13,7 @@ public partial class Nlp : IDisposable
 {
     private const long MaxPhotoSize = 5 * 1024 * 1024;
     [Inject] private ITextService Texts { get; set; } = default!;
+    [Inject] private IRegistrationService Registrations { get; set; } = default!;
     [Inject] private IOcrService Ocr { get; set; } = default!;
     [Inject] private AuthSessionState Session { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
@@ -21,13 +23,43 @@ public partial class Nlp : IDisposable
     private bool allTexts, loading, uploading, recognizingPhoto, photoMenuOpen, hasNext, disposed;
     private List<TextResponse> paragraphs = [];
     private TextResponse? selected;
+    private Guid? registrationId;
+    private List<StudentCourseResponse> uploadCourses = [];
+    private bool loadingCourses;
+    private string? coursesError;
     private object devicePhotoInputKey = new(), cameraPhotoInputKey = new();
     private readonly CancellationTokenSource lifetime = new();
     private CancellationTokenSource? historyCancellation;
     private bool CanReadAll => Session.IsInRole("Teacher") || Session.IsInRole("Coordinator");
     private bool EditorBusy => uploading || recognizingPhoto;
     private TextResponse? CurrentAnalysis => selected?.OriginalContent == text ? selected : null;
-    protected override Task OnInitializedAsync() => LoadHistoryAsync(1);
+    protected override Task OnInitializedAsync() => Task.WhenAll(LoadHistoryAsync(1), LoadUploadCoursesAsync());
+
+    private async Task LoadUploadCoursesAsync()
+    {
+        if (disposed || loadingCourses || !Session.IsInRole("Student") || Session.Current?.User is not { } viewer) return;
+        loadingCourses = true; coursesError = null;
+        try
+        {
+            var courses = new Dictionary<Guid, StudentCourseResponse>();
+            for (var number = 1; ; number++)
+            {
+                var response = await Registrations.GetMyCoursesAsync(number, 100, lifetime.Token);
+                if (disposed || Session.Current?.User?.Id != viewer.Id) return;
+                if (response?.Data is null || response.Error is { ErrorCode: not 0 }) throw new InvalidOperationException("No se pudieron consultar tus cursos para asociar el párrafo.");
+                var added = 0;
+                foreach (var course in response.Data)
+                    if (course.RegistrationId != Guid.Empty && courses.TryAdd(course.RegistrationId, course)) added++;
+                if (response.Data.Count < 100) break;
+                if (added == 0) throw new InvalidOperationException("El listado de cursos no avanzó. Inténtalo de nuevo.");
+            }
+            uploadCourses = courses.Values.Where(course => course.ClassId != Guid.Empty && string.Equals(course.Status, "Approved", StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(course => course.Year).ThenByDescending(course => course.Bimester).ToList();
+        }
+        catch (Exception ex) when (ex is HttpRequestException or JsonException or InvalidOperationException or OperationCanceledException)
+        { if (!disposed && !lifetime.IsCancellationRequested) coursesError = ErrorMessage(ex, false); }
+        finally { loadingCourses = false; }
+    }
 
     private bool CheckSession()
     {
@@ -104,6 +136,7 @@ public partial class Nlp : IDisposable
     {
         if (EditorBusy) return;
         selected = paragraph; text = paragraph.OriginalContent;
+        registrationId = paragraph.UserId == Session.Current?.User?.Id ? paragraph.RegistrationId : null;
         status = uploadError = photoMessage = photoError = null;
         photoMenuOpen = false;
     }
@@ -114,14 +147,19 @@ public partial class Nlp : IDisposable
         var content = text.Trim();
         if (content.Length == 0 || content.Length > 5000) { uploadError = "Escribe un párrafo de entre 1 y 5000 caracteres."; return; }
         var owner = Session.Current!.User!.Id;
+        // Docentes y coordinadores no están inscritos: sus párrafos van siempre sin curso.
+        var registration = Session.IsInRole("Student") ? registrationId : null;
+        if (registration.HasValue && loadingCourses) { uploadError = "Espera a que termine la consulta de tus cursos."; return; }
+        if (registration.HasValue && !uploadCourses.Any(course => course.RegistrationId == registration))
+        { uploadError = "Selecciona una inscripción válida para asociar el párrafo."; return; }
         uploading = true; uploadError = status = photoError = null;
         photoMenuOpen = false;
         try
         {
-            var response = await Texts.UploadAsync(new(content), lifetime.Token);
+            var response = await Texts.UploadAsync(new(content, registration), lifetime.Token);
             if (disposed) return;
             if (response?.Data is not { } result || response.Error is { ErrorCode: not 0 }
-                || result.Id == Guid.Empty || result.UserId != owner)
+                || result.Id == Guid.Empty || result.UserId != owner || result.RegistrationId != registration)
                 throw new InvalidOperationException("No se pudo confirmar el análisis. Consulta el historial antes de volver a subir el párrafo.");
             selected = result; text = result.OriginalContent;
             status = IsProcessed(result) ? "Párrafo guardado y analizado." : $"Párrafo guardado. Estado: {result.Status}.";

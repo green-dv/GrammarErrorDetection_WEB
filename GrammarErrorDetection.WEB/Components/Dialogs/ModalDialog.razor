@@ -2,7 +2,17 @@
 @inject IJSRuntime JS
 
 <dialog class="ceti-modal @Class" @ref="dialog" aria-labelledby="@titleId" aria-modal="true" @oncancel="RequestCloseAsync" @oncancel:preventDefault>
-    <header class="ceti-modal-heading"><h2 id="@titleId">@Title</h2><button type="button" class="data-table-icon-button" aria-label="Cerrar ventana" disabled="@Busy" @onclick="RequestCloseAsync">×</button></header>
+    <header class="ceti-modal-heading @(Subtitle is null ? "" : "has-subtitle")">
+        @if (Subtitle is null)
+        {
+            <h2 id="@titleId">@Title</h2>
+        }
+        else
+        {
+            <div class="ceti-modal-title"><h2 id="@titleId">@Title</h2><p>@Subtitle</p></div>
+        }
+        <button type="button" class="data-table-icon-button" aria-label="Cerrar ventana" disabled="@Busy" @onclick="RequestCloseAsync">×</button>
+    </header>
     @ChildContent
 </dialog>
 
@@ -10,6 +20,8 @@
     [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
     [Parameter] public bool Busy { get; set; }
     [Parameter] public string? Class { get; set; }
+    // Opcional: línea descriptiva bajo el título (se muestra con la barra de color del encabezado).
+    [Parameter] public string? Subtitle { get; set; }
     [Parameter] public RenderFragment? ChildContent { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
     private readonly string titleId = $"modal-{Guid.NewGuid():N}";

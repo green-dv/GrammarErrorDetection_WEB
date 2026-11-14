@@ -15,9 +15,11 @@ public sealed class TextService(IApiClient apiClient) : ITextService
         ArgumentOutOfRangeException.ThrowIfLessThan(request.PageSize, 1);
         if (request.UserId == Guid.Empty) throw new ArgumentException("El usuario no es válido.");
         if (request.Id == Guid.Empty) throw new ArgumentException("El texto no es válido.");
+        if (request.RegistrationId == Guid.Empty) throw new ArgumentException("La inscripción no es válida.");
         var query = $"api/Text?PageNumber={request.PageNumber.ToString(CultureInfo.InvariantCulture)}&PageSize={request.PageSize.ToString(CultureInfo.InvariantCulture)}&Filter.Active=true";
         if (request.UserId is { } userId) query += $"&Filter.UserId={userId:D}";
         if (request.Id is { } id) query += $"&Filter.Id={id:D}";
+        if (request.RegistrationId is { } registrationId) query += $"&Filter.RegistrationId={registrationId:D}";
         if (!string.IsNullOrWhiteSpace(request.OriginalContent)) query += $"&Filter.OriginalContent={Uri.EscapeDataString(request.OriginalContent.Trim())}";
         return apiClient.GetAsync<ApiResponse<List<TextResponse>>>(query, cancellationToken);
     }
@@ -26,6 +28,7 @@ public sealed class TextService(IApiClient apiClient) : ITextService
     {
         ArgumentNullException.ThrowIfNull(request);
         if (string.IsNullOrWhiteSpace(request.OriginalContent)) throw new ArgumentException("Escribe un párrafo antes de subirlo.");
+        if (request.RegistrationId == Guid.Empty) throw new ArgumentException("La inscripción no es válida.");
         return apiClient.PostAsync<TextUploadRequest, ApiResponse<TextResponse>>("api/Text/upload", request, cancellationToken);
     }
 }

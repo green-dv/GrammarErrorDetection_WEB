@@ -1,0 +1,157 @@
+@using GrammarErrorDetection.Models.Dashboards
+@using GrammarErrorDetection.Services.Interfaces
+@implements IDisposable
+@inject IDashboardService Dashboard
+
+@* Rendimiento de los docentes en el periodo (Dashboard_TeacherRanking_List): promedio de nota final de todos sus
+   estudiantes, con textos y errores. Ordenable de mejor a peor y paginado en el servidor. *@
+<section class="sh-card cd-ranking" id="@AnchorId" aria-labelledby="cd-ranking-title" aria-busy="@(loading ? "true" : "false")">
+    <header class="sh-card-head">
+        <div>
+            <h3 id="cd-ranking-title">Rendimiento de docentes</h3>
+            <p class="sh-muted">Promedio de nota final de todos sus estudiantes en @PeriodLabel.ToLower(StudentDashboard.Culture).</p>
+        </div>
+        <div class="cd-toggle" role="group" aria-label="Orden">
+            <button type="button" aria-pressed="@(order == "Best" ? "true" : "false")" disabled="@loading" @onclick='() => ChangeOrderAsync("Best")'>Mejor primero</button>
+            <button type="button" aria-pressed="@(order == "Worst" ? "true" : "false")" disabled="@loading" @onclick='() => ChangeOrderAsync("Worst")'>Peor primero</button>
+        </div>
+    </header>
+    @if (error is not null) { <div class="data-table-error" role="alert">@error <button type="button" class="data-table-text-button" @onclick="() => LoadAsync(pageNumber)">Reintentar</button></div> }
+    else if (results is null) { <p class="data-table-message" role="status">Cargando docentes…</p> }
+    else if (results.Items.Count == 0) { <p class="sh-empty">No hay docentes con cursos en este periodo.</p> }
+    else
+    {
+        <ul class="m-cards">
+            @foreach (var teacher in results.Items)
+            {
+                <li @key="teacher.TeacherId">
+                    <div class="m-card-head">
+                        <span class="cd-rank @(teacher.FinalAverage is null ? "is-none" : teacher.Rank <= 3 ? "is-top" : "")">@(teacher.FinalAverage is null ? "—" : teacher.Rank.ToString(StudentDashboard.Culture))</span>
+                        <div><strong>@teacher.TeacherName</strong><small>@teacher.CourseCount @(teacher.CourseCount == 1 ? "curso" : "cursos") · @teacher.GradedStudents de @teacher.EnrolledStudents con nota</small></div>
+                    </div>
+                    @if (teacher.FinalAverage is { } final)
+                    {
+                        <div class="cd-score @(final >= 70 ? "is-pass" : "is-fail")"><strong>@final.ToString("0.#", StudentDashboard.Culture)</strong><span class="sh-meter" aria-hidden="true"><span style="width:@StudentDashboard.Width(final)"></span></span></div>
+                    }
+                    else { <span class="sh-muted">Sin notas</span> }
+                    <dl class="m-facts">
+                        <div><dt>Aprobación</dt><dd>@StudentDashboard.Percent(teacher.PassRatePercentage)</dd></div>
+                        <div><dt>Errores por texto</dt><dd>@(teacher.ErrorsPerText?.ToString("0.##", StudentDashboard.Culture) ?? "—")</dd></div>
+                        <div><dt>Textos · errores</dt><dd>@teacher.AnalyzedTexts.ToString("N0", StudentDashboard.Culture) · @teacher.TotalErrors.ToString("N0", StudentDashboard.Culture)</dd></div>
+                        <div><dt>En riesgo</dt><dd>@teacher.AtRiskStudents</dd></div>
+                    </dl>
+                </li>
+            }
+        </ul>
+        <div class="data-table-scroll m-table" role="region" aria-label="Rendimiento de docentes" tabindex="0">
+            <table class="td-table cd-perf-table">
+                <thead>
+                    <tr>
+                        <th scope="col"><span class="data-table-sr-only">Puesto</span>#</th>
+                        <th scope="col">Docente</th>
+                        <th scope="col">Nota final promedio</th>
+                        <th scope="col">Aprobación</th>
+                        <th scope="col">Textos</th>
+                        <th scope="col">Errores</th>
+                        <th scope="col">Errores por texto</th>
+                        <th scope="col">En riesgo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var teacher in results.Items)
+                    {
+                        <tr @key="teacher.TeacherId">
+                            <td><span class="cd-rank @(teacher.FinalAverage is null ? "is-none" : teacher.Rank <= 3 ? "is-top" : "")">@(teacher.FinalAverage is null ? "—" : teacher.Rank.ToString(StudentDashboard.Culture))</span></td>
+                            <th scope="row">@teacher.TeacherName<small>@teacher.CourseCount @(teacher.CourseCount == 1 ? "curso" : "cursos") · @teacher.GradedStudents de @teacher.EnrolledStudents con nota</small></th>
+                            <td>
+                                @if (teacher.FinalAverage is { } final)
+                                {
+                                    <div class="cd-score @(final >= 70 ? "is-pass" : "is-fail")">
+                                        <strong>@final.ToString("0.#", StudentDashboard.Culture)</strong>
+                                        <span class="sh-meter" aria-hidden="true"><span style="width:@StudentDashboard.Width(final)"></span></span>
+                                    </div>
+                                }
+                                else { <span class="sh-muted">Sin notas</span> }
+                            </td>
+                            <td>@StudentDashboard.Percent(teacher.PassRatePercentage)</td>
+                            <td>@teacher.AnalyzedTexts.ToString("N0", StudentDashboard.Culture)</td>
+                            <td>@teacher.TotalErrors.ToString("N0", StudentDashboard.Culture)</td>
+                            <td>@(teacher.ErrorsPerText?.ToString("0.##", StudentDashboard.Culture) ?? "—")</td>
+                            <td>@(teacher.AtRiskStudents > 0 ? teacher.AtRiskStudents.ToString(StudentDashboard.Culture) : "—")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <nav class="sh-pager" aria-label="Páginas de docentes">
+            <span>Mostrando @((pageNumber - 1) * PageSize + 1)–@((pageNumber - 1) * PageSize + results.Items.Count) de @results.TotalCount</span>
+            @if (Pages > 1)
+            {
+                <div>
+                    <button type="button" aria-label="Página anterior" disabled="@(loading || pageNumber == 1)" @onclick="() => LoadAsync(pageNumber - 1)">‹</button>
+                    @foreach (var number in PageWindow())
+                    {
+                        <button type="button" aria-current="@(number == pageNumber ? "page" : null)" disabled="@loading" @onclick="() => LoadAsync(number)">@number</button>
+                    }
+                    <button type="button" aria-label="Página siguiente" disabled="@(loading || pageNumber >= Pages)" @onclick="() => LoadAsync(pageNumber + 1)">›</button>
+                </div>
+            }
+        </nav>
+        <p class="sh-note">Los docentes sin notas registradas aparecen al final.</p>
+    }
+</section>
+
+@code {
+    [Parameter] public string? AnchorId { get; set; }
+    [Parameter] public int? Year { get; set; }
+    [Parameter] public int? Bimester { get; set; }
+    [Parameter] public string PeriodLabel { get; set; } = string.Empty;
+    private const int PageSize = 5;
+    private readonly CancellationTokenSource lifetime = new();
+    private DashboardPage<TeacherRankingItem>? results;
+    private (int?, int?)? loadedPeriod;
+    private string order = "Best";
+    private int pageNumber = 1;
+    private bool loading;
+    private string? error;
+
+    private int Pages => results is null ? 0 : (int)((results.TotalCount + PageSize - 1) / PageSize);
+
+    protected override Task OnParametersSetAsync()
+    {
+        if (loadedPeriod == (Year, Bimester)) return Task.CompletedTask;
+        loadedPeriod = (Year, Bimester);
+        results = null;
+        return LoadAsync(1);
+    }
+
+    private Task ChangeOrderAsync(string value)
+    {
+        if (order == value) return Task.CompletedTask;
+        order = value;
+        return LoadAsync(1);
+    }
+
+    private IEnumerable<int> PageWindow()
+    {
+        var first = Math.Max(1, Math.Min(pageNumber - 2, Pages - 4));
+        return Enumerable.Range(first, Math.Min(5, Pages));
+    }
+
+    private async Task LoadAsync(int number)
+    {
+        if (loading || number < 1) return;
+        loading = true;
+        error = null;
+        try
+        {
+            results = await Dashboard.GetTeacherRankingAsync(number, PageSize, Year, Bimester, order, lifetime.Token);
+            pageNumber = number;
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException or ArgumentException) { error = "No se pudo cargar el rendimiento de los docentes."; }
+        finally { loading = false; }
+    }
+
+    public void Dispose() { lifetime.Cancel(); lifetime.Dispose(); }
+}

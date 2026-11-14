@@ -20,6 +20,16 @@
                     <label class="data-table-field"><span>Correo</span><input type="email" @bind="model.Email" @bind:event="oninput" maxlength="100" /></label>
                     <label class="data-table-field"><span>Teléfono</span><input type="tel" @bind="model.Phone" @bind:event="oninput" maxlength="12" /></label>
                     <label class="data-table-field"><span>Fecha de nacimiento</span><InputDate @bind-Value="model.BirthDate" max="@DateTime.Today.ToString("yyyy-MM-dd")" /></label>
+                    <label class="data-table-field"><span>Rol</span>
+                        <select value="@(model.RoleId?.ToString() ?? "")" disabled="@(IsSelf || Roles.Count == 0)" aria-describedby="user-role-help"
+                                @onchange="args => model.RoleId = Guid.TryParse(args.Value?.ToString(), out var id) ? id : model.RoleId">
+                            @foreach (var role in Roles.Where(r => r.Active || r.Id == User.RoleId))
+                            {
+                                <option value="@role.Id">@UserCreateModal.RoleLabel(role.Name)</option>
+                            }
+                        </select>
+                        <small id="user-role-help" class="users-field-help">@(IsSelf ? "No puedes cambiar tu propio rol." : model.RoleChanged ? "El cambio de rol se aplica en su próximo inicio de sesión." : "")</small>
+                    </label>
                 </div>
             </fieldset>
         </div>

@@ -1,0 +1,136 @@
+@using GrammarErrorDetection.Services.Services.Auth
+@using GrammarErrorDetection.WEB.Views.Courses
+@using GrammarErrorDetection.WEB.Views.Points
+@using GrammarErrorDetection.WEB.Views.Reports
+@inject AuthSessionState Session
+@inject NavigationManager Navigation
+@inject GrammarErrorDetection.Services.Interfaces.IUserService Users
+
+<article class="settings-card member-settings-card">
+    <div class="settings-tabs profile-tabs" role="tablist" aria-label="Secciones del perfil">
+        @for (var index = 0; index < Tabs.Length; index++)
+        {
+            var item = Tabs[index];
+            var tabIndex = index;
+            <button @ref="tabButtons[tabIndex]" id="profile-@(item.Key)-tab" type="button" role="tab"
+                    aria-selected="@(activeTab == item.Key ? "true" : "false")" tabindex="@(activeTab == item.Key ? 0 : -1)"
+                    aria-controls="profile-@(item.Key)-panel" @onclick="() => SelectTab(item.Key)" @onkeydown="args => HandleTabKeyAsync(args, tabIndex)">@item.Label</button>
+        }
+    </div>
+    <div id="profile-@(activeTab)-panel" class="member-profile-content" role="tabpanel" aria-labelledby="profile-@(activeTab)-tab" tabindex="0">
+        @switch (activeTab)
+        {
+            case "information":
+                <MemberProfile @key="(UserId, activeTab)" UserId="UserId" Section="information" />
+                @if (IsOwn)
+                {
+                    <a class="data-table-text-button" href="/profile?tab=settings">Configurar la seguridad de mi cuenta</a>
+                }
+                break;
+            case "courses":
+                @if (IsOwn && Session.IsInRole("Teacher"))
+                {
+                    <TeacherCourseList @key="UserId" />
+                }
+                else if ((IsOwn && Session.IsInRole("Student")) || (!IsOwn && Session.IsInRole("Coordinator")))
+                {
+                    <StudentCourseList @key="UserId" Embedded="true" UserId="UserId" />
+                }
+                else
+                {
+                    <MemberProfile @key="(UserId, activeTab)" UserId="UserId" Section="courses" />
+                }
+                break;
+            case "achievements":
+                <MemberProfile @key="(UserId, activeTab)" UserId="UserId" Section="achievements" />
+                @if (IsOwn && Session.IsInRole("Student"))
+                {
+                    <PointsDashboard />
+                }
+                break;
+            case "grammar":
+                <GrammarDashboard @key="UserId" UserId="UserId" />
+                @if (IsOwn || Session.IsInRole("Teacher") || Session.IsInRole("Coordinator"))
+                {
+                    <div class="grammar-live-detail">
+                        <button type="button" class="data-table-button" aria-expanded="@(showGrammarSentences ? "true" : "false")" aria-controls="profile-grammar-sentences" @onclick="() => showGrammarSentences = !showGrammarSentences">@(showGrammarSentences ? "Ocultar oraciones subidas" : "Ver oraciones subidas")</button>
+                        @if (showGrammarSentences)
+                        {
+                            <div id="profile-grammar-sentences"><StudentGrammarList @key="UserId" UserId="UserId" /></div>
+                        }
+                    </div>
+                }
+                break;
+            case "settings" when IsOwn:
+                <div class="settings-subtabs" role="tablist" aria-label="Secciones de configuración">
+                    @foreach (var (key, label) in SettingsSections)
+                    {
+                        <button type="button" role="tab" id="settings-@(key)-tab" aria-selected="@(settingsSection == key ? "true" : "false")"
+                                aria-controls="settings-@(key)-panel" tabindex="@(settingsSection == key ? 0 : -1)" @onclick="() => settingsSection = key">@label</button>
+                    }
+                </div>
+                <div id="settings-@(settingsSection)-panel" role="tabpanel" aria-labelledby="settings-@(settingsSection)-tab">
+                    @if (settingsSection == "appearance") { <AppearanceSettings /> }
+                    else if (settingsSection == "password") { <ChangePasswordSettings @key="UserId" UserId="UserId" /> }
+                    else { <ProfileSettings @key="UserId" UserId="UserId" /> }
+                </div>
+                break;
+        }
+    </div>
+</article>
+
+@code {
+    [Parameter] public Guid UserId { get; set; }
+    [Parameter] public string? InitialTab { get; set; }
+    private static readonly (string Key, string Label)[] AllTabs = [("information", "Información"), ("courses", "Cursos"), ("achievements", "Logros"), ("grammar", "Gramática"), ("settings", "Configuración")];
+    // Logros y desafíos son de estudiantes: docentes y coordinadores no tienen esa pestaña.
+    private (string Key, string Label)[] Tabs => (IsOwn ? AllTabs : AllTabs[..4]).Where(tab => tab.Key != "achievements" || ProfileIsStudent).ToArray();
+    private bool ProfileIsStudent => IsOwn ? Session.IsInRole("Student") : string.Equals(profileRole, "Student", StringComparison.OrdinalIgnoreCase);
+    private string? profileRole;
+    private Guid roleLoadedFor;
+    private readonly ElementReference[] tabButtons = new ElementReference[AllTabs.Length];
+    private string activeTab = "information";
+    private static readonly (string Key, string Label)[] SettingsSections = [("security", "Seguridad"), ("password", "Contraseña"), ("appearance", "Apariencia")];
+    private string settingsSection = "security";
+    private Guid previousUserId;
+    private bool showGrammarSentences;
+    private string? previousInitialTab;
+    private bool IsOwn => Session.Current?.User?.Id == UserId;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!IsOwn && roleLoadedFor != UserId)
+        {
+            roleLoadedFor = UserId;
+            profileRole = null;
+            try { profileRole = (await Users.GetAsync(UserId))?.Data?.RoleName; }
+            catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException) { }
+        }
+        if (previousUserId != UserId || previousInitialTab != InitialTab)
+        {
+            activeTab = Tabs.Any(tab => tab.Key == InitialTab) ? InitialTab! : "information";
+            showGrammarSentences = false;
+            previousUserId = UserId;
+            previousInitialTab = InitialTab;
+        }
+    }
+    private void SelectTab(string key)
+    {
+        activeTab = key;
+        if (IsOwn) Navigation.NavigateTo($"/profile?tab={key}", replace: true);
+    }
+    private async Task HandleTabKeyAsync(KeyboardEventArgs args, int index)
+    {
+        int? next = args.Key switch
+        {
+            "ArrowRight" => (index + 1) % Tabs.Length,
+            "ArrowLeft" => (index + Tabs.Length - 1) % Tabs.Length,
+            "Home" => 0,
+            "End" => Tabs.Length - 1,
+            _ => null
+        };
+        if (next is not { } target) return;
+        SelectTab(Tabs[target].Key);
+        await tabButtons[target].FocusAsync();
+    }
+}

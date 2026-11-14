@@ -1,0 +1,59 @@
+/* Lenguaje visual del directorio de usuarios para todas las pantallas del portal. */
+.ceti-content {
+    --screen-ink: var(--color-brand-navy, #171d46);
+    --screen-muted: #627187;
+    --screen-line: #e6ebf2;
+    --screen-radius: 14px;
+}
+.ceti-content :is(.users-page, .profile-page) { width: 100%; max-width: 1500px; min-width: 0; margin: 10px auto 30px; color: var(--screen-ink); }
+.ceti-content :is(.users-heading, .portal-heading) { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin: 0 0 24px; padding-left: 16px; border-left: 3px solid var(--color-brand-red, #c53736); }
+.ceti-content .portal-heading { display: block; }
+.ceti-content :is(.users-eyebrow, .portal-eyebrow) { margin: 0 0 7px; color: var(--color-brand-blue, #176b9f); font-size: calc(10px * var(--ui-scale, 1)); font-weight: 700; letter-spacing: .12em; }
+.ceti-content :is(.users-heading, .portal-heading) h1 { margin: 0; color: var(--screen-ink); font-size: calc(29px * var(--ui-scale, 1)); line-height: 1.2; font-weight: 700; letter-spacing: -.035em; overflow-wrap: anywhere; }
+.ceti-content :is(.users-heading, .portal-heading) h1 + p { margin: 8px 0 0; color: var(--screen-muted); font-size: calc(13px * var(--ui-scale, 1)); line-height: 1.5; }
+.ceti-content :is(.settings-card, .member-person, .member-stats article, .member-course, .member-medals-panel, .member-medal, .material-card, .collection-overview, .collection-achievement, .gamification-detail, .course-detail-info, .courses-stats article, .nlp-history, .nlp-editor, .nlp-analysis, .leaderboard-podium-section) { border: 1px solid var(--screen-line); border-radius: var(--screen-radius); box-shadow: 0 3px 14px #18244004; }
+.ceti-content :is(.settings-card, .member-person, .member-stats article, .member-course, .member-medals-panel, .material-card, .collection-overview, .course-detail-info, .courses-stats article, .nlp-history, .nlp-editor, .nlp-analysis) { background-color: var(--t-surface); }
+.ceti-content :is(.settings-content, .member-panel-heading, .nlp-history, .nlp-editor, .nlp-analysis) h2 { color: var(--screen-ink); font-size: calc(17px * var(--ui-scale, 1)); font-weight: 700; }
+.ceti-content .settings-content { padding: 22px; }
+.ceti-content .settings-content p { font-size: calc(13px * var(--ui-scale, 1)); line-height: 1.6; }
+.ceti-content .settings-card { max-width: none; }
+.ceti-content .settings-tabs { padding-inline: 22px; }
+.ceti-content .settings-tabs button { padding: 16px 12px; font-size: calc(13px * var(--ui-scale, 1)); }
+.ceti-content .portal-button { min-height: 38px; padding: 8px 12px; border-radius: 7px; font-size: calc(12px * var(--ui-scale, 1)); }
+.ceti-content .portal-field { gap: 6px; font-size: calc(12px * var(--ui-scale, 1)); }
+.ceti-content .portal-field input { height: 38px; border-color: var(--t-line); border-radius: 7px; }
+.ceti-content .gamification-filters.data-filter-panel { gap: 12px; padding: 16px; margin: 0 22px 18px; }
+.gamification-filters .data-filter-heading { flex-basis: 100%; margin-bottom: 2px; }
+.gamification-filters .data-filter-actions { flex-basis: 100%; }
+.ceti-content .materials-toolbar { display: grid; gap: 0; }
+.ceti-content .leaderboard-toolbar { display: grid; gap: 0; }
+.leaderboard-toolbar .leaderboard-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ceti-content .leaderboard-search-card { margin-bottom: 24px; }
+.ceti-content .materials-catalog > .materials-grid { padding: 0 22px 22px; }
+.ceti-content .materials-catalog > .materials-pagination { margin: 0; padding: 14px 22px; border-top: 1px solid var(--screen-line); color: var(--screen-muted); font-size: calc(11px * var(--ui-scale, 1)); }
+.ceti-content .materials-catalog .materials-empty { margin: 0 22px 22px; border: 0; }
+.ceti-content .materials-count { display: block; margin-top: 12px; color: var(--screen-muted); font-size: calc(12px * var(--ui-scale, 1)); }
+.ceti-content .material-upload-button, .ceti-content .nlp-upload-button { min-height: 38px; padding: 8px 12px; border-radius: 7px; font-size: calc(12px * var(--ui-scale, 1)); font-weight: 600; }
+.ceti-content .nlp-history-search-form { margin: 0 16px; padding: 14px; border: 1px solid var(--table-filter-border); border-radius: 10px; background: var(--table-filter-bg); }
+.ceti-content .nlp-history-count { font-size: calc(12px * var(--ui-scale, 1)); }
+.ceti-content .gamification-tabs { border: 1px solid var(--screen-line); border-radius: 10px; }
+.ceti-content .gamification-tabs button { padding: 9px 20px; border-radius: 7px; font-size: calc(12px * var(--ui-scale, 1)); }
+.portal-welcome { padding: 22px; }
+.portal-welcome h2 { margin: 0; font-size: calc(17px * var(--ui-scale, 1)); font-weight: 700; }
+.portal-welcome p { margin: 8px 0 0; color: var(--screen-muted); font-size: calc(13px * var(--ui-scale, 1)); line-height: 1.6; }
+.portal-shortcuts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px; margin-top: 20px; }
+.portal-shortcut { display: flex; align-items: center; gap: 12px; padding: 16px; border: 1px solid var(--screen-line); border-radius: 10px; color: var(--screen-ink); font-size: calc(13px * var(--ui-scale, 1)); font-weight: 600; text-decoration: none; }
+.portal-shortcut:hover { background: var(--t-subtle); border-color: #b8cee4; color: var(--color-brand-blue); }
+.portal-shortcut svg { width: 22px; height: 22px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.portal-welcome-footer { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--screen-line); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.portal-welcome-footer span { color: var(--screen-muted); font-size: calc(12px * var(--ui-scale, 1)); }
+@media (max-width: 640px) {
+    .ceti-content :is(.users-heading, .portal-heading) h1 { font-size: calc(25px * var(--ui-scale, 1)); }
+    .ceti-content .users-heading { align-items: flex-start; }
+    .ceti-content .gamification-filters.data-filter-panel { margin-inline: 16px; padding: 14px; }
+    .leaderboard-toolbar .leaderboard-filters { grid-template-columns: minmax(0, 1fr); }
+    .ceti-content .materials-catalog > .materials-grid { padding: 0 16px 16px; }
+    .ceti-content .materials-catalog > .materials-pagination { padding-inline: 16px; }
+    .ceti-content .materials-catalog .materials-empty { margin-inline: 16px; }
+    .ceti-content .settings-content, .portal-welcome { padding: 16px; }
+}
