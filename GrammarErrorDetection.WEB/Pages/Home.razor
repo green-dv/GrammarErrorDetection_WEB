@@ -1,7 +1,32 @@
-﻿@page "/"
+@page "/home"
+@using GrammarErrorDetection.Services.Services.Auth
+@using GrammarErrorDetection.WEB.Views.Auth.Components
+@inject AuthSessionState Session
+@inject LoginFlowState LoginFlow
+@inject RegistrationFlowState RegistrationFlow
+@inject NavigationManager Navigation
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Inicio | CETI La Paz</PageTitle>
 
-<h1>Hello, world!</h1>
+@if (Session.Current is { User: { } user })
+{
+    <h1>Bienvenido, @user.Name</h1>
+    <p>Tu sesión está iniciada.</p>
+    <SessionRolePreview />
+    <button type="button" class="btn btn-primary" @onclick="SignOut">Cerrar sesión</button>
+}
 
-Welcome to your new app.
+@code {
+    protected override void OnInitialized()
+    {
+        if (Session.Current is null) Navigation.NavigateTo("/auth/login", replace: true);
+    }
+
+    private void SignOut()
+    {
+        Session.Clear();
+        LoginFlow.Clear();
+        RegistrationFlow.Clear();
+        Navigation.NavigateTo("/auth/login", replace: true);
+    }
+}

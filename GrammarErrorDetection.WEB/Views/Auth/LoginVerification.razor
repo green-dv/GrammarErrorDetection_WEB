@@ -1,0 +1,42 @@
+@page "/auth/verify"
+@layout AuthLayout
+@using GrammarErrorDetection.WEB.Views.Auth.Components
+
+<PageTitle>Verificar acceso | CETI La Paz</PageTitle>
+@if (Flow.HasPendingVerification)
+{
+    <AuthHeader Title="@(Flow.IsTotpSelected ? "Abre tu autenticador" : "Revisa tu correo")" Subtitle="@(Flow.IsTotpSelected ? "Ingresa el código de tu aplicación autenticadora." : $"Ingresa el código enviado a {Flow.PendingEmail}.")" />
+    <EditForm EditContext="editContext" OnValidSubmit="VerifyAsync" OnInvalidSubmit="ShowValidationErrors" novalidate class="auth-register-form" aria-describedby="login-verification-errors">
+        <DataAnnotationsValidator />
+        @if (!string.IsNullOrEmpty(status) || validationErrors.Count > 0)
+        {
+            <div id="login-verification-errors" class="auth-errors" role="alert">
+                <ul>
+                    @if (!string.IsNullOrEmpty(status))
+                    {
+                        <li>@status</li>
+                    }
+                    @foreach (var error in validationErrors)
+                    {
+                        <li>@error</li>
+                    }
+                </ul>
+            </div>
+        }
+        <fieldset disabled="@busy" class="auth-verification-fields">
+            <label for="login-code" class="auth-label">Código de verificación</label>
+            <InputText id="login-code" @bind-Value="model.Code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" class="auth-control auth-code-control" />
+            <button type="submit" class="auth-submit auth-register-submit">@(busy ? "Verificando…" : "Verificar e iniciar sesión")</button>
+        </fieldset>
+    </EditForm>
+    @if (Flow.Challenge is { } challenge)
+    {
+        <p class="auth-verification-note">El código vence a las @challenge.ExpiresAt.ToLocalTime().ToString("HH:mm").</p>
+    }
+    <button type="button" class="auth-link auth-cancel" @onclick="Cancel" disabled="@busy">Cancelar inicio de sesión</button>
+}
+else
+{
+    <AuthHeader Title="Vuelve a iniciar sesión" Subtitle="La verificación pendiente venció o ya no está disponible." />
+    <a href="/auth/login" class="auth-link mt-5 inline-block">Volver al inicio de sesión</a>
+}
