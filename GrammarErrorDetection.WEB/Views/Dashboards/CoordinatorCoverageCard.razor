@@ -1,0 +1,113 @@
+@using System.Globalization
+@using GrammarErrorDetection.Models.Dashboards
+@using GrammarErrorDetection.Services.Interfaces
+@implements IDisposable
+@inject IDashboardService Dashboard
+
+@* Cobertura de clases del periodo: anillo con clases con actividad y lista paginada (Dashboard_ClassCoverage_List),
+   ordenada con la menor cobertura primero para detectar cursos que no usan el analizador. *@
+<section class="sh-card cd-coverage" id="@AnchorId" aria-labelledby="cd-coverage-title" aria-busy="@(loading ? "true" : "false")">
+    <header class="sh-card-head">
+        <h3 id="cd-coverage-title">Cobertura de clases</h3>
+        <a class="sh-link" href="courses">Ver todas</a>
+    </header>
+    <div class="cd-coverage-head">
+        <div class="cd-ring" style="--value:@StudentDashboard.Number(ActivityPercent)" role="img" aria-label="@($"{ActivityText} de las clases con actividad")">
+            <div><strong>@ActivityText</strong><span>con actividad</span></div>
+        </div>
+        <ul class="cd-coverage-legend">
+            <li class="is-all"><span>Clases del periodo</span><b>@CourseCount</b></li>
+            <li class="is-active"><span>Con textos analizados</span><b>@ClassesWithActivity</b></li>
+            <li class="is-idle"><span>Sin actividad</span><b>@Math.Max(CourseCount - ClassesWithActivity, 0)</b></li>
+        </ul>
+    </div>
+    <p class="sh-note">@PeriodLabel. Primero las clases con menor uso del analizador.</p>
+
+    @if (error is not null) { <div class="data-table-error" role="alert">@error <button type="button" class="data-table-text-button" @onclick="() => LoadAsync(pageNumber)">Reintentar</button></div> }
+    else if (results is null) { <p class="data-table-message" role="status">Cargando clases…</p> }
+    else if (results.Items.Count > 0)
+    {
+        <ul class="cd-classes">
+            @foreach (var course in results.Items)
+            {
+                <li @key="course.ClassId">
+                    <div>
+                        <a href="@($"courses/{course.ClassId:D}/grammar-report")"><strong>@course.ModuleName</strong></a>
+                        <small>@(course.Parallel is { Length: > 0 } p ? $"Paralelo {p} · " : "")B@(course.Bimester) @course.Year · @course.TeacherName</small>
+                    </div>
+                    <div class="cd-class-meter">
+                        <span class="sh-meter"><span style="width:@StudentDashboard.Width(course.CoveragePercentage)"></span></span>
+                        <small>@course.StudentsWithTexts/@course.EnrolledStudents</small>
+                    </div>
+                </li>
+            }
+        </ul>
+        <nav class="sh-pager" aria-label="Páginas de clases">
+            <span>Mostrando @((pageNumber - 1) * PageSize + 1)–@((pageNumber - 1) * PageSize + results.Items.Count) de @results.TotalCount</span>
+            @if (Pages > 1)
+            {
+                <div>
+                    <button type="button" aria-label="Página anterior" disabled="@(loading || pageNumber == 1)" @onclick="() => LoadAsync(pageNumber - 1)">‹</button>
+                    @foreach (var number in PageWindow())
+                    {
+                        <button type="button" aria-current="@(number == pageNumber ? "page" : null)" disabled="@loading" @onclick="() => LoadAsync(number)">@number</button>
+                    }
+                    <button type="button" aria-label="Página siguiente" disabled="@(loading || pageNumber >= Pages)" @onclick="() => LoadAsync(pageNumber + 1)">›</button>
+                </div>
+            }
+        </nav>
+    }
+</section>
+
+@code {
+    [Parameter] public string? AnchorId { get; set; }
+    [Parameter] public int? Year { get; set; }
+    [Parameter] public int? Bimester { get; set; }
+    [Parameter] public int CourseCount { get; set; }
+    [Parameter] public long ClassesWithActivity { get; set; }
+    [Parameter] public string PeriodLabel { get; set; } = string.Empty;
+    private const int PageSize = 4;
+    private readonly CancellationTokenSource lifetime = new();
+    private DashboardPage<ClassCoverageItem>? results;
+    private (int?, int?)? loadedPeriod;
+    private int pageNumber = 1;
+    private bool loading;
+    private string? error;
+
+    private decimal? ActivityPercent => CourseCount == 0 ? null : 100m * ClassesWithActivity / CourseCount;
+
+    private string ActivityText => StudentDashboard.Percent(ActivityPercent);
+
+    private int Pages => results is null ? 0 : (int)((results.TotalCount + PageSize - 1) / PageSize);
+
+    protected override Task OnParametersSetAsync()
+    {
+        if (loadedPeriod == (Year, Bimester)) return Task.CompletedTask;
+        loadedPeriod = (Year, Bimester);
+        results = null;
+        return LoadAsync(1);
+    }
+
+    private IEnumerable<int> PageWindow()
+    {
+        var first = Math.Max(1, Math.Min(pageNumber - 2, Pages - 4));
+        return Enumerable.Range(first, Math.Min(5, Pages));
+    }
+
+    private async Task LoadAsync(int number)
+    {
+        if (loading || number < 1) return;
+        loading = true;
+        error = null;
+        try
+        {
+            results = await Dashboard.GetClassCoverageAsync(number, PageSize, Year, Bimester, lifetime.Token);
+            pageNumber = number;
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException or ArgumentException) { error = "No se pudo cargar la cobertura por clase."; }
+        finally { loading = false; }
+    }
+
+    public void Dispose() { lifetime.Cancel(); lifetime.Dispose(); }
+}

@@ -59,6 +59,12 @@ Bootstrap y los estilos existentes siguen presentes mientras se adaptan las pág
 
 ## Arquitectura del sistema
 
+### Integración de gamificación
+
+Los modelos y llamadas de logros, desafíos, categorías y condiciones están
+disponibles mediante `IGamificationService`. Consultar [la guía de uso](docs/gamification.md)
+para filtros, actualizaciones parciales, imágenes multipart y comprobaciones del contrato HTTP.
+
 El frontend se organiza por capas para separar la presentación, la coordinación de operaciones, la comunicación HTTP y los modelos de datos.
 
 ```text
@@ -109,7 +115,7 @@ Contiene los modelos de datos compartidos entre las capas del frontend: DTOs, so
 
 En `/auth/register` se solicitan nombres, apellidos, CI, teléfono opcional, correo, contraseña y confirmación. El formulario utiliza validación propia, errores compactos y lógica de entrada en `Views/Auth/Register.razor.cs`. Envía únicamente `email`, `purpose: "signup"` y `password` a `POST /api/Auth/SendCode`; los datos personales y la confirmación de contraseña no se envían en esta etapa. La contraseña conserva su valor original y HTTPS protege el transporte.
 
-Al recibir una respuesta válida, abre `/auth/register/verification`. `RegistrationFlowState` conserva el desafío y una copia de los datos completos del usuario, incluida la contraseña, únicamente en memoria; no usa almacenamiento del navegador. Al pulsar «Verificar y crear cuenta», envía `firstName`, `lastName`, `ci`, `email`, `password`, `phone`, `challengeId` y `code` a `POST /api/Auth/Signup`. El backend valida el código antes de crear la cuenta, en la misma operación. Los errores permiten corregir el código y reintentar mientras el desafío siga vigente. El estado temporal se limpia al completar, cancelar o vencer el registro; recargar la página también pierde estos datos. Si la respuesta contiene una sesión válida, se conserva el JWT en memoria y se abre `/home`.
+Al recibir una respuesta válida, abre `/auth/register/verification`. `RegistrationFlowState` conserva el desafío y una copia de los datos completos del usuario, incluida la contraseña, únicamente en memoria; no usa almacenamiento del navegador. Al pulsar «Verificar y crear cuenta», envía `firstName`, `lastName`, `ci`, `email`, `password`, `phone`, `challengeId` y `code` a `POST /api/Auth/Signup`. El backend valida el código antes de crear la cuenta, en la misma operación. Los errores permiten corregir el código y reintentar mientras el desafío siga vigente. El estado temporal se limpia al completar, cancelar o vencer el registro; recargar la página también pierde estos datos. Si la respuesta contiene una sesión válida, se conserva la sesión en `sessionStorage` y se abre `/home`.
 
 Los estilos específicos están en `wwwroot/css/auth/register.css`. El layout compartido compacta el encabezado en pantallas pequeñas para dar espacio al formulario.
 
@@ -129,7 +135,7 @@ El flujo es `Login.razor → IAuthService → IApiClient → POST https://localh
 
 ### Sesión tras verificar
 
-Login por correo, TOTP y registro comparten `AuthSessionResponse` (`accessToken`, `tokenType`, `expiresAt`, `user`). `AuthSessionState` conserva la respuesta en memoria solo si contiene un token Bearer, una fecha vigente y el usuario esperado; no escribe tokens en almacenamiento del navegador. Al verificar correctamente, abre `/home`. Cerrar sesión, recargar la aplicación o vencer la sesión exige autenticarse de nuevo. El JWT queda disponible en `AuthSessionState.Current` para las siguientes integraciones con endpoints protegidos.
+Login por correo, TOTP y registro comparten `AuthSessionResponse` (`accessToken`, `tokenType`, `expiresAt`, `user`). `AuthSessionState` acepta la respuesta solo si contiene un token Bearer, una fecha vigente y el usuario esperado. La sesión se guarda en `sessionStorage` y se recupera antes de evaluar las rutas al recargar. Al verificar correctamente, abre `/home`. Cerrar sesión o vencer la sesión exige autenticarse de nuevo. El JWT queda disponible en `AuthSessionState.Current` para las siguientes integraciones con endpoints protegidos.
 
 En el backend actual, `Login/Verify` acepta desafíos `login_email`; `Signup` valida los desafíos `signup_email` y crea el usuario en la misma operación, devolviendo la misma estructura de sesión. El registro conserva este endpoint para no consumir un desafío de registro en una operación de login.
 
@@ -141,19 +147,39 @@ Se reutilizaron `Layout/AuthLayout.razor`, `Views/Auth/Components/AuthHeader.raz
 
 `Views/Auth/Login.razor` y `Views/Auth/SelectVerificationMethod.razor` adaptan esas vistas al contrato real de la API. `wwwroot/css/auth.css` importa cinco archivos en `wwwroot/css/auth/`: `theme.css` (colores), `layout.css` (estructura visual), `form.css` (campos y mensajes), `methods.css` (selección de verificación) y `register.css` (registro). Estos estilos recuperan las reglas necesarias de `Failed`; no hay estilos inline en `index.html`. No se importaron el registro, la verificación de códigos, el proveedor de autenticación de prueba ni los estilos de las otras páginas.
 
+### Sidebar, perfil y TOTP
+
+El sidebar recupera el diseño de `Failed`: navegación compacta o expandida, búsqueda, menú de cuenta y cierre de sesión. `Navigation/PortalNavigation.cs` centraliza estas reglas del JWT:
+
+| Rol | Opciones específicas |
+| --- | --- |
+| Student | Mis inscripciones, Mis cursos |
+| Teacher | Cursos (solo propios), Inscripciones |
+| Coordinator | Usuarios, Cursos, Inscripciones |
+
+Inicio, material de apoyo, leaderboard, procesamiento y perfil están disponibles para las sesiones autenticadas. `PortalRouteView` también comprueba los permisos al introducir una URL directamente. Las secciones académicas todavía no implementadas muestran un aviso, sin datos simulados. La autorización de operaciones y la validación de la firma del JWT siguen a cargo de la API.
+
+En `/profile`, la pestaña «Configuración TOTP» ejecuta `POST /api/Auth/Totp/Setup` sin cuerpo y genera el QR localmente con [QRCoder](https://www.nuget.org/packages/QRCoder/1.8.1), a partir de `data.otpAuthUri`. También ofrece una clave manual. El URI, el QR y la clave no se guardan en almacenamiento del navegador ni se envían a generadores de QR externos.
+
+La confirmación usa `POST /api/Auth/Totp/Confirm` con únicamente `code`, conservando los ceros iniciales. Solo `data: true` sin error activa el estado visual de TOTP y elimina la clave y el QR temporales. Una respuesta `false` permite corregir el código y reintentar. Un `401` limpia la sesión y vuelve al login.
+
+`ApiAuthorizationHandler` agrega `Authorization: Bearer <accessToken>` únicamente a requests HTTPS del host y puerto de `Api:BaseUrl`. La API debe permitir el encabezado `Authorization` en CORS. Las llamadas a otros orígenes no reciben el JWT.
+
 ### HTTPS y contraseña
+
+La sesión autenticada (JWT, usuario, expiración y estado TOTP) se guarda en `sessionStorage` y se restaura antes de evaluar las rutas protegidas. Esto permite recargar la misma pestaña sin volver al login. Al cerrar sesión o detectar su expiración se elimina del almacenamiento. Los datos pendientes del registro, las contraseñas y los códigos permanecen únicamente en memoria. Si el navegador bloquea el almacenamiento, la sesión funciona solo en memoria.
 
 La configuración exige HTTPS para la API y utiliza la validación de certificados del navegador. El campo `password` se envía tal cual en el JSON, sin cifrar, hashear ni transformar en el frontend. La conexión HTTPS sigue protegiendo el transporte. No se guarda en almacenamiento del navegador, no se añade a URLs y se limpia del formulario al terminar la solicitud. Un cifrado adicional del campo requeriría acordar un protocolo de claves y descifrado con la API. Consultar la [guía de TLS de OWASP](https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html).
 
 ### CORS en el backend
 
-Como el frontend y la API usan puertos distintos, la API debe permitir el origen exacto `https://localhost:7178`. La comprobación actual de `OPTIONS /api/Auth/Login` devuelve `405` sin cabeceras CORS, por lo que el navegador bloquea la solicitud. Para habilitarla en el proyecto externo de la API, registrar antes de `builder.Build()`:
+Como el frontend y la API usan puertos distintos, la API debe permitir el origen exacto `https://localhost:7178`, los métodos utilizados y los encabezados `Content-Type` y `Authorization`. Si se necesita configurar una política en el proyecto externo de la API, registrar antes de `builder.Build()`:
 
 ```csharp
 builder.Services.AddCors(options => options.AddPolicy("CetiWeb", policy =>
     policy.WithOrigins("https://localhost:7178")
           .WithMethods("POST")
-          .WithHeaders("Content-Type")));
+          .WithHeaders("Content-Type", "Authorization")));
 ```
 
 Y agregar después de `app.UseHttpsRedirection()` y antes de autenticación/autorización:
@@ -164,3 +190,82 @@ app.UseCors("CetiWeb");
 
 Reiniciar la API después de aplicar esta configuración. No se requiere permitir cualquier origen ni desactivar la validación HTTPS.
 
+### Listado de cursos
+
+La configuración de cuenta se encuentra en «Perfil → Configuración» (`/profile?tab=settings`). El menú de cuenta y el enlace de seguridad del perfil abren esa pestaña. `/settings` y el enlace antiguo `/profile?tab=totp` redirigen a ella. `Views/Profiles/ProfileSettings` conserva la preparación y confirmación TOTP y solo se monta para el propietario del perfil; no aparece al consultar a otro usuario. Las pestañas del perfil propio actualizan el parámetro `tab` para que el enlace directo seleccione siempre la sección solicitada.
+
+El menú «Reportes» (`/reports`, para docentes y coordinadores) y «Perfil → Gramática» consumen los endpoints reales de `IGrammarReportService`: resumen, categorías y comparación, con `ClassId` para un curso, `UserId` para un reporte personal o ambos para consultar a un estudiante dentro del curso. La guía vigente es `docs/grammar-reports-api-integration.md`. No se envían fechas ni paginación: la BD resuelve los cursos anteriores de la cohorte actual y devuelve las dos bases, la disponibilidad de historial y las tendencias. Se conservan categorías históricas aunque el listado actual esté vacío y se muestran los porcentajes sin recalcularlos. Las selecciones de categoría solo filtran la vista; la cabecera y el Excel mantienen el alcance completo. «Descargar Excel» obtiene el reporte unificado del servidor con JWT, valida el estado HTTP y el formato, usa Content-Disposition para el nombre y lo guarda mediante un Blob del navegador. Los cambios de curso o perfil cancelan las consultas y descargas anteriores. En «Procesar», los estudiantes pueden seleccionar una inscripción aprobada para asociar un párrafo al curso mediante RegistrationId, o dejarlo como texto personal. El detalle de oraciones del perfil usa UserId para incluir los cursos y las prácticas personales.
+
+La pestaña «Gramática» del perfil lista las oraciones de los párrafos del usuario visitado. `StudentGrammarList` envía siempre `Filter.UserId` con el ID del perfil a `GET /api/Text`, valida la identidad de cada párrafo y muestra fecha, original, corrección, categorías y errores. Como el endpoint no tiene filtro por categoría, lee todas las páginas de párrafos de ese usuario antes de filtrar y paginar las oraciones localmente. Las categorías disponibles se obtienen del propio historial. Permite consultar el historial propio y, para profesores o coordinadores, el de otro usuario; un estudiante no solicita textos ajenos. Cambiar de perfil o perder la sesión cancela las solicitudes y limpia el listado.
+
+Para un profesor que abre su propio perfil, la pestaña «Cursos» muestra `TeacherCourseList`: sus cursos impartidos con periodo, horario, aula, estudiantes, promedios del grupo y enlace al listado de estudiantes. Utiliza `GET /api/Class` y fija `Filter.TeacherId` al usuario autenticado en cada consulta, paginación y reintento. No filtra por activo para conservar los cursos de periodos anteriores. Rechaza respuestas con cursos de otro docente y limpia los datos si cambia la sesión.
+
+En la pestaña «Cursos» del perfil, `StudentCourseList` muestra el historial paginado con módulo, docente, paralelo, horario, año/bimestre, fecha de inscripción y notas de ambos exámenes. El estudiante consulta su historial con `GET /api/Registration/mine/courses`. Un coordinador que visita otro perfil utiliza `GET /api/Registration/students/{studentId}/courses`; los demás visitantes no consultan ese historial privado. Ambos endpoints reciben `PageNumber` y `PageSize`. Se conservan los cursos anteriores e inactivos, se excluyen las inscripciones rechazadas o canceladas y las notas ausentes aparecen como pendientes. Las consultas se cancelan al cambiar de perfil o cerrar la vista.
+
+La acción Ver abre `/courses/{classId}` (también `/teaching-courses/{classId}`), adaptando la vista de detalle de `Failed`: módulo, paralelo, docente, aula, horario, fechas y tarjetas con el total inscrito y promedios de exámenes disponibles. La media de ambos exámenes es su promedio aritmético y solo aparece si existen ambas notas. Reutiliza `Views/Users/UserList` con un contexto `Course`, que impone `filter.classId` en cada `POST /api/User/search`, incluso al buscar, limpiar, paginar o reintentar. No carga los catálogos globales ni ofrece cambios de cuentas desde el curso. Coordinadores pueden consultar cualquier curso; Teacher debe ser su docente tanto al cargar el detalle como al consultar sus estudiantes. El listado global `/users` sigue reservado a coordinadores. Las notas e inscripción individuales se muestran solo si `currentCourse.classId` coincide con el curso seleccionado, para no atribuir notas de otro periodo. No se simulan reportes gramaticales ni calificaciones no incluidas en la respuesta.
+
+«Generar cursos automáticamente» abre `GenerateCoursesModal` para coordinadores. Solicita año, bimestre y fechas de destino, muestra el periodo anterior de origen (incluyendo el salto de año) y valida fechas ordenadas dentro del año elegido. Envía únicamente esos cuatro campos a `POST /api/Registration/generate-next-bimester`, con el JWT del cliente API. Bloquea doble envío y cierre durante la operación. Conserva el resultado en el modal con cantidades de cursos creados/reutilizados, inscripciones creadas y motivos de las omisiones; no vuelve a enviar desde esa pantalla. Al completarse, consulta la primera página del periodo de destino. Ante un resultado incierto, pide revisar el listado antes de reenviar porque la operación puede haber guardado cambios parciales.
+
+Editar reutiliza el mismo modal con los datos completos precargados. Lee todas las páginas de `GET /api/Registration?Filter.ClassId=...&Filter.Active=true` y completa los nombres mediante elegibles asignados del módulo y periodo original antes de habilitar el guardado. Conserva a todos los inscritos aunque no estén en la página visible. Permite añadir elegibles, trasladar desde otra clase con confirmación y quitar actuales con confirmación de bajas; `studentIds: []` permite quitar a todos en edición. Envía `PUT /api/Class/with-students` con el `id`, todos los campos del curso y la lista final explícita. Verifica el ID de respuesta y las asignaciones finales, y lee `removedRegistrationIds` para informar de las bajas. Una carga incompleta de inscripciones bloquea el guardado. La edición está disponible solo para coordinadores y respeta el filtro fijo de Teacher.
+
+El botón «Crear curso» del coordinador abre `Views/Courses/CreateCourseModal.razor`, con los datos de módulo, periodo, profesor, aula, paralelo, fechas y horario, y un panel de estudiantes elegibles. Consulta `GET /api/Class/eligible-students` con módulo, año, bimestre, paginación y filtros opcionales de nombre, apellido y CI. Conserva la selección entre páginas y búsquedas, y la reinicia al cambiar módulo o periodo. Los estudiantes con `AlreadyAssigned` o `isAssigned` muestran su asignación y requieren confirmación de traslado. Envía `POST /api/Class/with-students` con datos del curso activo y `studentIds` de usuarios existentes; no crea usuarios. Al confirmar la respuesta, cierra el modal y actualiza el listado. Valida fechas, horario y selección, bloquea envíos duplicados y distingue el éxito de creación de un fallo posterior al refrescar. Ante una respuesta de creación incierta, pide revisar el listado antes de reenviar.
+
+El rol `Teacher` también puede abrir `/courses` y la ruta anterior `/teaching-courses`. Su filtro de profesor muestra el ID del usuario de la sesión como solo lectura; antes de cada consulta se impone ese mismo ID, incluyendo búsqueda, limpieza de filtros, paginación y reintentos. No se carga el catálogo de profesores para este rol. `Coordinator` conserva el selector editable. Esta restricción de interfaz debe complementarse con autorización del lado de la API.
+
+`/courses` recupera el diseño de `Failed` para el administrador (rol `Coordinator`). `Views/Courses/CourseList.razor` reutiliza los estilos compartidos de tablas y `wwwroot/css/courses.css` agrega la distribución adaptable. `ICourseService` consulta `GET /api/Class` con `PageNumber`, `PageSize` y filtros opcionales `Filter.Id`, `Filter.TeacherId`, `Filter.ModuleNameId`, `Filter.Bimester`, `Filter.Year`, `Filter.StartDate`, `Filter.EndDate`, `Filter.Parallel`, `Filter.ClassroomId`, `Filter.StartTime`, `Filter.EndTime`, `Filter.CreatedAt` y `Filter.Active`. Omite campos vacíos, conserva `false` y codifica los valores de query; no envía cuerpo.
+
+Los filtros se aplican al pulsar Buscar o Enter. Los selectores recorren sus catálogos en páginas de 100: módulos mediante `GET /api/ModuleName`, profesores mediante `POST /api/User/search` con `filter.roleId = f2700000-0000-4000-8000-000000000002` y aulas mediante `GET /api/Classroom` con `PageNumber` y `PageSize` en query. Cada catálogo puede reintentarse sin bloquear los que sí cargaron. La paginación consulta al servidor. En el backend local, `ClassController` devuelve `count = data.Count`, por lo que se muestran el rango y la página actual; Siguiente se habilita al recibir una página completa y conserva la anterior si la siguiente está vacía. Las tarjetas resumen únicamente la página cargada, sin presentar esos cálculos como estadísticas globales. Las notas conservan decimales, los nulos aparecen como pendientes y las horas aceptan la terminación `Z` sin convertir la zona horaria. Se reutiliza el JWT del cliente API y se manejan carga, errores, reintentos, cancelación y expiración de sesión. La creación, edición y generación automática están habilitadas para coordinadores. Ver abre los estudiantes del curso para coordinadores y su docente; enviar a papelera sigue deshabilitado.
+
+### Leaderboard y puntos
+
+`/leaderboard` consulta la clasificación con filtros de módulo, bimestre y año.
+El perfil propio (`/profile`) conserva la información y las medallas e incluye,
+para estudiantes, el total de puntos, el nivel, la siguiente meta y el historial
+paginado de movimientos. La configuración TOTP también está en `/settings`.
+Coordinadores y docentes pueden asignar puntos desde los listados de usuarios
+y estudiantes de cursos, usando la inscripción activa del estudiante.
+
+Las comprobaciones de esta integración están en `checks/PointChecks`,
+`checks/LeaderboardChecks`, `checks/SupportMaterialChecks` y `checks/UserEditChecks`.
+
+### Material de apoyo
+
+`/materials` adapta las tarjetas y el modal de `Failed`. Todos los usuarios autenticados pueden consultar el listado y el detalle; solo `Teacher` y `Coordinator` pueden registrar, editar, desactivar y reactivar materiales. El rol también se comprueba antes de cada escritura. `ISupportMaterialService` reutiliza el cliente autenticado y consume los GET, POST y PUT de `/api/SupportMaterial`. La búsqueda usa parámetros de query, omite filtros vacíos y conserva valores como `false` y tamaño cero. La paginación trata `count` como registros de la página, sin inventar un total global.
+
+Los selectores consultan `/api/ErrorClassification` y `/api/FileType` en páginas de 100 con `Filter.Active=true`, y tienen carga y reintento independientes. El tipo y la vista previa usan la extensión y el MIME del catálogo, con una alternativa basada en el enlace. Las rutas relativas de archivos se resuelven contra `Api:BaseUrl` y solo se abren enlaces HTTP/HTTPS. La descarga usa un enlace al recurso; su servidor determina si lo entrega como archivo o lo abre en el navegador.
+
+El formulario ofrece un toggle entre Archivo y Enlace. En modo Enlace registra una URL HTTP/HTTPS mediante JSON sin subir bytes al servidor de archivos, asignando el tipo de enlaces del catálogo. En modo Archivo detecta automáticamente el tipo por extensión o MIME (incluidas categorías de imágenes, audio y vídeo), sin selector manual; un tipo sin correspondencia activa bloquea el guardado. Selecciona un archivo real (hasta 25 MiB) y lo envía como multipart a `POST /api/SupportMaterial/file`, restringido a Teacher y Coordinator. La API conserva una copia física y hace PUT al contenedor de archivos en `http://localhost:8081/archivos/{uuid}.ext`. Solo después de confirmar la subida registra el material con el enlace HTTP y el tamaño devueltos; ante un fallo del registro conserva el enlace para reintentar sin volver a subir los bytes. El autor sale de la sesión y la fecha y el tamaño se registran automáticamente. Editar permite reemplazar el archivo y envía solo los campos modificados, conservando el autor original. Los archivos anteriores se conservan al reemplazar o desactivar un material. Desactivar solicita confirmación y envía exclusivamente `{ id, active: false }`; reactivar usa `true`. Un guardado confirmado y un fallo posterior del listado se muestran por separado.
+
+En el `appsettings.json` del proyecto **API**, `SupportMaterialFiles` configura:
+
+```json
+"SupportMaterialFiles": {
+  "StoragePath": "D:/files/SupportMaterial",
+  "BaseUrl": "http://localhost:8081/",
+  "PublicBaseUrl": "http://localhost:8081/"
+}
+```
+
+`StoragePath` es la carpeta de la copia física en el equipo de la API, que debe tener permiso de escritura. El contenedor mantiene su volumen `/data` y la ruta HTTP `/archivos/`; no se ha cambiado el volumen de Docker. `BaseUrl` es la dirección de subida desde la API y `PublicBaseUrl` la dirección accesible por el navegador. Una ruta de disco como `D:/files/SupportMaterial` no es un enlace web. Para un despliegue fuera de localhost debe configurarse el host público correspondiente. Si nginx exige clave, configura `SupportMaterialFiles:ApiKey` en el entorno de la API. Reinicia la API después de incorporar el nuevo controlador.
+
+Las comprobaciones de contratos y permisos se ejecutan desde la raíz, después de compilar la solución:
+
+```powershell
+dotnet restore checks/SupportMaterialChecks/SupportMaterialChecks.csproj --ignore-failed-sources -m:1
+dotnet build checks/SupportMaterialChecks/SupportMaterialChecks.csproj --no-restore -m:1 -p:UseSharedCompilation=false
+dotnet checks/SupportMaterialChecks/bin/Debug/net10.0/SupportMaterialChecks.dll
+```
+
+### Listado de usuarios y tablas
+
+`/users` está disponible para el rol `Coordinator` del JWT. La página comprueba el rol incluso al acceder por URL, y el menú muestra Usuarios únicamente para coordinadores. `Views/Users/UserList.razor` define la tabla y `UserList.razor.cs` coordina filtros, carga y paginación. `IUserService` y `Services/Users/UserService` consumen `POST /api/User/search`, enviando siempre `pageNumber` y `pageSize` (20 por defecto); `filter` y sus campos nulos se omiten cuando no se usan. Se admiten nombre, apellido, CI, teléfono, correo, fecha de registro, rol, estado y módulo actual. El estado Inactivo se envía como `false`, sin confundirlo con el filtro vacío.
+
+Los selectores de roles y módulos consultan `GET /api/Role` y `GET /api/ModuleName`, recorriendo sus páginas de 100 elementos. La búsqueda se ejecuta al pulsar Buscar o Enter; al cambiar filtros o tamaño de página vuelve a la primera página. La paginación consulta al servidor, sin filtrar ni paginar otra vez en memoria. En el backend actual, `count` representa la cantidad de filas devueltas en esa página: no se muestra un total de páginas inventado. Siguiente se habilita cuando llega una página completa; si la siguiente está vacía, se conserva la página anterior y se indica el final del listado.
+
+`ApiAuthorizationHandler` agrega el JWT como Bearer únicamente a solicitudes HTTPS dirigidas al host y puerto de `Api:BaseUrl`. Un `401` limpia la sesión y vuelve al login; los demás errores permiten reintentar desde el listado. Se cancelan las consultas al abandonar la vista y se ignoran respuestas anteriores. Los cursos y horarios ausentes muestran un texto alternativo, y la nota conserva sus decimales.
+
+Ver navega a `/users/{id}`, una ruta reservada para el futuro perfil (todavía sin implementar). Editar abre un modal con nombre, apellido, CI, correo, teléfono, rol, estado y solicitud de cambio de contraseña. `UserEditForm` compara los valores con el usuario original: `PUT /api/User` envía únicamente `id` y los campos modificados, omitiendo las propiedades nulas y conservando valores explícitos como `false` o teléfono vacío. Guardar permanece deshabilitado si no hay diferencias; el servicio también rechaza un PUT sin cambios. No se editan ni se reenvían contraseñas, secretos TOTP o campos de cursos. La respuesta de actualización se deserializa con `UserUpdateResponse`, que conserva solo los datos personales y de estado del usuario.
+
+La papelera solicita confirmación y envía exclusivamente `{ id, active: false }`. Los usuarios inactivos muestran una acción de reactivación que envía `{ id, active: true }`; no hay borrado físico. Tras una actualización correcta se consulta de nuevo la página con los filtros aplicados. Si falla esa recarga, se distingue el guardado exitoso del error de consulta para evitar repetir el PUT. Los modales utilizan el elemento nativo `dialog`, mantienen el foco dentro de la ventana y bloquean envíos duplicados mientras guardan. Sus estilos compartidos están en `wwwroot/css/modals.css`.
+
+`wwwroot/css/tables.css` centraliza el estilo reutilizable de los listados. Usar `data-table-card` como contenedor, `data-table-scroll` alrededor de una `table.data-table`, `data-table-toolbar` para filtros y `data-table-footer` para paginación. `data-table-primary` y `data-table-secondary` agrupan dos líneas en una celda. También incluye estilos para avatares, módulos, notas, estados vacíos y botones. `Components/Tables/RowActions.razor` ofrece las acciones Ver, Editar y Eliminar con etiquetas accesibles. `wwwroot/css/users.css` contiene solo las reglas de distribución específicas de usuarios.

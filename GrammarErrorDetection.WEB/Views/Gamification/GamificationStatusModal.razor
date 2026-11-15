@@ -1,0 +1,69 @@
+@using System.Net
+@using System.Text.Json
+@using GrammarErrorDetection.Models.Gamification
+@using GrammarErrorDetection.Services.Interfaces
+@using GrammarErrorDetection.Services.Services.Auth
+@using GrammarErrorDetection.WEB.Components.Dialogs
+@implements IDisposable
+@inject IGamificationService Service
+@inject AuthSessionState Session
+@inject NavigationManager Navigation
+
+<ModalDialog Title="@($"{Action} {(Achievement is not null ? "logro" : "colección")}")" Busy="saving" OnClose="OnClose">
+    <div class="ceti-modal-body">
+        <p>¿Quieres @Action.ToLowerInvariant() <strong>@Name</strong>?</p>
+        <p>@(Active ? "El registro quedará inactivo. Podrás volver a habilitarlo desde su listado o detalle." : "El registro volverá a estar activo.")</p>
+        @if (error is not null) { <p class="ceti-modal-errors" role="alert">@error</p> }
+    </div>
+    <footer class="ceti-modal-footer"><span role="status">@(saving ? "Guardando estado…" : "")</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">@(uncertain ? "Cerrar y revisar" : "Cancelar")</button><button type="button" class="data-table-button @(Active ? "gamification-danger-button" : "data-table-button-primary")" disabled="@(saving || uncertain)" @onclick="SaveAsync">@Action</button></div></footer>
+</ModalDialog>
+
+@code {
+    [Parameter] public AchievementResponse? Achievement { get; set; }
+    [Parameter] public AchievementCollectionResponse? Collection { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnChanged { get; set; }
+    private readonly CancellationTokenSource lifetime = new();
+    private bool saving, uncertain, disposed;
+    private string? error;
+    private bool Active => Achievement?.Active ?? Collection?.Active ?? true;
+    private string Name => Achievement?.Name ?? Collection?.Name ?? "";
+    private string Action => Active ? "Deshabilitar" : "Habilitar";
+    private const string UncertainResult = "No se pudo confirmar el cambio. Cierra y consulta el estado antes de intentarlo de nuevo.";
+    private async Task SaveAsync()
+    {
+        if (saving || uncertain || disposed) return;
+        if (Session.Current is null) { Navigation.NavigateTo("/auth/login", replace: true); return; }
+        if (!Session.IsInRole("Coordinator")) { error = "No tienes permiso para cambiar el estado."; return; }
+        saving = true; error = null; var success = false;
+        try
+        {
+            if (Achievement is { } a && Collection is null)
+            {
+                var response = await Service.UpdateAchievementAsync(new() { Id = a.Id, Active = !a.Active }, cancellationToken: lifetime.Token);
+                if (response?.Error is { ErrorCode: not 0 }) throw new InvalidOperationException(response.Error.ErrorMessage ?? "Cambio rechazado.");
+                if (response?.Data is not { } updated || updated.Id != a.Id || updated.Active == a.Active) throw new JsonException();
+            }
+            else if (Collection is { } c && Achievement is null)
+            {
+                var response = await Service.UpdateAchievementCollectionAsync(new() { Id = c.Id, Active = !c.Active }, lifetime.Token);
+                if (response?.Error is { ErrorCode: not 0 }) throw new InvalidOperationException(response.Error.ErrorMessage ?? "Cambio rechazado.");
+                if (response?.Data is not { } updated || updated.Id != c.Id || updated.Active == c.Active) throw new JsonException();
+            }
+            else throw new InvalidOperationException("Selecciona un logro o colección.");
+            success = true;
+        }
+        catch (HttpRequestException ex)
+        {
+            if (ex.StatusCode == HttpStatusCode.Unauthorized) { Session.Clear(); Navigation.NavigateTo("/auth/login", replace: true); }
+            uncertain = ex.StatusCode is null || (int)ex.StatusCode >= 500 || ex.StatusCode == HttpStatusCode.RequestTimeout;
+            error = uncertain ? UncertainResult : ex.StatusCode == HttpStatusCode.Forbidden ? "No tienes permiso para cambiar el estado." : "El cambio fue rechazado. Actualiza los datos e inténtalo de nuevo.";
+        }
+        catch (OperationCanceledException) { if (!disposed) { uncertain = true; error = UncertainResult; } }
+        catch (JsonException) { uncertain = true; error = UncertainResult; }
+        catch (InvalidOperationException ex) { error = ex.Message; }
+        finally { saving = false; }
+        if (success && !disposed) await OnChanged.InvokeAsync();
+    }
+    public void Dispose() { disposed = true; lifetime.Cancel(); lifetime.Dispose(); }
+}

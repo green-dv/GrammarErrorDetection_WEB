@@ -1,0 +1,99 @@
+@using GrammarErrorDetection.WEB.Components.Dialogs
+
+<ModalDialog Title="@(IsEdit ? "Editar curso" : "Crear curso")" Class="create-course-dialog" Busy="@saving" OnClose="OnClose">
+    <p class="ceti-modal-description">@(IsEdit ? "Actualiza los datos y revisa la lista final de estudiantes. Los que quites dejarán de estar inscritos en este curso." : "Configura el nuevo grupo y selecciona estudiantes existentes para inscribirlos.")</p>
+    @if (initializing) { <p class="ceti-modal-description" role="status">Cargando todas las inscripciones actuales…</p> }
+    @if (initializationError is not null) { <div class="create-course-errors ceti-modal-errors" role="alert"><p>@initializationError</p><button type="button" class="data-table-text-button" @onclick="LoadCurrentStudentsAsync">Reintentar carga de inscripciones</button></div> }
+    @if (error is not null || validationErrors.Count > 0)
+    {
+        <div class="create-course-errors ceti-modal-errors" role="alert">
+            @if (error is not null) { <p>@error</p> }
+            @foreach (var message in validationErrors) { <p>@message</p> }
+        </div>
+    }
+    <div class="create-course-body">
+        <section class="create-course-fields" aria-labelledby="course-data-title">
+            <h3 id="course-data-title"><span>1</span> Datos del curso</h3>
+            <EditForm EditContext="editContext" OnSubmit="SaveAsync" id="@formId" novalidate>
+                <DataAnnotationsValidator />
+                <fieldset disabled="@(saving || initializing || (IsEdit && !membersLoaded))" class="create-course-field-grid">
+                    <label class="data-table-field create-course-full"><span>Módulo</span><InputSelect @bind-Value="model.ModuleNameId" @bind-Value:after="ScopeChangedAsync" autofocus><option value="@Guid.Empty">Seleccionar módulo</option>@if (Course is not null && !Modules.Any(item => item.Id == Course.ModuleNameId)) { <option value="@Course.ModuleNameId">@Course.ModuleName (actual)</option> }@foreach (var module in Modules) { <option value="@module.Id">@module.Name</option> }</InputSelect></label>
+                    <label class="data-table-field"><span>Año</span><InputNumber @bind-Value="model.Year" @bind-Value:after="ScopeChangedAsync" min="1" max="9999" /></label>
+                    <label class="data-table-field"><span>Bimestre</span><InputSelect @bind-Value="model.Bimester" @bind-Value:after="ScopeChangedAsync">@for (var value = 1; value <= 6; value++) { <option value="@value">Bimestre @value</option> }</InputSelect></label>
+                    <label class="data-table-field create-course-full"><span>Profesor</span><InputSelect @bind-Value="model.TeacherId"><option value="@Guid.Empty">Seleccionar profesor</option>@if (Course?.TeacherId is { } teacherId && !Teachers.Any(item => item.Id == teacherId)) { <option value="@teacherId">@Course.TeacherName (actual)</option> }@foreach (var teacher in Teachers) { <option value="@teacher.Id">@teacher.FirstName @teacher.LastName</option> }</InputSelect></label>
+                    <label class="data-table-field"><span>Aula</span><InputSelect @bind-Value="model.ClassroomId"><option value="@Guid.Empty">Seleccionar aula</option>@if (Course?.ClassroomId is { } roomId && !Classrooms.Any(item => item.Id == roomId)) { <option value="@roomId">@Course.ClassroomName (actual)</option> }@foreach (var room in Classrooms) { <option value="@room.Id">@room.Name · @room.Capacity plazas</option> }</InputSelect></label>
+                    <label class="data-table-field"><span>Paralelo</span><InputText @bind-Value="model.Parallel" maxlength="10" /></label>
+                    <label class="data-table-field"><span>Fecha de inicio</span><InputDate @bind-Value="model.StartDate" /></label>
+                    <label class="data-table-field"><span>Fecha de fin</span><InputDate @bind-Value="model.EndDate" /></label>
+                    <label class="data-table-field"><span>Hora de inicio</span><InputDate @bind-Value="model.StartTime" Type="InputDateType.Time" /></label>
+                    <label class="data-table-field"><span>Hora de fin</span><InputDate @bind-Value="model.EndTime" Type="InputDateType.Time" /></label>
+                    @if (IsEdit) { <label class="create-course-active create-course-full"><InputCheckbox @bind-Value="model.Active" /> Curso activo</label> }
+                </fieldset>
+            </EditForm>
+            <div class="create-course-summary"><div><span>@(IsEdit ? "Estudiantes en la lista final" : "Estudiantes seleccionados")</span><small>@(IsEdit ? $"{RetainedCount} actuales se conservan · {RemovedCount} se quitarán" : "El curso se creará activo.")</small></div><strong>@selected.Count</strong></div>
+            <p class="create-course-hint">Cambiar el módulo, año o bimestre reinicia la selección de estudiantes.</p>
+        </section>
+        <section class="create-course-students" aria-labelledby="eligible-students-title" aria-busy="@loading.ToString().ToLowerInvariant()">
+            <header><div><h3 id="eligible-students-title"><span>2</span> Estudiantes elegibles</h3><p>@(IsEdit ? "Los estudiantes actuales ya están seleccionados. Añade elegibles o quita estudiantes para definir la lista final." : "Los estudiantes ya asignados aparecen primero. Selecciónalos únicamente si quieres trasladarlos a este curso.")</p></div></header>
+            <form @onsubmit="SearchEligibleAsync" @onsubmit:preventDefault>
+                <fieldset disabled="@(saving || loading || initializing || (IsEdit && !membersLoaded) || !ValidScope)" class="create-course-search">
+                    <label class="data-table-field"><span>Nombre</span><input @bind="firstName" maxlength="50" placeholder="Nombre" /></label>
+                    <label class="data-table-field"><span>Apellido</span><input @bind="lastName" maxlength="50" placeholder="Apellido" /></label>
+                    <label class="data-table-field"><span>CI</span><input @bind="ci" maxlength="15" placeholder="Documento" /></label>
+                    <button type="submit" class="data-table-button">Buscar</button>
+                </fieldset>
+            </form>
+            @if (eligibilityError is not null) { <div class="create-course-eligibility-error" role="alert"><p>@eligibilityError</p><button type="button" class="data-table-text-button" @onclick="() => LoadEligibleAsync(page)" disabled="@(loading || saving)">Reintentar consulta</button></div> }
+            <div class="create-course-selection-tools"><span role="status" aria-live="polite">@(loading ? "Consultando estudiantes…" : $"{eligible.Count} en esta página · {selected.Count} seleccionados")</span><button type="button" class="data-table-text-button" disabled="@(saving || selected.Count == 0)" @onclick="ClearSelection">Quitar selección</button></div>
+            @if (initializing) { <p class="create-course-empty" role="status">Cargando las inscripciones actuales…</p> }
+            else if (IsEdit && !membersLoaded) { <p class="create-course-empty">Reintenta la carga de inscripciones para editar la lista completa.</p> }
+            else if (!ValidScope) { <div class="create-course-empty"><strong>Elige el módulo y periodo</strong><p>Mostraremos los estudiantes elegibles para ese grupo.</p></div> }
+            else if (loading) { <p class="create-course-empty" role="status">Cargando estudiantes elegibles…</p> }
+            else if (eligible.Count == 0 && eligibilityError is null) { <div class="create-course-empty"><strong>No hay estudiantes para mostrar</strong><p>Prueba con otros filtros o un periodo diferente.</p></div> }
+            else
+            {
+                <ul class="create-course-student-list">
+                    @foreach (var student in eligible)
+                    {
+                        <li @key="student.UserId"><label class="create-course-student @(selected.ContainsKey(student.UserId) ? "is-selected" : "")">
+                            <input type="checkbox" checked="@selected.ContainsKey(student.UserId)" @onchange="() => Toggle(student)" disabled="@saving" aria-label="Seleccionar a @FullName(student)" />
+                            <span class="data-table-avatar" aria-hidden="true">@Initials(student)</span>
+                            <span class="create-course-student-info"><strong>@FullName(student)</strong><span>CI @student.CI · @student.Email</span>
+                                @if (IsEdit && originalStudents.ContainsKey(student.UserId))
+                                {
+                                    <small>Inscrito en este curso · @(selected.ContainsKey(student.UserId) ? "Se conservará" : "Se quitará si guardas")</small>
+                                }
+                                else if (NeedsTransfer(student))
+                                {
+                                    <span class="create-course-assigned">Ya asignado · Se trasladará si lo seleccionas</span>
+                                    @foreach (var assignment in student.Assignments)
+                                    {
+                                        <small>@assignment.ModuleName · Paralelo @assignment.Parallel · @AssignmentHour(assignment.StartTime)–@AssignmentHour(assignment.EndTime)</small>
+                                    }
+                                }
+                                else { <small>Disponible para inscripción @if (student.LastFinalScore is { } score) { <span>· Última nota @score.ToString("0.##") / 100</span> }</small> }
+                            </span>
+                        </label></li>
+                    }
+                </ul>
+            }
+            @if (ValidScope)
+            {
+                <div class="create-course-pagination"><span role="status">@eligibilityStatus</span><nav class="data-table-pagination" aria-label="Paginación de estudiantes elegibles"><button type="button" @onclick="() => LoadEligibleAsync(page - 1)" disabled="@(saving || loading || page <= 1)" aria-label="Página anterior de estudiantes">‹</button><span>Página <strong>@(page)</strong></span><button type="button" @onclick="() => LoadEligibleAsync(page + 1)" disabled="@(saving || loading || !hasNext)" aria-label="Página siguiente de estudiantes">›</button></nav></div>
+            }
+            @if (selected.Count > 0)
+            {
+                <div class="create-course-selected"><span>Seleccionados en todas las páginas</span><div>@foreach (var student in selected.Values) { <button type="button" class="create-course-selected-tag" disabled="@(saving || loading)" @onclick="() => Toggle(student)" aria-label="Quitar a @FullName(student)">@FullName(student) ×</button> }</div></div>
+            }
+            @if (TransferCount > 0)
+            {
+                <div class="create-course-transfer-warning" role="note"><strong>@(TransferCount == 1 ? "1 estudiante ya tiene un curso asignado" : $"{TransferCount} estudiantes ya tienen un curso asignado")</strong><p>Al guardar, sus inscripciones pasarán a este curso y horario.</p><label><input type="checkbox" @bind="transferConfirmed" disabled="@saving" /> Confirmo el traslado de estos estudiantes.</label></div>
+            }
+            @if (RemovedCount > 0)
+            {
+                <div class="create-course-transfer-warning create-course-removal-warning" role="note"><strong>@(RemovedCount == 1 ? "Se quitará 1 estudiante de este curso" : $"Se quitarán {RemovedCount} estudiantes de este curso")</strong><p>Sus inscripciones se desactivarán. @(selected.Count == 0 ? "La lista final quedará vacía." : "Los demás estudiantes seleccionados permanecerán inscritos.")</p><ul>@foreach (var student in originalStudents.Values.Where(student => !selected.ContainsKey(student.UserId))) { <li>@FullName(student)</li> }</ul><label><input type="checkbox" @bind="removalConfirmed" disabled="@saving" /> Confirmo que quiero quitar a estos estudiantes.</label></div>
+            }
+        </section>
+    </div>
+    <footer class="ceti-modal-footer create-course-footer"><span role="status">@(saving ? (IsEdit ? "Guardando curso e inscripciones…" : "Creando curso e inscripciones…") : SelectionSummary)</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">Cancelar</button><button type="submit" form="@formId" class="data-table-button data-table-button-primary" disabled="@(saving || loading || initializing || (IsEdit && !membersLoaded) || (!IsEdit && selected.Count == 0) || (TransferCount > 0 && !transferConfirmed) || (RemovedCount > 0 && !removalConfirmed))">@(IsEdit ? "Guardar cambios" : "Crear curso")</button></div></footer>
+</ModalDialog>

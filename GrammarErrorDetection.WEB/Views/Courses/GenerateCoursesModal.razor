@@ -1,0 +1,42 @@
+@using GrammarErrorDetection.WEB.Components.Dialogs
+
+<ModalDialog Title="Generar cursos automáticamente" Class="generate-courses-dialog" Busy="@generating" OnClose="OnClose">
+    @if (result is null)
+    {
+        <p class="ceti-modal-description">Define el periodo de destino y las fechas de los nuevos cursos. Se usarán los cursos e inscripciones del bimestre anterior.</p>
+        <EditForm EditContext="editContext" OnSubmit="GenerateAsync" novalidate>
+            <DataAnnotationsValidator />
+            <div class="ceti-modal-body">
+                @if (error is not null || validationErrors.Count > 0)
+                {
+                    <div class="ceti-modal-errors" role="alert">@if (error is not null) { <p>@error</p> }@foreach (var message in validationErrors) { <p>@message</p> }</div>
+                }
+                <fieldset disabled="@generating" class="generate-courses-fields">
+                    <label class="data-table-field"><span>Año de destino</span><InputNumber @bind-Value="model.Year" min="2" max="9999" autofocus /></label>
+                    <label class="data-table-field"><span>Bimestre de destino</span><InputSelect @bind-Value="model.Bimester">@for (var number = 1; number <= 6; number++) { <option value="@number">Bimestre @number</option> }</InputSelect></label>
+                    <label class="data-table-field"><span>Fecha de inicio</span><InputDate @bind-Value="model.StartDate" /></label>
+                    <label class="data-table-field"><span>Fecha de fin</span><InputDate @bind-Value="model.EndDate" /></label>
+                </fieldset>
+                @if (ValidPeriod)
+                {
+                    <div class="generate-courses-period"><div><span>Periodo de origen</span><strong>Bimestre @SourceBimester · @SourceYear</strong></div><span aria-hidden="true">→</span><div><span>Periodo de destino</span><strong>Bimestre @model.Bimester · @model.Year</strong></div></div>
+                }
+                <p class="generate-courses-note">Al generar se podrán crear cursos e inscripciones y reutilizar cursos existentes. Al finalizar verás un resumen y los motivos de los casos omitidos.</p>
+            </div>
+            <footer class="ceti-modal-footer"><span role="status">@(generating ? "Generando cursos e inscripciones…" : "Las fechas deben pertenecer al año de destino.")</span><div><button type="button" class="data-table-button" disabled="@generating" @onclick="OnClose">Cancelar</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@generating">@(generating ? "Generando…" : "Generar cursos")</button></div></footer>
+        </EditForm>
+    }
+    else
+    {
+        <div class="ceti-modal-body generate-courses-result">
+            <div class="generate-courses-success" role="status"><strong>Generación completada</strong><p>Periodo de destino: bimestre @model.Bimester · @model.Year.</p></div>
+            <dl class="generate-courses-counts"><div><dt>Cursos creados</dt><dd>@result.CreatedClassIds?.Count</dd></div><div><dt>Cursos reutilizados</dt><dd>@result.ReusedClassIds?.Count</dd></div><div><dt>Inscripciones creadas</dt><dd>@result.CreatedRegistrationIds?.Count</dd></div><div><dt>Inscripciones omitidas</dt><dd>@result.Skipped?.Count</dd></div></dl>
+            @if (result.CreatedClassIds?.Count == 0 && result.CreatedRegistrationIds?.Count == 0) { <p class="generate-courses-note">No se crearon cursos ni inscripciones para este periodo.</p> }
+            @if (result.Skipped is { Count: > 0 } skipped)
+            {
+                <details class="generate-courses-skipped"><summary>Ver motivos de las omisiones (@skipped.Count)</summary><ul>@foreach (var group in skipped.GroupBy(item => string.IsNullOrWhiteSpace(item.Reason) ? "Sin motivo informado" : item.Reason)) { <li><span>@group.Key</span><strong>@group.Count()</strong></li> }</ul></details>
+            }
+        </div>
+        <footer class="ceti-modal-footer"><span>Cierra esta ventana para revisar los cursos del periodo.</span><div><button type="button" class="data-table-button data-table-button-primary" disabled="@generating" @onclick="OnClose">Cerrar</button></div></footer>
+    }
+</ModalDialog>
