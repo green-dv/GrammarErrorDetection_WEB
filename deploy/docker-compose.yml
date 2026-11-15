@@ -1,0 +1,15 @@
+# Se copia a ~/apps/web/ en el VPS en cada deploy (lo hace el workflow).
+services:
+  web:
+    image: ghcr.io/green-dv/grammarerrordetection_web:latest
+    restart: unless-stopped
+    networks: [app-net]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+networks:
+  app-net:
+    external: true
