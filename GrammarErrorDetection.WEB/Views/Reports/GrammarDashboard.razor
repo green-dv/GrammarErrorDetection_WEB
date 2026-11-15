@@ -1,0 +1,161 @@
+@using GrammarErrorDetection.Models.Reports
+@using GrammarErrorDetection.WEB.Components.Materials
+
+<section class="grammar-dashboard" aria-labelledby="grammar-dashboard-title">
+    @if (!Allowed)
+    {
+        <p class="portal-empty">No tienes permiso para consultar este reporte.</p>
+    }
+    else
+    {
+        <header class="grammar-report-heading">
+            <div><p class="portal-eyebrow">CETI · SEGUIMIENTO PEDAGÓGICO</p><h2 id="grammar-dashboard-title">@ReportTitle</h2><p>@(IsPersonal ? "Dificultades de escritura en todos los cursos y prácticas personales." : "Identifica las dificultades del grupo y cómo cambian entre periodos.")</p></div>
+            <div class="grammar-report-exports">
+                <button type="button" class="data-table-button data-table-button-primary" disabled="@(data is null || loading || exporting)" @onclick="ExportAsync">Descargar Excel</button>
+                @if (exporting) { <span role="status">Descargando…</span> }
+            </div>
+        </header>
+        <div class="grammar-filters">
+            @if (!IsPersonal)
+            {
+            <label class="data-table-field"><span>Módulo (curso)</span><select value="@selectedClass" @onchange="ChangeCourse" disabled="@(ClassId.HasValue || loadingCourses || exporting)">
+                @if (courseOptions.Count == 0) { <option value="">Selecciona un curso</option> }
+                @foreach (var course in courseOptions) { <option value="@course.ClassId">@course.Label</option> }
+            </select></label>
+            }
+            <label class="data-table-field"><span>Categoría del error</span><select @bind="category" disabled="@(data is null || loading)"><option value="">Todas las categorías</option>@foreach (var row in CategoryOptions) { <option value="@row.Id">@row.Name</option> }</select></label>
+            @if (!IsPersonal) { <div class="grammar-previous"><span>Comparación histórica</span><strong>@(data is null ? "Cursos anteriores" : PreviousLabel)</strong><small>Según las inscripciones de cada estudiante</small></div> }
+        </div>
+        @if (loadingCourses || loading) { <p class="grammar-notice" role="status">@(loadingCourses ? "Consultando cursos…" : "Cargando reporte gramatical…")</p> }
+        @if (error is not null) { <div class="data-table-error" role="alert">@error <button type="button" class="data-table-text-button" @onclick="RetryAsync">Reintentar</button></div> }
+        @if (exportError is not null) { <p class="data-table-error" role="alert">@exportError</p> }
+        @if (!IsPersonal && !loadingCourses && error is null && courseOptions.Count == 0) { <p class="grammar-notice" role="status">No hay cursos disponibles para este usuario.</p> }
+        @if (!IsPersonal && SelectedCourse is { } courseScope)
+        {
+            <StudentProgressChart @key="courseScope.ClassId" ClassId="courseScope.ClassId" ModuleName="@courseScope.Name"
+                                  Year="courseScope.Year" Bimester="courseScope.Bimester" Parallel="@courseScope.Parallel" />
+        }
+        @if (data is not null)
+        {
+        <p class="grammar-scope-note">@(IsPersonal ? CurrentLabel : SelectedCourseName). Los indicadores y los archivos Excel incluyen todas las categorías, independientemente del filtro visual.</p>
+
+        <div class="grammar-kpis" aria-label="Indicadores generales">
+            @if (!IsPersonal)
+            {
+                <article class="grammar-kpi blue"><span>Estudiantes con análisis</span><strong>@data.Summary.StudentsWithAnalyzedTexts <small>/ @data.Summary.EnrolledStudentCount</small></strong><p>@Number(data.Summary.StudentCoveragePercentage) % de cobertura</p></article>
+            }
+            <article class="grammar-kpi violet"><span>Párrafos totales</span><strong>@data.Summary.TotalTexts</strong><p>@data.Summary.AnalyzedTexts analizados</p></article>
+            <article class="grammar-kpi coral"><span>Errores totales</span><strong>@data.Summary.TotalErrors</strong>@if (!IsPersonal) { <p>@Overall.PreviousErrorCount en @PreviousLabel</p> }</article>
+            <article class="grammar-kpi teal"><span>Errores / párrafo total</span><strong>@Number(data.Summary.ErrorsPerTextTotal)</strong><p>Base: @data.Summary.TotalTexts párrafos subidos</p></article>
+            <article class="grammar-kpi amber"><span>Errores / párrafo analizado</span><strong>@Number(data.Summary.ErrorsPerAnalyzedText)</strong>@if (!IsPersonal) { <p class="@TrendClass(Overall.Trend)">@TrendLabel(Overall.Trend) · @RelativeChange(Overall.ErrorsPerAnalyzedTextChangePercentage)</p> }</article>
+        </div>
+
+        @if (data.Summary.AnalyzedTexts == 0)
+        {
+            <div class="grammar-notice" role="status"><strong>@(IsPersonal ? "Sin párrafos analizados" : "Sin análisis en este curso")</strong></div>
+        }
+        else if (!IsPersonal)
+        {
+            <div class="grammar-coverage"><strong>@data.Summary.StudentsWithAnalyzedTexts de @data.Summary.EnrolledStudentCount estudiantes con análisis</strong><span>Los alumnos sin análisis no se consideran estudiantes sin errores.</span></div>
+        }
+
+        <div class="grammar-top-grid">
+            <article class="grammar-card grammar-ranking">
+                <header><div><h3>Fallas por categoría</h3><p>Ordenadas por cantidad de errores · @CurrentLabel</p></div>@if (!string.IsNullOrEmpty(category)) { <button type="button" class="data-table-text-button" @onclick="ClearCategory">Ver todas</button> }</header>
+                <div class="data-table-scroll" tabindex="0" role="region" aria-label="Ranking de fallas y estudiantes afectados">
+                    <table class="data-table">
+                        <caption class="data-table-sr-only">Errores y párrafos relacionados por categoría, con sus bases de estudiantes afectados.</caption>
+                        <thead><tr><th scope="col">Categoría</th><th scope="col">Errores</th><th scope="col">Párrafos relacionados</th>@if (!IsPersonal) { <th scope="col">Estudiantes afectados</th> }</tr></thead>
+                        <tbody>@foreach (var row in FilteredCategories)
+                        {
+                            <tr><th scope="row"><button type="button" class="grammar-category-button" @onclick="() => SelectCategory(row.ErrorClassificationId)"><span class="grammar-dot" style="background:@Color(row.ErrorClassificationId)"></span>@row.ErrorClassificationName</button></th><td><strong>@row.ErrorCount</strong><small class="grammar-muted">@Number(row.ErrorPercentage) % del total</small></td><td>@row.RelatedTextCount</td>
+                                @if (!IsPersonal) { <td><strong>@row.AffectedStudentCount de @row.EnrolledStudentCount <span class="grammar-muted">(@Number(row.AffectedStudentPercentage) %)</span></strong><small class="grammar-muted">@row.AffectedStudentCount de @row.StudentsWithAnalyzedTexts con análisis (@Number(row.AffectedAnalyzedStudentPercentage) %)</small></td> }
+                            </tr>
+                        }</tbody>
+                    </table>
+                </div>
+                <p class="grammar-footnote">Un párrafo puede contener errores de varias categorías. Los párrafos relacionados no se suman para obtener el total.</p>
+                @if (!FilteredCategories.Any()) { <p class="grammar-footnote">No hay errores registrados para la selección.</p> }
+            </article>
+
+            <article class="grammar-card">
+                <header><div><h3>Errores por categoría</h3><p>Selecciona una barra para enfocar el detalle.</p></div></header>
+                <div class="grammar-bars" role="group" aria-label="Cantidad de errores por categoría">
+                    @foreach (var row in data.Categories)
+                    {
+                        <button type="button" class="grammar-bar-row @(category == row.ErrorClassificationId.ToString() ? "selected" : "")" @onclick="() => SelectCategory(row.ErrorClassificationId)" aria-label="@($"{row.ErrorClassificationName}: {row.ErrorCount} errores. Ver categoría.")"><span>@row.ErrorClassificationName</span><span class="grammar-bar-track"><span class="grammar-bar-fill" style="width:@Percent(row.ErrorCount, MaxErrors)%;background:@Color(row.ErrorClassificationId)"></span></span><strong>@row.ErrorCount</strong></button>
+                    }
+                    @if (data.Categories.Count > 0) { <div class="grammar-bar-axis"><span>0</span><span>@MaxErrors errores</span></div> }
+                    else { <p class="grammar-footnote">No hay errores por categoría.</p> }
+                </div>
+            </article>
+        </div>
+
+        @if (IsPersonal)
+        {
+            <RecommendedMaterials UserId="UserId" Title="@(UserId == viewer ? "Material recomendado para ti" : "Material recomendado para este estudiante")" />
+        }
+
+        <div class="grammar-bottom-grid">
+            <article class="grammar-card">
+                <header><div><h3>Falencias gramaticales</h3><p>Mayor distancia al centro significa más errores.</p></div></header>
+                @if (ChartCategories.Count >= 3)
+                {
+                <svg class="grammar-radar" viewBox="0 0 400 300" role="img" aria-label="@RadarDescription">
+                    <title>Errores por categoría</title>
+                    @for (var ring = 1; ring <= 4; ring++)
+                    {
+                        <polygon points="@RadarPoints(ring / 4d)" class="grammar-radar-grid" />
+                    }
+                    @for (var index = 0; index < ChartCategories.Count; index++)
+                    {
+                        var point = RadarPoint(index, 1); var label = RadarPoint(index, 1.30);
+                        <g><line x1="200" y1="142" x2="@Svg(point.X)" y2="@Svg(point.Y)" class="grammar-radar-grid" /><text x="@Svg(label.X)" y="@Svg(label.Y)" text-anchor="middle">@ChartCategories[index].ErrorClassificationName</text></g>
+                    }
+                    <polygon points="@RadarValuePoints" class="grammar-radar-value" />
+                    @for (var index = 0; index < ChartCategories.Count; index++)
+                    {
+                        var row = ChartCategories[index]; var point = RadarPoint(index, (double)row.ErrorCount / MaxErrors);
+                        <g><circle cx="@Svg(point.X)" cy="@Svg(point.Y)" r="4" fill="@Color(row.ErrorClassificationId)"><title>@row.ErrorClassificationName: @row.ErrorCount errores</title></circle></g>
+                    }
+                    <g><text x="205" y="147">0</text><text x="205" y="52">@MaxErrors</text></g>
+                </svg>
+                }
+                else { <p class="grammar-footnote">La telaraña estará disponible cuando haya al menos tres categorías. Consulta las cantidades en la tabla y las barras.</p> }
+                <p class="grammar-footnote">Escala de 0 a @MaxErrors errores. Las barras y la tabla muestran las cantidades exactas.</p>
+            </article>
+
+            @if (!IsPersonal)
+            {
+            <article class="grammar-card grammar-comparison-summary">
+                <header><div><h3>Comparación con cursos anteriores</h3><p>@PreviousLabel frente a @CurrentLabel · todas las categorías</p></div></header>
+                <p class="grammar-footnote">@Overall.StudentsWithPreviousClassCount con curso anterior · @Overall.StudentsWithoutPreviousClassCount sin curso anterior. Base inscrita: @Overall.PreviousEnrolledStudentCount antes y @Overall.CurrentEnrolledStudentCount ahora.</p>
+                <div class="grammar-trend-banner @TrendClass(Overall.Trend)"><strong>@TrendLabel(Overall.Trend)</strong><span>@ComparisonDescription(Overall)</span></div>
+                <dl class="grammar-comparison-metrics">
+                    <div><dt>Errores / párrafo analizado</dt><dd>@Number(Overall.PreviousErrorsPerAnalyzedText) <span>→</span> @Number(Overall.CurrentErrorsPerAnalyzedText)<small>@RelativeChange(Overall.ErrorsPerAnalyzedTextChangePercentage)</small></dd></div>
+                    <div><dt>Errores detectados</dt><dd>@Overall.PreviousErrorCount <span>→</span> @Overall.CurrentErrorCount<small>@ChangeWithUnit(Overall.ErrorCountChange, "errores")</small></dd></div>
+                    <div><dt>Párrafos analizados</dt><dd>@Overall.PreviousAnalyzedTexts <span>→</span> @Overall.CurrentAnalyzedTexts<small>Base usada para comparar las falencias</small></dd></div>
+                    @if (!IsPersonal) { <div><dt>Estudiantes afectados</dt><dd>@Overall.PreviousAffectedStudentCount / @Overall.PreviousEnrolledStudentCount <span>→</span> @Overall.CurrentAffectedStudentCount / @Overall.CurrentEnrolledStudentCount<small>@Number(Overall.PreviousAffectedStudentPercentage) % → @Number(Overall.CurrentAffectedStudentPercentage) % · @ChangeWithUnit(Overall.AffectedStudentPercentagePointChange, "puntos porcentuales", true)</small></dd></div> }
+                </dl>
+                <p class="grammar-footnote">La tendencia compara errores por párrafo analizado. Un aumento de entregas puede aumentar la cantidad total de errores.</p>
+            </article>
+            }
+        </div>
+
+        @if (!IsPersonal)
+        {
+        <article class="grammar-card grammar-period-table">
+            <header><div><h3>Evolución por categoría</h3><p>@PreviousLabel → @CurrentLabel. Incluye categorías nuevas y resueltas.</p></div></header>
+            <div class="data-table-scroll" tabindex="0" role="region" aria-label="Comparación histórica de las categorías">
+                <table class="data-table"><thead><tr><th scope="col">Categoría</th><th scope="col">Errores anteriores</th><th scope="col">Errores actuales</th><th scope="col">Cambio</th><th scope="col">Errores / párrafo analizado</th>@if (!IsPersonal) { <th scope="col">Afectados</th> }<th scope="col">Tendencia</th></tr></thead><tbody>
+                    @foreach (var row in FilteredComparison)
+                    {
+                        <tr><th scope="row">@row.ErrorClassificationName</th><td>@row.PreviousErrorCount</td><td>@row.CurrentErrorCount</td><td>@Signed(row.ErrorCountChange)<small class="grammar-muted">@RelativeChange(row.ErrorCountChangePercentage)</small></td><td>@Number(row.PreviousErrorsPerAnalyzedText) → @Number(row.CurrentErrorsPerAnalyzedText)</td>@if (!IsPersonal) { <td>@row.PreviousAffectedStudentCount / @row.PreviousEnrolledStudentCount → @row.CurrentAffectedStudentCount / @row.CurrentEnrolledStudentCount<small class="grammar-muted">@ChangeWithUnit(row.AffectedStudentPercentagePointChange, "pp de inscritos", true)</small></td> }<td><span class="grammar-trend @TrendClass(row.Trend)">@TrendLabel(row.Trend)</span>@if (row.ComparisonStatus == "Comparable" && row.PreviousErrorCount == 0 && row.CurrentErrorCount > 0) { <small class="grammar-muted">No se detectaba antes</small> }@if (row.ComparisonStatus == "Comparable" && row.PreviousErrorCount > 0 && row.CurrentErrorCount == 0) { <small class="grammar-muted">Sin errores actuales</small> }</td></tr>
+                    }
+                </tbody></table>
+            </div>
+        </article>
+        }
+        }
+    }
+</section>

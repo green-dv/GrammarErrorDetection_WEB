@@ -1,0 +1,28 @@
+@page "/users"
+@using GrammarErrorDetection.Services.Services.Auth
+@using GrammarErrorDetection.WEB.Views.Users
+@inject AuthSessionState Session
+@inject NavigationManager Navigation
+
+<PageTitle>Usuarios | CETI La Paz</PageTitle>
+
+@if (Session.Current is not null)
+{
+    @if (Session.Roles.Contains("Coordinator", StringComparer.Ordinal))
+    {
+        <UserList />
+    }
+    else
+    {
+        <h1>Acceso restringido</h1>
+        <p>El listado de usuarios está disponible para coordinadores.</p>
+        <a href="home">Volver al inicio</a>
+    }
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        if (Session.Current is null) Navigation.NavigateTo("/auth/login", replace: true);
+    }
+}

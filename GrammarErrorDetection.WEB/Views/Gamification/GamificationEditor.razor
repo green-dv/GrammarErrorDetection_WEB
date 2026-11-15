@@ -1,0 +1,144 @@
+@using GrammarErrorDetection.WEB.Components.Dialogs
+@using GrammarErrorDetection.Models.Gamification
+@using GrammarErrorDetection.WEB.Views.Gamification.Badges
+
+<ModalDialog Title="@Title" Busy="@(saving || showBadgeDesigner)" OnClose="OnClose" Class="gamification-dialog">
+    <p class="ceti-modal-description">@(IsAchievement ? "Define qué reconocerás y cuántos puntos recibirá el estudiante." : "Prepara el reto, sus instrucciones y el periodo de participación.")</p>
+    <EditForm EditContext="context" OnSubmit="SaveAsync" id="@formId" novalidate>
+        <DataAnnotationsValidator />
+        <div class="ceti-modal-body">
+            @if (error is not null || errors.Count > 0)
+            {
+                <div class="ceti-modal-errors" role="alert">@if (error is not null) { <p>@error</p> }@foreach (var item in errors) { <p>@item</p> }</div>
+            }
+            @if (loading) { <p role="status">Cargando opciones del formulario…</p> }
+            @if (catalogError is not null) { <div class="ceti-modal-errors" role="alert">@catalogError <button class="data-table-text-button" type="button" @onclick="LoadCatalogsAsync">Reintentar catálogos</button></div> }
+            <fieldset class="gamification-fields" disabled="@(saving || uncertain || loading || readingImage)">
+                <div class="gamification-grid">
+                    <label class="data-table-field gamification-full"><span>@(IsAchievement ? "Nombre del logro" : "Título del desafío") *</span><InputText @bind-Value="model.Name" autofocus /></label>
+                    <label class="data-table-field gamification-full"><span>Descripción *</span><InputTextArea @bind-Value="model.Description" rows="3" /></label>
+                    <label class="data-table-field"><span>Puntos *</span><InputNumber @bind-Value="model.Points" min="0" /></label>
+                    @if (IsAchievement)
+                    {
+                        <label class="data-table-field"><span>Categoría *</span><InputSelect @bind-Value="model.CategoryId"><option value="@Guid.Empty">Seleccionar categoría</option>
+                            @if (Achievement is { } a && !categories.Any(c => c.Id == a.AchievementCategoryId)) { <option value="@a.AchievementCategoryId">@(a.AchievementCategoryName ?? "Categoría actual")</option> }
+                            @foreach (var category in categories) { <option value="@category.Id">@category.Name @(!category.Active ? "(inactiva)" : "")</option> }
+                        </InputSelect></label>
+                        @if (!loading && catalogError is null && categories.Count == 0) { <p class="gamification-full" role="note">No hay categorías disponibles. Debe existir una categoría antes de crear un logro.</p> }
+                        <label class="data-table-field"><span>Colección (opcional)</span><InputSelect @bind-Value="model.CollectionId">
+                            <option value="@Guid.Empty">Sin colección</option>
+                            @if (Achievement?.AchievementCollectionId is { } currentCollection && !collections.Any(c => c.Id == currentCollection))
+                            {
+                                <option value="@currentCollection">@(Achievement.AchievementCollectionName ?? "Colección actual")</option>
+                            }
+                            @foreach (var collection in collections.Where(c => c.Active || c.Id == Achievement?.AchievementCollectionId))
+                            {
+                                <option value="@collection.Id">@collection.Name @(!collection.Active ? "(inactiva)" : "")</option>
+                            }
+                        </InputSelect></label>
+                        @if (model.CollectionId != Guid.Empty)
+                        {
+                            <label class="data-table-field"><span>Orden del nivel *</span><InputNumber @bind-Value="model.TierOrder" min="1" step="1" /><small>Por ejemplo: 1 = Bronce, 2 = Plata. Debe ser un entero positivo.</small></label>
+                        }
+                        @if (Achievement?.AchievementCollectionId is not null && model.CollectionId == Guid.Empty)
+                        {
+                            <p class="gamification-full" role="note">Al guardar, este logro se desvinculará de su colección y dejará de tener un nivel asignado.</p>
+                        }
+                        <div class="gamification-image gamification-full">
+                            @if ((imagePreview ?? GamificationAdmin.SafeIcon(Achievement?.IconLink)) is { } preview) { <img src="@preview" alt="Vista previa del icono del logro" /> }
+                            else { <span class="gamification-medal" aria-hidden="true">✦</span> }
+                            <div><div class="gamification-image-controls"><label class="data-table-field"><span>Imagen opcional</span><InputFile @key="fileVersion" OnChange="SelectFileAsync" accept="image/png,image/jpeg,image/webp,image/gif" /></label>
+                                <button type="button" class="data-table-button" disabled="@(saving || readingImage)" @onclick="OpenBadgeDesigner" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.5 5 5.5.8-4 3.9.9 5.5L12 15.6l-4.9 2.6.9-5.5-4-3.9L9.5 8Z"/></svg>Crear imagen</button>
+                            </div><small>PNG, JPG, WebP o GIF · hasta 5 MB. Sin un archivo nuevo se conserva la imagen actual.</small>
+                                @if (imageBytes is not null || fileError is not null) { <p>@imageName <button type="button" class="data-table-text-button" @onclick="ClearImage">Descartar archivo seleccionado</button></p> }
+                            </div>
+                        </div>
+                        @if (fileError is not null) { <p class="ceti-modal-errors gamification-full" role="alert">@fileError</p> }
+                    }
+                    else
+                    {
+                        <label class="data-table-field"><span>Dificultad *</span><InputText @bind-Value="model.Difficulty" placeholder="Normal" /></label>
+                        <label class="data-table-field gamification-full"><span>Instrucciones *</span><InputTextArea @bind-Value="model.Instructions" rows="4" /></label>
+                        <label class="data-table-field"><span>Inicio (hora de Bolivia) *</span><InputDate @bind-Value="model.StartDate" Type="InputDateType.DateTimeLocal" /></label>
+                        <label class="data-table-field"><span>Fin (hora de Bolivia) *</span><InputDate @bind-Value="model.EndDate" Type="InputDateType.DateTimeLocal" /></label>
+                        <label class="data-table-field"><span>Publicación</span><InputSelect @bind-Value="model.Status">
+                            <option value="Draft">Borrador</option><option value="Published">Publicado</option>
+                            @if (model.Status is not ("Draft" or "Published")) { <option value="@model.Status">@model.Status</option> }
+                        </InputSelect></label>
+                    }
+                    <div class="gamification-checks gamification-full"><label><InputCheckbox @bind-Value="model.Active" /> Activo</label>@if (IsAchievement) { <label><InputCheckbox @bind-Value="model.IsSecret" /> Logro secreto</label> }</div>
+                </div>
+                <section class="gamification-condition" aria-labelledby="gamification-condition-title">
+                    <header class="gamification-condition-heading">
+                        <div>
+                            <h3 id="gamification-condition-title">Condiciones para completar</h3>
+                            <p>@(conditionRows.Count > 1 ? "Se deben cumplir todas las condiciones." : "Agrega una o más actividades; se deben cumplir todas.")</p>
+                        </div>
+                        @if (!ConditionLocked && conditionRows.Count < MaxConditions)
+                        {
+                            <button type="button" class="data-table-button" @onclick="AddCondition">+ Agregar condición</button>
+                        }
+                    </header>
+                    @if (ConditionLocked) { <p role="note">Las condiciones solo pueden modificarse mientras el desafío está en borrador. Usa «Duplicar» para crear una variante.</p> }
+                    else if (IsAchievement && IsEdit) { <p role="note">Si alguien ya obtuvo este logro, sus condiciones no pueden modificarse. Puedes crear otro logro con condiciones diferentes.</p> }
+                    else if (!IsAchievement) { <p>Un borrador puede guardarse sin condiciones. Para publicarlo, agrega al menos una.</p> }
+                    @if (conditionRows.Count == 0)
+                    {
+                        <p class="gamification-help">Sin condiciones todavía.</p>
+                    }
+                    <ol class="gamification-condition-list">
+                        @for (var index = 0; index < conditionRows.Count; index++)
+                        {
+                            var row = conditionRows[index];
+                            var number = index + 1;
+                            var code = CodeOf(row);
+                            <li class="gamification-condition-item" @key="row">
+                                <div class="gamification-condition-item-heading">
+                                    <strong>Condición @number</strong>
+                                    @if (!ConditionLocked && (conditionRows.Count > 1 || !IsAchievement))
+                                    {
+                                        <button type="button" class="data-table-text-button" aria-label="Quitar condición @number" @onclick="() => RemoveCondition(row)">Quitar</button>
+                                    }
+                                </div>
+                                <fieldset class="gamification-fields gamification-grid" disabled="@ConditionLocked">
+                                    <label class="data-table-field gamification-full"><span>Actividad *</span>
+                                        <select value="@row.TypeId" @onchange="args => ConditionTypeChanged(row, args.Value)">
+                                            <option value="@Guid.Empty">Seleccionar actividad</option>
+                                            @if (row.TypeId != Guid.Empty && !conditions.Any(c => c.Id == row.TypeId)) { <option value="@row.TypeId">@(originalNames.GetValueOrDefault(row.TypeId) ?? "Actividad actual")</option> }
+                                            @foreach (var condition in conditions.Where(c => c.Id == row.TypeId || (c.Active && ConditionConfiguration.IsSupported(c.Code)))) { <option value="@condition.Id">@condition.Name @(!condition.Active ? "(inactiva)" : "")</option> }
+                                        </select>
+                                    </label>
+                                    @if (row.TypeId != Guid.Empty)
+                                    {
+                                        <p class="gamification-full gamification-help">@ConditionConfiguration.Description(code)</p>
+                                        <label class="data-table-field"><span>Comparación de cantidad</span>
+                                            <select @bind="row.Operator">
+                                                <option value=">=">Al menos (≥)</option><option value=">">Más de (&gt;)</option><option value="=">Exactamente (=)</option>
+                                                @if (row.Operator is not (">=" or ">" or "=")) { <option value="@row.Operator" disabled>@row.Operator (no admitido)</option> }
+                                            </select>
+                                        </label>
+                                        <label class="data-table-field"><span>Cantidad objetivo *</span><input type="number" @bind="row.Target" min="1" step="1" /><small>Entero mayor que cero.</small></label>
+                                        @if (code == "ERROR_FREE_TEXTS")
+                                        {
+                                            <label class="data-table-field gamification-full"><span>Mínimo de palabras por texto</span><input type="number" @bind="row.MinimumWords" min="1" step="1" placeholder="1" /><small>Opcional. Si lo dejas vacío, se exige al menos una palabra por texto.</small></label>
+                                        }
+                                        @if (code == "EVALUATIONS_ABOVE_SCORE")
+                                        {
+                                            <label class="data-table-field gamification-full"><span>Nota a superar *</span><input type="number" @bind="row.MinimumScore" step="any" /><small>La nota debe ser estrictamente mayor. Un umbral de 90 exige más de 90; una nota de 90 no cuenta.</small></label>
+                                        }
+                                    }
+                                </fieldset>
+                            </li>
+                        }
+                    </ol>
+                </section>
+            </fieldset>
+        </div>
+        <footer class="ceti-modal-footer"><span role="status">@(saving ? "Guardando…" : readingImage ? "Leyendo imagen…" : "* Campos obligatorios")</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">@(uncertain ? "Cerrar y revisar listado" : "Cancelar")</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@(saving || readingImage || loading || uncertain || (catalogError is not null && !ConditionLocked))">@(IsEdit ? "Guardar cambios" : IsAchievement ? "Crear logro" : "Crear desafío")</button></div></footer>
+    </EditForm>
+</ModalDialog>
+
+@if (showBadgeDesigner)
+{
+    <BadgeDesignerModal InitialDesign="badgeDesign" OnClose="CloseBadgeDesigner" OnGenerated="BadgeGenerated" />
+}

@@ -1,0 +1,82 @@
+@using System.ComponentModel.DataAnnotations
+@using GrammarErrorDetection.Models.Points
+@using GrammarErrorDetection.Services.Interfaces
+@using GrammarErrorDetection.Services.Services.Auth
+@using GrammarErrorDetection.WEB.Components.Dialogs
+@implements IDisposable
+@inject IPointService Points
+@inject AuthSessionState Session
+@inject NavigationManager Navigation
+
+<ModalDialog Title="Asignar puntos" Busy="saving" OnClose="OnClose">
+    <p class="ceti-modal-description">Estudiante: <strong>@Name</strong><br />Inscripción: @CourseName</p>
+    <EditForm Model="model" OnValidSubmit="SaveAsync" novalidate>
+        <DataAnnotationsValidator />
+        <div class="ceti-modal-body points-form">
+            @if (error is not null) { <div class="ceti-modal-errors" role="alert">@error</div> }
+            <fieldset disabled="@saving" class="users-edit-fields">
+                <label class="data-table-field" for="points-amount"><span>Cantidad de puntos</span><InputNumber id="points-amount" @bind-Value="model.Amount" max="99" step="1" placeholder="Ej. 25" aria-describedby="points-amount-help" /></label>
+                <span id="points-amount-help" class="points-field-help">Número entero menor que 100. Admite cero y valores negativos para ajustes.</span>
+                <ValidationMessage For="() => model.Amount" />
+                <label class="data-table-field" for="points-reason"><span>Motivo</span><InputTextArea id="points-reason" @bind-Value="model.Reason" rows="3" maxlength="255" placeholder="Ej. Participación destacada en clase" /></label>
+                <ValidationMessage For="() => model.Reason" />
+            </fieldset>
+        </div>
+        <footer class="ceti-modal-footer"><span role="status">@(saving ? "Guardando puntos…" : "El movimiento quedará registrado en esta inscripción.")</span><div><button type="button" disabled="@saving" class="data-table-button" @onclick="() => OnClose.InvokeAsync()">Cancelar</button><button type="submit" disabled="@(saving || RegistrationId == Guid.Empty)" class="data-table-button data-table-button-primary">Asignar puntos</button></div></footer>
+    </EditForm>
+</ModalDialog>
+@code {
+    [Parameter, EditorRequired] public string Name { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string CourseName { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public Guid RegistrationId { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<PointTransactionResponse> OnSaved { get; set; }
+    private readonly PointsForm model = new();
+    private readonly CancellationTokenSource lifetime = new();
+    private bool saving, disposed;
+    private string? error;
+    private async Task SaveAsync()
+    {
+        if (saving || disposed || RegistrationId == Guid.Empty) return;
+        if (Session.Current is null) { Navigation.NavigateTo("/auth/login", replace: true); return; }
+        saving = true; error = null;
+        PointTransactionResponse? saved = null;
+        try
+        {
+            var response = await Points.CreateAsync(new() { RegistrationId = RegistrationId, Amount = model.Amount!.Value, Reason = model.Reason.Trim() }, lifetime.Token);
+            if (disposed) return;
+            if (response?.Data is not { } data || response.Error is { ErrorCode: not 0 })
+                throw new InvalidOperationException("No se pudo confirmar la asignación. Consulta los movimientos antes de volver a enviarla.");
+            if (data.Id == Guid.Empty || data.RegistrationId != RegistrationId || data.Amount != model.Amount.Value || !data.Active)
+                throw new InvalidOperationException("La respuesta no confirma el movimiento solicitado. Verifica la asignación antes de repetirla.");
+            saved = data;
+        }
+        catch (HttpRequestException ex)
+        {
+            if (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized) { Session.Clear(); Navigation.NavigateTo("/auth/login", replace: true); }
+            error = ex.StatusCode switch
+            {
+                System.Net.HttpStatusCode.Forbidden => "No tienes permiso para asignar puntos a esta inscripción.",
+                System.Net.HttpStatusCode.BadRequest or System.Net.HttpStatusCode.UnprocessableEntity => "Revisa la cantidad, el motivo y la inscripción.",
+                System.Net.HttpStatusCode.NotFound => "La inscripción no está disponible.",
+                System.Net.HttpStatusCode.TooManyRequests => "Demasiadas solicitudes. Espera un momento.",
+                _ => "No se pudo confirmar la asignación. Verifica los movimientos antes de volver a enviarla."
+            };
+        }
+        catch (OperationCanceledException) { if (!disposed) error = "No se recibió confirmación a tiempo. Verifica los movimientos antes de repetir la asignación."; }
+        catch (System.Text.Json.JsonException) { error = "La respuesta no se pudo interpretar. Verifica los movimientos antes de repetir la asignación."; }
+        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException) { error = ex.Message; }
+        finally { saving = false; }
+        if (!disposed && saved is not null) await OnSaved.InvokeAsync(saved);
+    }
+    public void Dispose() { disposed = true; lifetime.Cancel(); lifetime.Dispose(); }
+    private sealed class PointsForm
+    {
+        [Required(ErrorMessage = "Ingresa la cantidad de puntos.")]
+        [Range(int.MinValue, 99, ErrorMessage = "La cantidad debe ser un entero menor que 100.")]
+        public int? Amount { get; set; }
+        [Required(ErrorMessage = "Escribe el motivo de la asignación.")]
+        [StringLength(255, ErrorMessage = "El motivo no puede superar los 255 caracteres.")]
+        public string Reason { get; set; } = string.Empty;
+    }
+}

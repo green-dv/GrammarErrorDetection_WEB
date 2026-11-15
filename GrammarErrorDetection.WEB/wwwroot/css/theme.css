@@ -1,0 +1,268 @@
+/* Tema del portal: colores por función. El valor claro está en :root; el oscuro, en :root[data-theme="dark"].
+   data-theme lo fija el script de index.html antes de que cargue Blazor (preferencia guardada o la del sistema). */
+:root {
+    --t-page: #f4f7fa;          /* fondo general */
+    --t-surface: #ffffff;       /* tarjetas, contenedor, modales */
+    --t-subtle: #f6f8fc;        /* filas, encabezados suaves, cajas secundarias */
+    --t-text: #171d46;
+    --t-muted: #627187;
+    --t-line: #e3e9f2;
+    --t-accent: #176b9f;
+    --t-accent-soft: #edf5fc;
+    --t-shadow: #14264d12;
+    --brand-navy-fixed: #171d46; /* fondos navy (encabezado de tablas, botones) que no cambian con el tema */
+    color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+    --t-page: #0b1122;
+    --t-surface: #141c31;
+    --t-subtle: #1a2340;
+    --t-text: #e6ebf5;
+    --t-muted: #9aa6bd;
+    --t-line: #26314d;
+    --t-accent: #5fb0e6;
+    --t-accent-soft: #17304a;
+    --t-shadow: #00000040;
+    --brand-navy-fixed: #0f1736;
+    /* Variables de marca usadas como color de texto en todo el portal. */
+    --color-brand-navy: #e6ebf5;
+    --color-ink: #e6ebf5;
+    --color-muted: #9aa6bd;
+    --color-line: #26314d;
+    --color-brand-blue: #3d93cf;
+    --color-brand-blue-dark: #3b8fc8;
+    color-scheme: dark;
+}
+
+/* Fondo y texto general en oscuro. */
+:root[data-theme="dark"] body { background: var(--t-page); color: var(--t-text); }
+:root[data-theme="dark"] .ceti-shell { background: var(--t-page); }
+:root[data-theme="dark"] .ceti-sidebar { background: linear-gradient(180deg, #070c1d, #0a2240); }
+:root[data-theme="dark"] .ceti-mobile-toggle { border-color: var(--t-line); background: var(--t-surface); color: var(--t-text); }
+:root[data-theme="dark"] input, :root[data-theme="dark"] select, :root[data-theme="dark"] textarea { color: var(--t-text); }
+:root[data-theme="dark"] h1, :root[data-theme="dark"] h2, :root[data-theme="dark"] h3, :root[data-theme="dark"] h4 { color: var(--t-text); }
+
+/* Dashboards (student-home.css): sus tokens propios en oscuro. */
+:root[data-theme="dark"] .sh-dashboard {
+    --sh-ink: var(--t-text);
+    --sh-muted: var(--t-muted);
+    --sh-blue: #5fb0e6;
+    --sh-blue-soft: #17304a;
+    --sh-course: #3d5478;
+    --sh-red: #ff7a78;
+    --sh-red-soft: #3a1a20;
+    --sh-green: #4cc38a;
+    --sh-green-soft: #143326;
+    --sh-amber: #f0b64a;
+    --sh-amber-soft: #3a2c12;
+    --sh-flame: #ff9a62;
+    --sh-flame-soft: #3a2015;
+    --sh-violet: #a99cff;
+    --sh-violet-soft: #2a2550;
+    --sh-canvas: #10172b;
+    --sh-line: var(--t-line);
+    --sh-track: #222c47;
+}
+:root[data-theme="dark"] .sh-coach { background: #0f2a45; }
+:root[data-theme="dark"] .sh-coach.is-idle { background: #3a1a20; }
+:root[data-theme="dark"] .sh-avatar > span { background: #e6ebf5; color: #10172b; }
+:root[data-theme="dark"] .sh-tabs { background: var(--t-subtle); }
+
+/* Plan de estudio y dashboard anterior: sus tokens en oscuro. */
+:root[data-theme="dark"] .study-plan {
+    --sp-ink: var(--t-text);
+    --sp-muted: var(--t-muted);
+    --sp-accent: #5fb0e6;
+    --sp-accent-dark: #3b8fc8;
+    --sp-accent-soft: #17304a;
+    --sp-surface: var(--t-subtle);
+    --sp-border: var(--t-line);
+}
+:root[data-theme="dark"] .student-dashboard {
+    --sd-ink: var(--t-text);
+    --sd-muted: var(--t-muted);
+    --sd-accent: #5fb0e6;
+    --sd-accent-soft: #17304a;
+    --sd-good: #4cc38a;
+    --sd-good-soft: #143326;
+    --sd-warn: #f0b64a;
+    --sd-warn-soft: #3a2c12;
+    --sd-border: var(--t-line);
+    --sd-track: #222c47;
+}
+
+/* ---------- Vista previa de temas (Configuración > Apariencia) ---------- */
+/* Cada miniatura fija sus propios colores, sin depender del tema activo. */
+.theme-preview { --p-page: #f4f7fa; --p-surface: #fff; --p-canvas: #f3f6fb; --p-text: #171d46; --p-muted: #8792a5; --p-line: #e3e9f2;
+    --p-accent: #176b9f; --p-course: #b9cbe6; --p-good: #1f8a5b; --p-bad: #c53736; --p-side-a: #111d48; --p-side-b: #103e65; }
+.theme-preview.is-dark { --p-page: #0b1122; --p-surface: #141c31; --p-canvas: #10172b; --p-text: #e6ebf5; --p-muted: #6f7c96; --p-line: #26314d;
+    --p-accent: #5fb0e6; --p-course: #3d5478; --p-good: #4cc38a; --p-bad: #ff7a78; --p-side-a: #070c1d; --p-side-b: #0a2240; }
+.theme-preview { display: flex; height: 150px; overflow: hidden; border: 1px solid var(--p-line); border-radius: 12px; background: var(--p-page); }
+.theme-preview-side { display: grid; align-content: start; justify-items: center; gap: 8px; width: 26px; padding-top: 8px; background: linear-gradient(180deg, var(--p-side-a), var(--p-side-b)); }
+.theme-preview-side i { width: 10px; height: 10px; border-radius: 3px; background: #ffffff40; }
+.theme-preview-side i:first-child { width: 14px; height: 14px; border-radius: 50%; background: #fff; }
+.theme-preview-main { flex: 1; display: grid; grid-template-rows: auto 1fr; min-width: 0; }
+.theme-preview-top { height: 14px; border-bottom: 1px solid var(--p-line); background: var(--p-surface); }
+.theme-preview-body { display: grid; align-content: start; gap: 6px; margin: 6px; padding: 7px; border-radius: 8px; background: var(--p-canvas); }
+.theme-preview-title { width: 46%; height: 8px; border-radius: 4px; background: var(--p-text); }
+.theme-preview-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.theme-preview-kpis span { display: grid; gap: 3px; padding: 5px; border: 1px solid var(--p-line); border-radius: 5px; background: var(--p-surface); }
+.theme-preview-kpis b { width: 60%; height: 6px; border-radius: 3px; background: var(--p-text); }
+.theme-preview-kpis em { width: 80%; height: 4px; border-radius: 2px; background: var(--p-muted); }
+.theme-preview-kpis span:nth-child(2) em { background: var(--p-good); }
+.theme-preview-kpis span:nth-child(3) em { background: var(--p-bad); }
+.theme-preview-chart { display: flex; align-items: flex-end; gap: 4px; height: 44px; padding: 5px 6px 0; border: 1px solid var(--p-line); border-radius: 5px; background: var(--p-surface); }
+.theme-preview-chart i { flex: 1; border-radius: 2px 2px 0 0; background: var(--p-accent); }
+.theme-preview-chart i:nth-child(even) { background: var(--p-course); }
+
+/* Login y registro siguen en claro por ahora: se restauran sus colores de marca dentro de .auth-shell. */
+:root[data-theme="dark"] .auth-shell {
+    --color-brand-navy: #171d46;
+    --color-ink: #101735;
+    --color-muted: #66708a;
+    --color-line: #ccd3e0;
+    --color-brand-blue: #176b9f;
+    --color-brand-blue-dark: #115582;
+    --t-surface: #ffffff;
+    --t-subtle: #f6f8fc;
+    --t-text: #171d46;
+    --t-muted: #627187;
+    --t-line: #e3e9f2;
+    color-scheme: light;
+    color: #171d46;
+}
+
+/* ---------- Configuración: subpestañas y Apariencia ---------- */
+.settings-subtabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; padding: 4px; border-radius: 12px; background: var(--t-subtle); width: fit-content; max-width: 100%; }
+.settings-subtabs button { min-height: 38px; padding: 0 16px; border: 0; border-radius: 9px; background: transparent; color: var(--t-muted); font: inherit; font-size: calc(13px * var(--ui-scale, 1)); font-weight: 650; cursor: pointer; }
+.settings-subtabs button[aria-selected="true"] { background: var(--t-surface); color: var(--t-text); box-shadow: 0 1px 3px var(--t-shadow); }
+.settings-subtabs button:focus-visible { outline: 2px solid var(--t-accent); outline-offset: 2px; }
+.appearance-settings > p { color: var(--t-muted); }
+.appearance-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 16px; }
+.appearance-option { display: grid; align-content: start; gap: 10px; padding: 12px; border: 2px solid var(--t-line); border-radius: 16px; background: var(--t-surface); color: var(--t-text); font: inherit; text-align: left; cursor: pointer; transition: border-color .15s; }
+.appearance-option:hover:not(:disabled) { border-color: var(--t-accent); }
+.appearance-option.is-selected { border-color: var(--t-accent); box-shadow: 0 0 0 3px var(--t-accent-soft); }
+.appearance-option:focus-visible { outline: 2px solid var(--t-accent); outline-offset: 3px; }
+.appearance-option:disabled { cursor: progress; opacity: .7; }
+.appearance-split { display: grid; grid-template-columns: 1fr 1fr; gap: 0; overflow: hidden; border-radius: 12px; }
+.appearance-split .theme-preview { border-radius: 0; }
+.appearance-split .theme-preview:first-child { border-right: 0; border-radius: 12px 0 0 12px; }
+.appearance-split .theme-preview:last-child { border-radius: 0 12px 12px 0; }
+.appearance-split .theme-preview-side { width: 18px; }
+.appearance-label { display: flex; align-items: center; gap: 8px; }
+.appearance-label strong { font-size: calc(15px * var(--ui-scale, 1)); }
+.appearance-radio { display: grid; place-items: center; width: 18px; height: 18px; border: 2px solid var(--t-line); border-radius: 50%; }
+.is-selected .appearance-radio { border-color: var(--t-accent); }
+.is-selected .appearance-radio::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--t-accent); }
+.appearance-option small { color: var(--t-muted); font-size: calc(12px * var(--ui-scale, 1)); }
+@media (max-width: 760px) { .appearance-options { grid-template-columns: minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .appearance-option { transition: none; } }
+
+/* ---------- Modo oscuro: variables propias de componentes ---------- */
+:root[data-theme="dark"] {
+    --table-filter-bg: #18223b;
+    --table-filter-border: var(--t-line);
+    --table-action-bg: #17304a;
+    --table-action-ink: #8ccaf2;
+    --table-success-bg: #143326;
+    --table-success-ink: #6fd6a2;
+    --table-danger-bg: #3a1a20;
+    --table-danger-ink: #ff9a98;
+    --screen-muted: var(--t-muted);
+    --screen-line: var(--t-line);
+}
+:root[data-theme="dark"] .data-table-card { --table-line: var(--t-line); }
+:root[data-theme="dark"] .ceti-modal { --table-ink: var(--t-text); --table-muted: var(--t-muted); --table-accent: var(--t-accent); }
+:root[data-theme="dark"] .member-profile { --member-ink: var(--t-text); --member-muted: var(--t-muted); }
+:root[data-theme="dark"] .grammar-kpi { --kpi-tint: var(--t-subtle); }
+:root[data-theme="dark"] .file-icon { --file-tint: var(--t-subtle); }
+
+/* Tablas: sin bordes claros; encabezado navy un poco más profundo. */
+:root[data-theme="dark"] .data-table thead { background: #0c1430; }
+:root[data-theme="dark"] .data-table thead th { border-block-color: #0c1430; }
+:root[data-theme="dark"] .data-table-card { border-color: var(--t-line); }
+
+/* Pestañas segmentadas (Logros / Desafíos). */
+:root[data-theme="dark"] .gamification-tabs button.is-selected { background: #24304f; color: var(--t-text); box-shadow: none; }
+:root[data-theme="dark"] .gamification-tabs button { color: var(--t-muted); }
+:root[data-theme="dark"] .gamification-tabs button.is-selected { color: #ffffff; }
+
+/* Fondos con degradado claro. */
+:root[data-theme="dark"] .achievement-catalog-card .collection-achievement-image { background: linear-gradient(145deg, #17304a, #141c31); }
+:root[data-theme="dark"] .material-preview.enlace { background: linear-gradient(135deg, #17304a, #18223b); }
+:root[data-theme="dark"] .material-link-icon, :root[data-theme="dark"] .material-file-badge, :root[data-theme="dark"] .material-inactive-badge { background: #141c31e6; }
+:root[data-theme="dark"] .profile-person { background: linear-gradient(150deg, #17304a, var(--t-surface) 65%); }
+:root[data-theme="dark"] .sd-kpi-level { background: linear-gradient(135deg, #17304a, var(--t-surface)); }
+:root[data-theme="dark"] .member-medal.is-earned { background: linear-gradient(#3a2c12, var(--t-surface) 58%); border-color: #5a4520; }
+:root[data-theme="dark"] .sp-precision-bar { background: #222c47; }
+
+/* Leaderboard: podio sobre fondo oscuro, con los tonos oro, plata y bronce atenuados. */
+:root[data-theme="dark"] .leaderboard-podium-section { background: linear-gradient(180deg, #18223b, var(--t-surface) 75%); }
+:root[data-theme="dark"] .leaderboard-podium-avatar { border-color: #4a5a78; background: var(--t-subtle); color: #c3cfe2; }
+:root[data-theme="dark"] .leaderboard-podium-avatar > span { border-color: var(--t-surface); background: #5b6b88; }
+:root[data-theme="dark"] .leaderboard-podium-step { border-color: #33405f; background: linear-gradient(180deg, #24304f, #18223b); color: #c3cfe2; }
+:root[data-theme="dark"] .leaderboard-podium .place-1 .leaderboard-podium-avatar { border-color: #c9a24c; background: #3a2c12; color: #f0c86a; box-shadow: 0 0 0 5px #c9a24c26; }
+:root[data-theme="dark"] .place-1 .leaderboard-podium-step { border-color: #6b5420; background: linear-gradient(180deg, #4a3a16, #2a2212); color: #f0c86a; }
+:root[data-theme="dark"] .place-3 .leaderboard-podium-avatar { border-color: #b98058; background: #3a2418; color: #e6a77e; box-shadow: 0 0 0 5px #b9805826; }
+:root[data-theme="dark"] .place-3 .leaderboard-podium-step { border-color: #6a4632; background: linear-gradient(180deg, #4a2f20, #2a1c14); color: #e6a77e; }
+:root[data-theme="dark"] .leaderboard-top-label { border-color: #6b5420; background: #3a2c12; color: #f0c86a; }
+:root[data-theme="dark"] .leaderboard-top-row.rank-1 .leaderboard-rank-number { background: #3a2c12; color: #f0c86a; }
+:root[data-theme="dark"] .leaderboard-top-row.rank-2 .leaderboard-rank-number { background: #24304f; color: #c3cfe2; }
+:root[data-theme="dark"] .leaderboard-top-row.rank-3 .leaderboard-rank-number { background: #3a2418; color: #e6a77e; }
+
+/* Chips y etiquetas suaves con texto de contraste medio. */
+:root[data-theme="dark"] .data-table-chip, :root[data-theme="dark"] .data-table-badge { background: #1f2a47; color: #c3cfe2; }
+:root[data-theme="dark"] .data-table-avatar { background: #1f2a47; color: #c3cfe2; }
+:root[data-theme="dark"] .data-table-status.is-pending, :root[data-theme="dark"] .data-table-status.pending { background: #3a2c12; color: #f0c86a; }
+:root[data-theme="dark"] .data-table-row-button { border-color: #2c4466; }
+:root[data-theme="dark"] .data-table-row-button:hover:not(:disabled), :root[data-theme="dark"] .data-table-icon-button:hover:not(:disabled) { border-color: #3d6a9a; background: #1d3a5c; color: #cfe6f7; }
+:root[data-theme="dark"] .data-table-icon-danger:hover:not(:disabled) { border-color: #6a2a33; background: #3a1a20; color: #ff9a98; }
+:root[data-theme="dark"] .users-directory .users-role { background: #17304a; color: #8ccaf2; }
+:root[data-theme="dark"] .grammar-trend-banner.improved, :root[data-theme="dark"] .grammar-trend.improved { background: #143326; color: #6fd6a2; }
+:root[data-theme="dark"] .grammar-trend-banner.worsened, :root[data-theme="dark"] .grammar-trend.worsened { background: #3a2215; color: #f5a46a; }
+:root[data-theme="dark"] .collection-symbol, :root[data-theme="dark"] .gamification-medal, :root[data-theme="dark"] .member-stat-gold,
+:root[data-theme="dark"] .points-level-icon, :root[data-theme="dark"] .member-medal-state { background: #3a2c12; color: #f0c86a; }
+:root[data-theme="dark"] .badge-provisional, :root[data-theme="dark"] .create-course-student-info .create-course-assigned { background: #3a2c12; color: #f0c86a; }
+:root[data-theme="dark"] .points-level-card { background: linear-gradient(120deg, #17304a, #18223b); }
+
+/* ---------- Modo oscuro: segunda ronda ---------- */
+/* Tokens de pantalla definidos en .ceti-content (bordes de casi todas las tarjetas del portal). */
+:root[data-theme="dark"] .ceti-content { --screen-ink: var(--t-text); --screen-muted: var(--t-muted); --screen-line: var(--t-line); }
+
+/* Reporte gramatical: tarjetas de indicadores sin el degradado a blanco. */
+:root[data-theme="dark"] .grammar-kpi { background: linear-gradient(155deg, color-mix(in srgb, var(--kpi-color) 16%, var(--t-surface)), var(--t-surface) 65%); }
+
+/* Botón de rechazar y otros botones de peligro. */
+:root[data-theme="dark"] .data-table-button-danger { border-color: #7a3540; color: #ff9a98; }
+:root[data-theme="dark"] .data-table-button-danger:hover:not(:disabled) { background: #3a1a20; border-color: #a04552; color: #ffb3b1; }
+
+/* Plan de estudio: el color de cada categoría llega en línea (--cat, --cat-soft claro); en oscuro se mezcla con la superficie. */
+:root[data-theme="dark"] .sp-tag,
+:root[data-theme="dark"] .sp-chip:not([aria-pressed="true"]) .sp-chip-count { background: color-mix(in srgb, var(--cat) 22%, var(--t-surface)); color: color-mix(in srgb, var(--cat) 55%, #ffffff); }
+:root[data-theme="dark"] .sp-chip:hover,
+:root[data-theme="dark"] .sp-bars button:hover:not(:disabled),
+:root[data-theme="dark"] .sp-bars button[aria-pressed="true"] { background: color-mix(in srgb, var(--cat) 20%, var(--t-surface)); }
+:root[data-theme="dark"] .sp-thumb { background: linear-gradient(180deg, color-mix(in srgb, var(--cat) 14%, var(--t-subtle)), var(--t-subtle)); box-shadow: 4px 4px 0 -1px var(--t-subtle), 4px 4px 0 0 var(--t-line), 0 8px 18px #00000040; }
+:root[data-theme="dark"] .sp-thumb-title { color: color-mix(in srgb, var(--cat) 55%, #ffffff); }
+:root[data-theme="dark"] .sp-thumb-lines i { background: color-mix(in srgb, var(--cat) 25%, var(--t-line)); }
+:root[data-theme="dark"] .sp-thumb-wave { background: linear-gradient(90deg, color-mix(in srgb, var(--cat) 22%, var(--t-surface)), color-mix(in srgb, var(--cat) 40%, var(--t-surface))); }
+:root[data-theme="dark"] .sp-card { box-shadow: none; }
+
+/* ---------- Configuración > Contraseña ---------- */
+.password-settings > p { color: var(--t-muted); }
+.password-form fieldset { display: grid; gap: 14px; max-width: 460px; margin: 16px 0 0; padding: 0; border: 0; }
+.password-form .portal-field { display: grid; gap: 6px; }
+.password-form input[type="password"], .password-form input[type="text"] { width: 100%; }
+.password-show { display: inline-flex; align-items: center; gap: 8px; color: var(--t-muted); font-size: calc(13px * var(--ui-scale, 1)); cursor: pointer; }
+.password-rules { display: grid; gap: 6px; margin: 0; padding: 12px 14px; border: 1px solid var(--t-line); border-radius: 10px; background: var(--t-subtle); list-style: none; font-size: calc(13px * var(--ui-scale, 1)); color: var(--t-muted); }
+.password-rules li { display: flex; align-items: baseline; gap: 8px; }
+.password-rules li > span:first-child { width: 1em; font-weight: 800; text-align: center; }
+.password-rules li.is-met { color: #1f8a5b; }
+:root[data-theme="dark"] .password-rules li.is-met { color: #4cc38a; }
+.password-form .portal-button { justify-self: start; }
+.users-field-help { color: var(--t-muted); font-size: calc(11px * var(--ui-scale, 1)); }
+
+/* Procesar: aviso para docentes y coordinadores. Perfil: edad. */
+.nlp-staff-note { margin: 0; color: var(--t-muted); font-size: calc(12px * var(--ui-scale, 1)); line-height: 1.5; }
+.member-age { color: var(--t-muted); font-weight: 400; }

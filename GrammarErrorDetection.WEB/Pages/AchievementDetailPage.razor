@@ -1,0 +1,9 @@
+@page "/gamification/achievements/{AchievementId:guid}"
+@using GrammarErrorDetection.WEB.Views.Gamification
+
+<PageTitle>Detalle del logro | CETI La Paz</PageTitle>
+<AchievementDetail AchievementId="AchievementId" @key="AchievementId" />
+
+@code {
+    [Parameter] public Guid AchievementId { get; set; }
+}

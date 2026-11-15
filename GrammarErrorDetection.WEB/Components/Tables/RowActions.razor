@@ -1,0 +1,17 @@
+<div class="data-table-actions">
+    <button type="button" class="data-table-icon-button" aria-label="Ver @Label" title="Ver" @onclick="OnView"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+    <button type="button" class="data-table-icon-button" aria-label="Editar @Label" title="@EditTitle" disabled="@EditDisabled" @onclick="OnEdit"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15l-1 6Z"/></svg></button>
+    <button type="button" class="data-table-icon-button data-table-icon-danger" aria-label="@DeleteTitle @Label" title="@DeleteTitle" disabled="@DeleteDisabled" @onclick="OnDelete"><svg viewBox="0 0 24 24" aria-hidden="true">@if (Restore) { <path d="M4 9a8 8 0 1 1 0 6M4 3v6h6"/> } else { <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/> }</svg></button>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    [Parameter] public EventCallback OnView { get; set; }
+    [Parameter] public EventCallback OnEdit { get; set; }
+    [Parameter] public EventCallback OnDelete { get; set; }
+    [Parameter] public bool EditDisabled { get; set; }
+    [Parameter] public bool DeleteDisabled { get; set; }
+    [Parameter] public string EditTitle { get; set; } = "Editar";
+    [Parameter] public string DeleteTitle { get; set; } = "Eliminar";
+    [Parameter] public bool Restore { get; set; }
+}

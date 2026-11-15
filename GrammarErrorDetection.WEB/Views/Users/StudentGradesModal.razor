@@ -1,0 +1,173 @@
+@using GrammarErrorDetection.Models.Evaluations
+@using GrammarErrorDetection.Services.Interfaces
+@using GrammarErrorDetection.Services.Services.Auth
+@inject IEvaluationService Evaluations
+@inject AuthSessionState Session
+@inject NavigationManager Navigation
+@implements IDisposable
+@using GrammarErrorDetection.WEB.Components.Dialogs
+
+<ModalDialog Title="Registrar notas" Class="grade-dialog" Busy="saving" OnClose="OnClose">
+    <div class="ceti-modal-body">
+        <p class="grade-module">MÓDULO @Module · PARALELO @Parallel</p>
+        <div class="grade-student"><span class="data-table-avatar" aria-hidden="true">@Initials</span><div><strong>@Name</strong><span>@Email</span></div></div>
+        <p>Ingresa los puntos obtenidos según la ponderación de cada área.</p>
+        @if (CanPersist)
+        {
+            <p class="grade-local-note">Cada examen se guarda por separado en la inscripción de este módulo.</p>
+        }
+        else
+        {
+            <p class="grade-local-note" role="status">Para guardar las notas debes ser coordinador o el docente asignado a este curso y contar con una inscripción válida.</p>
+        }
+        <fieldset class="grade-fields" disabled="@saving">
+        <div class="grade-tabs" aria-label="Examen a registrar">
+            @for (var exam = 0; exam < 2; exam++)
+            {
+                var index = exam;
+                <button type="button" aria-pressed="@(activeExam == index ? "true" : "false")" @onclick="() => activeExam = index">Examen @(index + 1)</button>
+            }
+        </div>
+        @for (var exam = 0; exam < 2; exam++)
+        {
+            var examIndex = exam;
+            <section hidden="@(activeExam != examIndex)" aria-label="Examen @(examIndex + 1)">
+                <div class="grade-field-head" aria-hidden="true"><span>Área</span><span>Ponderación</span><span>Puntos obtenidos</span></div>
+                @for (var area = 0; area < Areas.Length; area++)
+                {
+                    var areaIndex = area;
+                    var item = Areas[areaIndex];
+                    <div class="grade-area-row">
+                        <label for="grade-@examIndex-@areaIndex"><strong>@item.Name</strong><span>@item.Description</span></label>
+                        <span class="grade-weight">@item.Weight %</span>
+                        <div class="grade-score-input"><input id="grade-@examIndex-@areaIndex" type="number" min="0" max="@item.Weight" step="1" placeholder="—" value="@draft.Exams[examIndex][areaIndex]?.ToString(System.Globalization.CultureInfo.InvariantCulture)" @oninput="args => SetScore(examIndex, areaIndex, args)" aria-label="@item.Name, Examen @(examIndex + 1), máximo @item.Weight puntos" /><span>/ @item.Weight</span></div>
+                    </div>
+                }
+                <div class="grade-total"><strong>Total del examen @(examIndex + 1)</strong><span class="@StudentGradeDraft.Color(draft.Total(examIndex))">@(draft.Total(examIndex)?.ToString("0.##") ?? "Pendiente") / 100 · @StudentGradeDraft.Result(draft.Total(examIndex))</span></div>
+            </section>
+        }
+        <div class="grade-total" aria-live="polite"><strong>Promedio de ambos exámenes</strong><span class="@StudentGradeDraft.Color(draft.Average)">@(draft.Average?.ToString("0.##") ?? "Pendiente") / 100 · @StudentGradeDraft.Result(draft.Average)</span></div>
+        </fieldset>
+        @if (saveError is not null) { <p class="ceti-modal-errors" role="alert">@saveError</p> }
+        @if (savedMessage is not null) { <p role="status">@savedMessage</p> }
+        @if (validationError is not null) { <p class="ceti-modal-errors" role="alert">@validationError</p> }
+        <p class="grade-local-note">Rojo: menor a 70 · Verde: 70 o más. Completa las seis áreas para calcular cada examen.</p>
+    </div>
+    <footer class="ceti-modal-footer"><span>Examen 1: 50 % · Examen 2: 50 %</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">Cerrar</button><button type="button" class="data-table-button data-table-button-primary" disabled="@(saving || invalid.Any(item => item.Exam == activeExam))" @onclick="SaveAsync">@(saving ? "Guardando…" : $"Guardar examen {activeExam + 1}")</button></div></footer>
+</ModalDialog>
+
+@code {
+    [Parameter] public Guid RegistrationId { get; set; }
+    [Parameter] public Guid? TeacherId { get; set; }
+    [Parameter] public string Name { get; set; } = "";
+    [Parameter] public string Email { get; set; } = "";
+    [Parameter] public string Initials { get; set; } = "";
+    [Parameter] public string? Module { get; set; }
+    [Parameter] public string? Parallel { get; set; }
+    [Parameter, EditorRequired] public StudentGradeDraft Value { get; set; } = new();
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<StudentGradeDraft> OnSaved { get; set; }
+    private bool CanPersist => RegistrationId != Guid.Empty && Session.Current?.User is { } user
+        && (Session.IsInRole("Coordinator") || (Session.IsInRole("Teacher") && TeacherId == user.Id));
+    private StudentGradeDraft draft = new();
+    private int activeExam;
+    private bool saving, disposed;
+    private string? saveError, savedMessage;
+    private readonly CancellationTokenSource lifetime = new();
+    public void Dispose() { disposed = true; lifetime.Cancel(); lifetime.Dispose(); }
+    private string? validationError;
+    private readonly HashSet<(int Exam, int Area)> invalid = [];
+    protected override void OnInitialized() => draft = Value.Copy();
+    private void SetScore(int exam, int area, ChangeEventArgs args)
+    {
+        var text = args.Value?.ToString();
+        var parsed = decimal.TryParse(text, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var score);
+        var valid = string.IsNullOrWhiteSpace(text) || (parsed && score == decimal.Truncate(score) && score >= 0 && score <= Areas[area].Weight);
+        if (valid) invalid.Remove((exam, area)); else invalid.Add((exam, area));
+        draft.Exams[exam][area] = parsed && valid ? score : null;
+        validationError = invalid.Count > 0 ? "Cada nota debe ser un número entero entre 0 y el máximo de su área." : null;
+    }
+    private async Task SaveAsync()
+    {
+        if (saving) return;
+        if (!CanPersist)
+        {
+            saveError = RegistrationId == Guid.Empty
+                ? "No se encontró la inscripción del estudiante en este módulo. Cierra el modal y reintenta la consulta de notas."
+                : Session.Current?.User is null
+                    ? "La sesión venció. Vuelve a iniciar sesión."
+                    : "Tu sesión debe ser de Coordinator o del Teacher asignado a este módulo.";
+            return;
+        }
+        if (invalid.Any(item => item.Exam == activeExam) || draft.Exams[activeExam].Where((value, index) =>
+            value.HasValue && (value < 0 || value > Areas[index].Weight || value != decimal.Truncate(value.Value))).Any())
+        {
+            validationError = "Revisa las notas del examen: usa enteros dentro de la ponderación de cada área.";
+            return;
+        }
+        if (draft.Exams[activeExam].All(value => value is null))
+        {
+            validationError = "Ingresa al menos una nota antes de guardar el examen.";
+            return;
+        }
+        saving = true;
+        savedMessage = saveError = null;
+        validationError = null;
+        try
+        {
+            var request = draft.Request(RegistrationId, activeExam);
+            // Una respuesta anterior pudo perderse después de que la API guardara.
+            // Resolver el ID de nuevo evita repetir POST al reintentar.
+            var evaluations = await Evaluations.GetAsync(RegistrationId, lifetime.Token);
+            if (disposed) return;
+            var existing = evaluations.Where(item => item.Period == activeExam + 1).ToList();
+            if (existing.Count > 1)
+                throw new InvalidOperationException("Hay más de una evaluación para este examen. Revisa los registros antes de guardar.");
+            var id = existing.SingleOrDefault()?.Id;
+            if (draft.Ids[activeExam].HasValue && id is null)
+                throw new InvalidOperationException("La evaluación cambió o ya no está activa. Cierra y vuelve a consultar las notas.");
+            var response = id is null
+                ? await Evaluations.CreateAsync(request, lifetime.Token)
+                : await Evaluations.UpdateAsync(new EvaluationUpdateRequest
+                {
+                    Id = id.Value, RegistrationId = request.RegistrationId, Period = request.Period,
+                    WritingScore = request.WritingScore, GrammarScore = request.GrammarScore,
+                    VocabularyScore = request.VocabularyScore, ReadingScore = request.ReadingScore,
+                    ListeningScore = request.ListeningScore, OralScore = request.OralScore,
+                    AcademicPerformance = request.AcademicPerformance, Active = true
+                }, lifetime.Token);
+            if (disposed) return;
+            if (response?.Data is not { } result || response.Error is { ErrorCode: not 0 }
+                || result.Id == Guid.Empty || (id.HasValue && result.Id != id)
+                || result.RegistrationId != RegistrationId || result.Period != activeExam + 1 || !result.Active)
+                throw new InvalidOperationException("No se pudo confirmar el guardado. Cierra y vuelve a consultar las notas antes de reintentar.");
+            draft.Set(result);
+            var confirmed = Value.Copy();
+            confirmed.Set(result);
+            await OnSaved.InvokeAsync(confirmed);
+            savedMessage = $"Examen {activeExam + 1} guardado.";
+        }
+        catch (HttpRequestException ex)
+        {
+            if (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            { Session.Clear(); Navigation.NavigateTo("/auth/login", replace: true); }
+            saveError = ex.StatusCode switch
+            {
+                System.Net.HttpStatusCode.Unauthorized => "La sesión venció. Vuelve a iniciar sesión.",
+                System.Net.HttpStatusCode.Forbidden => "La API rechazó la operación (403). Debe permitir Teacher en la consulta y el guardado de evaluaciones de sus cursos.",
+                System.Net.HttpStatusCode.BadRequest => "La API rechazó las notas (400). Revisa la inscripción, el examen y los puntajes.",
+                _ => "No se pudo guardar el examen. Puedes reintentar; primero se consultará si ya existe una evaluación."
+            };
+        }
+        catch (OperationCanceledException) { if (!disposed) saveError = "El guardado tardó demasiado. Puedes reintentar; se verificará primero si el examen ya se guardó."; }
+        catch (Exception ex) when (ex is InvalidOperationException or System.Text.Json.JsonException)
+        { if (!disposed) saveError = ex is InvalidOperationException ? ex.Message : "No se pudo confirmar la respuesta. Cierra y vuelve a consultar las notas."; }
+        finally { saving = false; }
+    }
+    private static readonly (string Name, string Description, int Weight)[] Areas = [
+        ("Writing", "Escritura", 30), ("Oral", "Expresión oral", 15),
+        ("Listening", "Comprensión auditiva", 10), ("Reading", "Comprensión lectora", 10),
+        ("Grammar and Vocabulary", "Gramática y vocabulario · ponderación compartida", 10),
+        ("Desempeño académico", "Participación y trabajo académico", 25)
+    ];
+}

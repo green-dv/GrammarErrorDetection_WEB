@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\GrammarErrorDetection.Models\GrammarErrorDetection.Models.csproj" />
+    <ProjectReference Include="..\GrammarErrorDetection.Infraestructure\GrammarErrorDetection.Infraestructure.csproj" />
+  </ItemGroup>
 </Project>

@@ -1,0 +1,14 @@
+@using GrammarErrorDetection.Services.Services.Auth
+@inject AuthSessionState Session
+
+@if (Session.Current is not null)
+{
+    <p class="auth-role-preview" role="status">
+        <span>Rol del JWT · comprobación:</span>
+        <strong>@RoleText</strong>
+    </p>
+}
+
+@code {
+    private string RoleText => Session.Roles is { Count: > 0 } roles ? string.Join(", ", roles) : "No informado";
+}

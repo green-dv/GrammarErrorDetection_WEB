@@ -1,0 +1,311 @@
+@using GrammarErrorDetection.Models.Materials
+@using GrammarErrorDetection.WEB.Views.Materials
+@using GrammarErrorDetection.WEB.Components.Dialogs
+
+<section class="study-plan" aria-labelledby="study-plan-title" aria-busy="@(loading ? "true" : "false")">
+    <header class="users-heading sp-header">
+        <div>
+            <p class="users-eyebrow">CETI · APRENDIZAJE PERSONALIZADO</p>
+            @if (Embedded) { <h2 id="study-plan-title">Plan de estudio personalizado</h2> }
+            else { <h1 id="study-plan-title">Plan de estudio personalizado</h1> }
+            <p>Basado en tus errores recientes, te recomendamos el siguiente material de apoyo.</p>
+        </div>
+        <div class="sp-course">
+            <button type="button" class="sp-course-button" aria-haspopup="listbox" aria-expanded="@(courseMenuOpen ? "true" : "false")"
+                    disabled="@loadingCourses" @onclick="() => courseMenuOpen = !courseMenuOpen">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4m8-4v4"/></svg>
+                <span class="sp-course-text">
+                    @if (SelectedCourse is { } current)
+                    {
+                        <strong>@CourseName(current)</strong><small>@CourseDetail(current)</small>
+                    }
+                    else
+                    {
+                        <strong>@(loadingCourses ? "Cargando cursos…" : "Todos mis cursos")</strong><small>Historial completo</small>
+                    }
+                </span>
+                <svg class="sp-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 5 5 5-5"/></svg>
+            </button>
+            @if (courseMenuOpen)
+            {
+                <div class="sp-backdrop" @onclick="() => courseMenuOpen = false"></div>
+                <ul class="sp-course-menu" role="listbox" aria-label="Filtrar por curso">
+                    <li><button type="button" role="option" aria-selected="@(classId is null ? "true" : "false")" @onclick="() => SelectCourseAsync(null)">
+                        <strong>Todos mis cursos</strong><small>Historial completo, incluida la práctica personal</small></button></li>
+                    @foreach (var course in courses)
+                    {
+                        <li @key="course.ClassId"><button type="button" role="option" aria-selected="@(classId == course.ClassId ? "true" : "false")" @onclick="() => SelectCourseAsync(course.ClassId)">
+                            <strong>@CourseName(course)</strong><small>@CourseDetail(course)</small></button></li>
+                    }
+                    @if (coursesError is not null) { <li class="sp-course-error" role="alert">@coursesError</li> }
+                    else if (!loadingCourses && courses.Count == 0) { <li class="sp-course-error">Aún no tienes cursos aprobados.</li> }
+                </ul>
+            }
+        </div>
+    </header>
+
+    <div class="sp-why">
+        <div class="sp-why-text">
+            <span class="sp-why-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 20V12m7 8V7m7 13V4"/></svg></span>
+            <div>
+                <strong>¿Por qué estas recomendaciones?</strong>
+                @if (DifficultySentence() is { } difficulty)
+                {
+                    <p>Presentas mayor dificultad en: <b>@difficulty</b>.</p>
+                }
+                else if (!loading)
+                {
+                    <p>Cuando se analicen tus párrafos verás aquí las categorías en las que más te equivocas.</p>
+                }
+            </div>
+        </div>
+        <div class="sp-precision sp-precision-@AccuracyLevel">
+            <span class="sp-precision-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg></span>
+            <div>
+                <span>Tu nivel de precisión actual</span>
+                <strong>@(Accuracy is { } accuracy ? accuracy.ToString("0", Spanish) + " %" : "—")</strong>
+                <div class="sp-precision-bar" role="meter" aria-label="Nivel de precisión" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@(Accuracy ?? 0)">
+                    <span style="width:@((Accuracy ?? 0).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%"></span>
+                </div>
+                <small>Oraciones sin errores sobre tus oraciones analizadas</small>
+            </div>
+        </div>
+    </div>
+
+    @if (categories.Count > 0)
+    {
+        <div class="sp-chips" role="group" aria-label="Filtrar por categoría de error">
+            <button type="button" class="sp-chip sp-chip-all" aria-pressed="@(selected.Count == 0 ? "true" : "false")" @onclick="ClearCategories">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z"/></svg>
+                Todas (@MaterialCount)
+            </button>
+            @foreach (var category in categories)
+            {
+                var active = selected.Contains(category.ErrorClassificationId);
+                <button type="button" class="sp-chip" style="@CategoryStyle(category.ErrorClassificationId)" aria-pressed="@(active ? "true" : "false")"
+                        @key="category.ErrorClassificationId" @onclick="() => ToggleCategory(category.ErrorClassificationId)">
+                    <CategoryGlyph Kind="@CategoryKind(category.ErrorClassificationName)" />
+                    @DisplayName(category.ErrorClassificationName)
+                    <span class="sp-chip-count">@category.ErrorCount</span>
+                </button>
+            }
+        </div>
+    }
+
+    <section class="sp-detail @(detailOpen ? "is-open" : "")">
+        <button type="button" class="sp-detail-toggle" aria-expanded="@(detailOpen ? "true" : "false")" aria-controls="sp-detail-body" @onclick="() => detailOpen = !detailOpen">
+            <span>
+                <strong>Detalle de tus errores</strong>
+                <small>
+                    @if (report is { } headline)
+                    {
+                        @($"{headline.Summary.TotalErrors} errores en {headline.Summary.AnalyzedTexts} párrafos analizados · {headline.Categories.Count} categorías")
+                    }
+                    else if (reportError is not null) { @reportError }
+                    else { @("Cargando…") }
+                    · @(SelectedCourse is { } scopeCourse ? $"{CourseName(scopeCourse)} ({CourseDetail(scopeCourse)})" : "Todos mis cursos")
+                </small>
+            </span>
+            <svg class="sp-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9 5 5 5-5"/></svg>
+        </button>
+        @if (detailOpen)
+        {
+            <div id="sp-detail-body" class="sp-detail-body">
+                @if (report is { } data)
+                {
+                    <dl class="sp-kpis">
+                        <div><dt>Errores totales</dt><dd>@data.Summary.TotalErrors</dd></div>
+                        <div><dt>Párrafos analizados</dt><dd>@data.Summary.AnalyzedTexts <small>de @data.Summary.TotalTexts</small></dd></div>
+                        <div><dt>Oraciones analizadas</dt><dd>@data.Summary.TotalSentences</dd></div>
+                        <div><dt>Oraciones con errores</dt><dd>@data.Summary.SentencesWithErrors</dd></div>
+                        <div><dt>Errores por párrafo</dt><dd>@(data.Summary.ErrorsPerAnalyzedText?.ToString("0.#", Spanish) ?? "—")</dd></div>
+                        <div><dt>Precisión</dt><dd>@Percent(data.Summary.AccuracyPercentage)</dd></div>
+                    </dl>
+                    @if (ReportCategories.Count == 0)
+                    {
+                        <p class="sp-muted">No hay errores registrados en este curso.</p>
+                    }
+                    else
+                    {
+                        <ul class="sp-bars" aria-label="Errores por categoría">
+                            @foreach (var row in ReportCategories)
+                            {
+                                var hasMaterial = categories.Any(category => category.ErrorClassificationId == row.ErrorClassificationId);
+                                <li style="@CategoryStyle(row.ErrorClassificationId)" @key="row.ErrorClassificationId">
+                                    <button type="button" disabled="@(!hasMaterial)" aria-pressed="@(selected.Contains(row.ErrorClassificationId) ? "true" : "false")"
+                                            title="@(hasMaterial ? "Filtrar por esta categoría" : "Aún no hay material para esta categoría")"
+                                            @onclick="() => ToggleCategory(row.ErrorClassificationId)">
+                                        <span class="sp-bar-name">@DisplayName(row.ErrorClassificationName)</span>
+                                        <span class="sp-bar-track"><span style="width:@((100d * row.ErrorCount / MaxCategoryErrors).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></span></span>
+                                        <span class="sp-bar-value">@row.ErrorCount <small>@Percent(row.ErrorPercentage) · @row.RelatedTextCount párr.</small></span>
+                                    </button>
+                                </li>
+                            }
+                        </ul>
+                    }
+                }
+                else if (reportError is not null)
+                {
+                    <p class="sp-muted" role="alert">@reportError</p>
+                }
+                else
+                {
+                    <p class="sp-muted" role="status">Cargando detalle…</p>
+                }
+            </div>
+        }
+    </section>
+
+    @if (loading)
+    {
+        <p class="sp-notice" role="status">Preparando tu plan de estudio…</p>
+    }
+    else if (error is not null)
+    {
+        <div class="sp-notice is-error" role="alert"><p>@error</p><button type="button" class="data-table-button" @onclick="LoadAsync">Reintentar</button></div>
+    }
+    else if (categories.Count == 0)
+    {
+        <div class="sp-empty" role="status">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5V5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2Zm0 0A2 2 0 0 0 6 22h12M8 7h6"/></svg>
+            <strong>Aún no hay recomendaciones@(SelectedCourse is null ? "" : " para este curso")</strong>
+            <span>Cuando se analicen párrafos con errores y exista material para esas categorías, aparecerá aquí.</span>
+            <a class="data-table-button" href="process">Procesar un párrafo</a>
+        </div>
+    }
+    else
+    {
+        <div class="sp-grid">
+            @foreach (var (category, material) in VisibleCards)
+            {
+                var link = MaterialPresentation.ResolveLink(material.FileLink, ApiBaseUrl);
+                var format = Format(material);
+                var isFile = MaterialPresentation.IsFileServerLink(link);
+                var priority = Priority(category);
+                <article class="sp-card" style="@CategoryStyle(category.ErrorClassificationId)" @key="material.Id">
+                    <header class="sp-card-top">
+                        <span class="sp-tag"><CategoryGlyph Kind="@CategoryKind(category.ErrorClassificationName)" />@DisplayName(category.ErrorClassificationName)</span>
+                        <span class="sp-priority sp-priority-@priority">
+                            @if (priority == "alta") { <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 21h20ZM12 10v5m0 3v.01"/></svg> }
+                            else if (priority == "media") { <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg> }
+                            else { <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> }
+                            @PriorityLabel(priority)
+                        </span>
+                    </header>
+                    <div class="sp-card-body">
+                        <div class="sp-thumb" aria-hidden="true">
+                            @if (isFile && format is "PNG" or "JPG" or "JPEG" or "WEBP" or "GIF" or "AVIF" && link is not null)
+                            {
+                                <img src="@link" alt="" loading="lazy" referrerpolicy="no-referrer" />
+                            }
+                            else
+                            {
+                                <span class="sp-thumb-title">@DisplayName(category.ErrorClassificationName)</span>
+                                <span class="sp-thumb-lines"><i></i><i></i><i></i><i></i></span>
+                                <span class="sp-thumb-wave"></span>
+                            }
+                            <span class="sp-thumb-icon"><FileIcon Format="@format" /></span>
+                        </div>
+                        <div class="sp-card-content">
+                            <h3 title="@material.Name">@material.Name</h3>
+                            <p>@(string.IsNullOrWhiteSpace(category.ErrorClassificationDescription) ? "Material de apoyo para reforzar esta categoría." : category.ErrorClassificationDescription)</p>
+                            <p class="sp-meta">
+                                @if (isFile)
+                                {
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6Z"/><path d="M14 2v6h6"/></svg>
+                                    @($"{format} • {MaterialPresentation.Size(material.FileSize)}")
+                                }
+                                else
+                                {
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 13 4-4m-6 5-2 2a3 3 0 0 0 4 4l4-4a3 3 0 0 0 0-4M10 10a3 3 0 0 1 0-4l4-4a3 3 0 0 1 4 4l-2 2"/></svg>
+                                    @("Enlace")
+                                }
+                                @if (material.Seen) { <span class="sp-badge sp-badge-seen">Visto</span> }
+                                else if (ReasonLabel(material) is { } reason) { <span class="sp-badge">@reason</span> }
+                            </p>
+                            <div class="sp-actions">
+                                @if (isFile)
+                                {
+                                    <button type="button" class="sp-button" disabled="@(link is null)" @onclick="() => Open(category, material)">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>Vista previa
+                                    </button>
+                                    <a class="sp-button sp-button-primary" href="@MaterialPresentation.DownloadLink(link)" download target="_blank" rel="noopener noreferrer"
+                                       @onclick="() => TrackView(category, material, true)">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></svg>Descargar
+                                    </a>
+                                }
+                                else
+                                {
+                                    @if (link is not null)
+                                    {
+                                        <a class="sp-button" href="@link" target="_blank" rel="noopener noreferrer" @onclick="() => TrackView(category, material, false)">
+                                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6m0-6L10 14M18 14v6H4V6h6"/></svg>Abrir enlace
+                                        </a>
+                                    }
+                                    <button type="button" class="helpful-button sp-helpful @(material.Helpful == true ? "is-marked" : "")" aria-pressed="@(material.Helpful == true ? "true" : "false")"
+                                            disabled="@(material.Helpful == true || voting.Contains(material.Id))"
+                                            title="@(material.Helpful == true ? "Marcaste este material como útil" : "Marcar como útil")"
+                                            @onclick="() => VoteAsync(category, material, true)">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-9-8.5C1.6 8.3 3.6 5 7 5c2 0 3.2 1.2 5 3 1.8-1.8 3-3 5-3 3.4 0 5.4 3.3 4 6.5-2 4.1-9 8.5-9 8.5Z"/></svg>
+                                        @(material.Helpful == true ? "Marcado como útil" : "Marcar útil")
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            }
+        </div>
+
+        <aside class="sp-feedback" aria-label="Valoración del material">
+            <span class="sp-feedback-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 20h18M5 16l4-5 4 3 6-8m-4 0h4v4"/></svg></span>
+            <div class="sp-feedback-text">
+                @if (lastOpened is { } last)
+                {
+                    <strong>¿Ya revisaste «@last.Material.Name»?</strong>
+                    <span>Cuéntanos cómo te fue para seguir mejorando tus recomendaciones.</span>
+                }
+                else
+                {
+                    <strong>¿Ya revisaste este material?</strong>
+                    <span>Abre o descarga un material y cuéntanos cómo te fue para mejorar tus recomendaciones.</span>
+                }
+                @if (feedbackError is not null && viewing is null) { <small class="sp-feedback-error" role="alert">@feedbackError</small> }
+            </div>
+            <div class="sp-feedback-actions">
+                <button type="button" class="sp-button sp-button-outline" disabled="@(lastOpened is null || lastOpened.Value.Material.Seen)" @onclick="MarkSeen">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>
+                    @(lastOpened is { } seen && seen.Material.Seen ? "Visto" : "Marcar como visto")
+                </button>
+                <button type="button" class="sp-vote" aria-label="Me sirvió" aria-pressed="@(lastOpened?.Material.Helpful == true ? "true" : "false")"
+                        disabled="@(lastOpened is null || voting.Contains(lastOpened.Value.Material.Id))"
+                        @onclick="() => lastOpened is { } item ? VoteAsync(item.Category, item.Material, true) : Task.CompletedTask">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10v11H3V10ZM7 10l4-7c1.7 0 3 1.3 3 3v3h5.5a2 2 0 0 1 2 2.4l-1.6 8A2 2 0 0 1 18 21H7"/></svg>
+                </button>
+                <button type="button" class="sp-vote" aria-label="No me sirvió" aria-pressed="@(lastOpened?.Material.Helpful == false ? "true" : "false")"
+                        disabled="@(lastOpened is null || voting.Contains(lastOpened.Value.Material.Id))"
+                        @onclick="() => lastOpened is { } item ? VoteAsync(item.Category, item.Material, false) : Task.CompletedTask">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 14V3h4v11ZM17 14l-4 7c-1.7 0-3-1.3-3-3v-3H4.5a2 2 0 0 1-2-2.4l1.6-8A2 2 0 0 1 6 3h11"/></svg>
+                </button>
+            </div>
+        </aside>
+    }
+</section>
+
+@if (viewing is { } view)
+{
+    <ModalDialog Title="@view.Name" Subtitle="@ViewerSubtitle" Class="material-viewer-dialog" OnClose="Close">
+        <div class="ceti-modal-body">
+            <MaterialViewer Material="view">
+                <Feedback>
+                    @if (viewingMaterial is { } current && lastOpened is { } opened)
+                    {
+                        <MaterialFeedback Helpful="current.Helpful" Busy="@voting.Contains(current.Id)" Error="@feedbackError"
+                                          OnVote="helpful => VoteAsync(opened.Category, current, helpful)"
+                                          @bind-Comment="commentDraft" OnSendComment="SendCommentAsync" CommentSent="commentSent" />
+                    }
+                </Feedback>
+            </MaterialViewer>
+        </div>
+    </ModalDialog>
+}

@@ -1,0 +1,36 @@
+@using GrammarErrorDetection.Services.Services.Auth
+@implements IDisposable
+@inject AuthSessionState Session
+@inject NavigationManager Navigation
+
+@if (isAuthRoute || allowed)
+{
+    <RouteView RouteData="RouteData" DefaultLayout="@typeof(MainLayout)" />
+}
+else if (Session.Current is not null)
+{
+    <LayoutView Layout="@typeof(MainLayout)">
+        <h1>Acceso no disponible</h1>
+        <p>Tu rol no tiene acceso a esta sección.</p>
+        <a href="/home" class="portal-button">Volver al inicio</a>
+    </LayoutView>
+}
+
+@code {
+    [Parameter, EditorRequired] public RouteData RouteData { get; set; } = default!;
+    private bool isAuthRoute;
+    private bool allowed;
+    protected override void OnInitialized() => Session.Changed += SessionChanged;
+    protected override void OnParametersSet() => CheckAccess();
+
+    private void CheckAccess()
+    {
+        var path = Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0].Trim('/');
+        isAuthRoute = PortalNavigation.IsAuthPath(path);
+        allowed = Session.Current is not null && PortalNavigation.CanAccess(path, Session.Roles);
+        if (!isAuthRoute && Session.Current is null) Navigation.NavigateTo("/auth/login", replace: true);
+    }
+
+    private void SessionChanged() => _ = InvokeAsync(() => { CheckAccess(); StateHasChanged(); });
+    public void Dispose() => Session.Changed -= SessionChanged;
+}

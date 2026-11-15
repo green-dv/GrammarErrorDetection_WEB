@@ -1,7 +1,46 @@
-﻿@page "/"
+@page "/home"
+@using GrammarErrorDetection.Services.Services.Auth
+@using GrammarErrorDetection.WEB.Navigation
+@using GrammarErrorDetection.WEB.Components.Materials
+@using GrammarErrorDetection.WEB.Views.Dashboards
+@inject AuthSessionState Session
+@inject NavigationManager Navigation
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Inicio | CETI La Paz</PageTitle>
 
-<h1>Hello, world!</h1>
+@if (Session.Current is { User: not null })
+{
+    <section class="users-page" aria-labelledby="home-title">
+        <h1 id="home-title" class="data-table-sr-only">Inicio</h1>
+        @if (Session.IsInRole("Student"))
+        {
+            <StudentDashboard />
+            <StudyPlan Embedded="true" />
+        }
+        @if (Session.IsInRole("Coordinator"))
+        {
+            <CoordinatorDashboard />
+        }
+        else if (Session.IsInRole("Teacher"))
+        {
+            <TeacherDashboard />
+        }
+        <article class="data-table-card portal-welcome" aria-labelledby="home-links-title">
+            <h2 id="home-links-title">Accesos del portal</h2>
+            <nav class="portal-shortcuts" aria-label="Accesos del portal">
+                @foreach (var option in PortalNavigation.Options.Where(option => option.Path != "home" && PortalNavigation.CanAccess(option.Path, Session.Roles)))
+                {
+                    <a class="portal-shortcut" href="@option.Path"><svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)option.Icon)</svg><span>@option.Label</span></a>
+                }
+            </nav>
+        </article>
+    </section>
+}
 
-Welcome to your new app.
+@code {
+    protected override void OnInitialized()
+    {
+        if (Session.Current is null) Navigation.NavigateTo("/auth/login", replace: true);
+    }
+
+}
