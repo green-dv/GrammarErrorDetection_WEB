@@ -1,0 +1,158 @@
+@* Pestaña "Vocabulary" (Recomendaciones en vocabulary): por oración, las palabras con error con sus alternativas y definiciones,
+   o un mensaje por defecto si no hay errores. Cada oración con errores se puede plegar. *@
+@using GrammarErrorDetection.Models.Vocabulary
+@using GrammarErrorDetection.WEB.Components.Analysis
+
+<div class="an-vocab" aria-busy="@(Loading ? "true" : "false")">
+    <h3 class="an-panel-title">Recomendaciones en vocabulary</h3>
+    @if (Loading)
+    {
+        <AnalysisSkeleton Message="Verificando el vocabulario…" />
+    }
+    else if (Error is not null)
+    {
+        <div class="an-alert is-err" role="alert">
+            <AnalysisIcon Name="alert" />
+            <div><p>@Error</p><button type="button" class="data-table-button" @onclick="OnRetry"><AnalysisIcon Name="retry" />Reintentar</button></div>
+        </div>
+    }
+    else if (Analysis is { } analysis)
+    {
+        <p class="an-scope">Detecta palabras mal escritas o que no existen; no revisa si una palabra válida está bien usada.</p>
+        @if (analysis.UncheckedCount > 0)
+        {
+            <div class="an-alert" role="status">
+                <AnalysisIcon Name="info" />
+                <div>
+                    <p>@(analysis.UncheckedCount == 1 ? "No se pudo verificar 1 palabra" : $"No se pudieron verificar {analysis.UncheckedCount} palabras"): el servicio de vocabulario no respondió o alcanzó su límite. Las demás sí se verificaron.</p>
+                    <button type="button" class="data-table-button" @onclick="OnRetry"><AnalysisIcon Name="retry" />Completar la verificación</button>
+                </div>
+            </div>
+        }
+        @if (analysis.IssueCount == 0 && analysis.UncheckedCount == 0)
+        {
+            <p class="an-summary is-ok"><AnalysisIcon Name="check" /><span>No encontramos errores de vocabulario en este párrafo.</span></p>
+        }
+        else if (analysis.IssueCount > 0)
+        {
+            <p class="an-summary">@analysis.IssueCount @AnalysisFormat.Plural(analysis.IssueCount, "palabra", "palabras") con error en @WithIssues de @analysis.Sentences.Count @AnalysisFormat.Plural(analysis.Sentences.Count, "oración", "oraciones").</p>
+        }
+        @Toolbar
+        <ol class="an-list">
+            @foreach (var sentence in Visible(analysis))
+            {
+                var open = !Collapsed.Contains(sentence.SentenceId);
+                <li class="an-item @(sentence.Issues.Count == 0 ? "is-clean" : "has-issues")" @key="sentence.SentenceId">
+                    <div class="an-sentence">
+                        <span class="an-index">@sentence.SentenceIndex</span>
+                        <p class="an-text" lang="en"><SentenceText Text="@sentence.OriginalSentence" Ranges="@AnalysisFormat.VocabularyRanges(sentence.Issues)" Kind="MarkKind.Vocabulary" /></p>
+                        @if (sentence.Issues.Count > 0)
+                        {
+                            <button type="button" class="an-flag an-flag--toggle is-warn" aria-expanded="@(open ? "true" : "false")" aria-controls="an-body-@sentence.SentenceId" @onclick="() => OnToggle.InvokeAsync(sentence.SentenceId)">
+                                <AnalysisIcon Name="alert" /><span>@sentence.Issues.Count @AnalysisFormat.Plural(sentence.Issues.Count, "palabra", "palabras")@(open ? "" : " · Ver alternativas")</span><AnalysisIcon Name="chevron" Class="an-chev" />
+                                <span class="ceti-sr-only"> de la oración @sentence.SentenceIndex</span>
+                            </button>
+                        }
+                        else if (sentence.UncheckedCount > 0)
+                        {
+                            <span class="an-flag is-wide"><AnalysisIcon Name="info" /><span>No se pudo verificar todo el vocabulario de esta oración.</span></span>
+                        }
+                        else
+                        {
+                            <span class="an-flag is-ok is-wide"><AnalysisIcon Name="check" /><span>Sin errores de vocabulario</span></span>
+                        }
+                    </div>
+                    @if (sentence.Issues.Count > 0)
+                    {
+                        <div id="an-body-@sentence.SentenceId" class="an-body" hidden="@(!open)">
+                            <ul class="an-issues" aria-label="Palabras con error de la oración @sentence.SentenceIndex">
+                                @foreach (var issue in sentence.Issues)
+                                {
+                                    <li class="an-issue" @key="@($"{issue.StartIndex}-{issue.EndIndex}")">
+                                        @if (issue.Alternatives.Count == 0)
+                                        {
+                                            <p class="an-change"><del class="an-wrong"><span class="ceti-sr-only">Palabra con error: </span>@issue.Token</del></p>
+                                            <p class="an-note">No encontramos una alternativa para esta palabra. Revisa cómo está escrita.</p>
+                                        }
+                                        else
+                                        {
+                                            <p class="an-change">
+                                                <del class="an-wrong"><span class="ceti-sr-only">Palabra con error: </span>@issue.Token</del>
+                                                <AnalysisIcon Name="arrow" />
+                                                <ins class="an-right"><span class="ceti-sr-only">Se escribe: </span>@issue.Alternatives[0].Word</ins>
+                                            </p>
+                                            @Meaning(issue.Alternatives[0])
+                                            @if (issue.Alternatives.Count > 1)
+                                            {
+                                                <p class="an-ask">También podría ser</p>
+                                                <ul class="an-alts">
+                                                    @foreach (var other in issue.Alternatives.Skip(1))
+                                                    {
+                                                        <li class="an-alt" @key="other.Word">
+                                                            <p class="an-alt-word"><ins class="an-right">@other.Word</ins></p>
+                                                            @Meaning(other)
+                                                        </li>
+                                                    }
+                                                </ul>
+                                            }
+                                        }
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    }
+                </li>
+            }
+        </ol>
+        <p class="an-source">Alternativas y definiciones en inglés, con datos de <a href="https://www.datamuse.com/api/" target="_blank" rel="noopener noreferrer">Datamuse</a>.</p>
+    }
+</div>
+
+@code {
+    [Parameter] public VocabularyAnalysisResponse? Analysis { get; set; }
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public string? Error { get; set; }
+    [Parameter] public EventCallback OnRetry { get; set; }
+    /// <summary>Muestra solo las oraciones con errores de vocabulario.</summary>
+    [Parameter] public bool OnlyIssues { get; set; }
+    /// <summary>Contenido que el panel ubica antes de la lista (filtro y botón de plegar).</summary>
+    [Parameter] public RenderFragment? Toolbar { get; set; }
+    /// <summary>Oraciones con el detalle oculto (lo guarda el panel, así se conserva al cambiar de pestaña).</summary>
+    [Parameter] public IReadOnlySet<Guid> Collapsed { get; set; } = new HashSet<Guid>();
+    [Parameter] public EventCallback<Guid> OnToggle { get; set; }
+
+    private int WithIssues => Analysis?.Sentences.Count(sentence => sentence.Issues.Count > 0) ?? 0;
+
+    private IEnumerable<VocabularySentenceResponse> Visible(VocabularyAnalysisResponse analysis)
+        => analysis.Sentences.OrderBy(item => item.SentenceIndex).Where(item => !OnlyIssues || item.Issues.Count > 0);
+
+    // Primera definición a la vista; las demás, en un desplegable nativo.
+    private RenderFragment<VocabularyAlternativeResponse> Meaning => alternative => __builder =>
+    {
+        if (alternative.Definitions.Count == 0)
+        {
+            <p class="an-note">Sin definición disponible.</p>
+            return;
+        }
+        <p class="an-def">@Definition(alternative.Definitions[0])</p>
+        @if (alternative.Definitions.Count > 1)
+        {
+            <details class="an-more">
+                <summary>Más definiciones (@(alternative.Definitions.Count - 1))<AnalysisIcon Name="chevron" /></summary>
+                <ul>
+                    @foreach (var definition in alternative.Definitions.Skip(1))
+                    {
+                        <li class="an-def">@Definition(definition)</li>
+                    }
+                </ul>
+            </details>
+        }
+    };
+    // La categoría gramatical va como etiqueta delante del texto de la definición.
+    private static MarkupString Definition(VocabularyDefinitionResponse definition)
+    {
+        var label = AnalysisFormat.PartOfSpeechLabel(definition.PartOfSpeech);
+        var text = System.Net.WebUtility.HtmlEncode(definition.Text);
+        return new MarkupString(label.Length == 0 ? text : $"<span class=\"an-pos\">{label}</span>{text}");
+    }
+}
