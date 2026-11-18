@@ -71,7 +71,7 @@
         <section class="data-table-card leaderboard-ranking" aria-labelledby="ranking-title">
             <header class="data-table-heading"><div><h2 id="ranking-title">Clasificación de participantes</h2><p>Top 10 por puntos · @moduleLabel · @periodLabel</p></div><span class="data-table-badge">TOP 10</span></header>
             <div class="data-table-scroll" role="region" aria-label="Clasificación por puntos" tabindex="0">
-                <table class="data-table leaderboard-table">
+                <table class="data-table leaderboard-table data-table-cards">
                     <caption class="data-table-sr-only">Top 10 y tu resultado, si la API lo incluye, según los filtros seleccionados.</caption>
                     <thead><tr><th scope="col">Puesto</th><th scope="col">Participante</th><th scope="col">Módulo</th><th scope="col">Puntos</th></tr></thead>
                     <tbody>
@@ -82,10 +82,10 @@
                         @foreach (var student in entries.OrderByDescending(item => item.IsTop10).ThenBy(item => item.Position ?? int.MaxValue))
                         {
                             <tr class="@(student.IsTop10 ? $"leaderboard-top-row rank-{student.Position}" : "")">
-                                <td><span class="leaderboard-rank-number">@(student.IsTop10 ? student.Position?.ToString() ?? "--" : "--")</span></td>
-                                <th scope="row"><div class="data-table-identity"><span class="data-table-avatar" aria-hidden="true">@Initials(student)</span><div><span class="data-table-primary">@Name(student) @if (student.IsCurrentUser) { <span class="data-table-chip">Tú</span> }</span>@if (!student.IsTop10) { <span class="data-table-secondary">Fuera del top 10</span> }</div></div></th>
-                                <td><span class="data-table-chip">@Module(student)</span></td>
-                                <td><strong class="leaderboard-points">@student.TotalPoints.ToString("N0")</strong><span class="leaderboard-points-unit"> pts</span></td>
+                                <td data-label="Puesto"><span class="leaderboard-rank-number">@(student.IsTop10 ? student.Position?.ToString() ?? "--" : "--")</span></td>
+                                <th data-label="Participante" scope="row"><div class="data-table-identity"><span class="data-table-avatar" aria-hidden="true">@Initials(student)</span><div><span class="data-table-primary">@Name(student) @if (student.IsCurrentUser) { <span class="data-table-chip">Tú</span> }</span>@if (!student.IsTop10) { <span class="data-table-secondary">Fuera del top 10</span> }</div></div></th>
+                                <td data-label="Módulo"><span class="data-table-chip">@Module(student)</span></td>
+                                <td data-label="Puntos"><strong class="leaderboard-points">@student.TotalPoints.ToString("N0")</strong><span class="leaderboard-points-unit"> pts</span></td>
                             </tr>
                         }
                     </tbody>

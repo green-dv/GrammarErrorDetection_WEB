@@ -10,7 +10,7 @@ public static class PortalNavigation
         new("learning", "Aprendizaje", [], ["materials", "recommendations", "process", "gamification"]),
         new("my-learning", "Mi formación", ["Student"], ["my-courses", "my-enrollments"]),
         new("academic", "Gestión académica", ["Coordinator", "Teacher"], ["courses", "enrollments", "reports"]),
-        new("administration", "Administración", ["Coordinator"], ["users"])
+        new("administration", "Administración", ["Coordinator"], ["users", "categories", "modules", "classrooms", "user-levels", "condition-types"])
     ];
 
     public static bool CanViewSection(PortalMenuSection section, IReadOnlyList<string> roles) =>
@@ -28,6 +28,11 @@ public static class PortalNavigation
         new("my-enrollments", "Mis inscripciones", List, ["Student"]),
         new("my-courses", "Mis cursos", Book, ["Student"]),
         new("users", "Usuarios", "<circle cx='9' cy='8' r='3'/><path d='M3 20v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 4v2'/>", ["Coordinator"]),
+        new("categories", "Categorías de error", "<path d='M3 12V4h8l10 10-8 8ZM7.5 8.5h.01'/>", ["Coordinator"], "clasificación errores gramática etiquetas reentrenamiento"),
+        new("modules", "Módulos", "<path d='M12 3 3 8l9 5 9-5ZM3 13l9 5 9-5M3 17.5 12 22l9-4.5'/>", ["Coordinator"], "niveles ruta cursos ciclo promoción"),
+        new("classrooms", "Aulas", "<path d='M3 21V8l9-5 9 5v13M9 21v-6h6v6M3 21h18'/>", ["Coordinator"], "capacidad salones espacios pisos"),
+        new("user-levels", "Niveles de puntos", "<path d='M4 20h4v-5H4ZM10 20h4V10h-4ZM16 20h4V4h-4Z'/>", ["Coordinator"], "gamificación puntos rangos escalera"),
+        new("condition-types", "Tipos de condición", "<path d='M4 6h10M4 12h6M4 18h10M17 4l3 3-3 3M17 14l3 3-3 3'/>", ["Coordinator"], "gamificación logros desafíos condiciones"),
         new("courses", "Cursos", Book, ["Coordinator", "Teacher"]),
         new("reports", "Reportes", "<path d='M4 20h16M7 16v-5m5 5V5m5 11V8'/>", ["Coordinator", "Teacher"], "gramática desempeño falencias estadísticas"),
         new("enrollments", "Inscripciones", List, ["Coordinator"]),

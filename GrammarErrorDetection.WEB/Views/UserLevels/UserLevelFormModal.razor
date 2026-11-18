@@ -1,0 +1,132 @@
+@using System.Net
+@using System.Text.Json
+@using GrammarErrorDetection.Models.UserLevels
+@using GrammarErrorDetection.Services.Interfaces
+@using GrammarErrorDetection.Services.Services.Auth
+@using GrammarErrorDetection.WEB.Components.Dialogs
+@implements IDisposable
+@inject IUserLevelCatalogService LevelService
+@inject AuthSessionState Session
+@inject NavigationManager Navigation
+
+@* Alta y edición de un nivel. Con Level = null crea; con un nivel, edita. Al guardar se reasigna el nivel de todos los usuarios. *@
+<ModalDialog Title="@(IsEdit ? "Editar nivel" : "Nuevo nivel")" Subtitle="@(IsEdit ? Level!.Name : "Nivel que se alcanza al sumar puntos")" Busy="@saving" OnClose="OnClose">
+    <EditForm EditContext="editContext" OnSubmit="SaveAsync" novalidate>
+        <DataAnnotationsValidator />
+        <div class="ceti-modal-body">
+            @if (error is not null || validationErrors.Count > 0)
+            {
+                <div class="ceti-modal-errors" role="alert">
+                    @if (error is not null) { <p>@error</p> }
+                    @foreach (var validationError in validationErrors) { <p>@validationError</p> }
+                </div>
+            }
+            <fieldset disabled="@saving" class="users-edit-fields">
+                <div class="users-edit-grid">
+                    <label class="data-table-field"><span>Nombre *</span><input @bind="model.Name" @bind:event="oninput" maxlength="50" autofocus /></label>
+                    <label class="data-table-field"><span>Número de nivel *</span><input type="number" min="1" step="1" @bind="model.LevelNumber" /></label>
+                    <label class="data-table-field"><span>Puntos mínimos *</span><input type="number" min="0" step="1" @bind="model.MinPoints" /></label>
+                </div>
+                <p class="gamification-help">Los puntos mínimos deben aumentar con el número de nivel y siempre debe haber un nivel activo con 0 puntos. Al guardar se reasigna el nivel de todos los usuarios según sus puntos.</p>
+            </fieldset>
+        </div>
+        <footer class="ceti-modal-footer"><span role="status">@(saving ? "Guardando y reasignando niveles…" : IsEdit && !HasChanges ? "No hay cambios para guardar." : "")</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">Cancelar</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@(saving || (IsEdit && !HasChanges))">@(IsEdit ? "Guardar cambios" : "Crear nivel")</button></div></footer>
+    </EditForm>
+</ModalDialog>
+
+@code {
+    [Parameter] public UserLevelItem? Level { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<UserLevelItem> OnSaved { get; set; }
+
+    private sealed class FormModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "El nombre es obligatorio.")]
+        [System.ComponentModel.DataAnnotations.StringLength(50, ErrorMessage = "El nombre admite hasta 50 caracteres.")]
+        public string Name { get; set; } = string.Empty;
+        [System.ComponentModel.DataAnnotations.Range(1, int.MaxValue, ErrorMessage = "El nivel debe ser un entero positivo.")]
+        public int LevelNumber { get; set; } = 1;
+        [System.ComponentModel.DataAnnotations.Range(0L, long.MaxValue, ErrorMessage = "Los puntos mínimos no pueden ser negativos.")]
+        public long MinPoints { get; set; }
+    }
+
+    private readonly CancellationTokenSource lifetime = new();
+    private FormModel model = new();
+    private EditContext editContext = default!;
+    private List<string> validationErrors = [];
+    private string? error;
+    private bool saving, disposed;
+    private bool IsEdit => Level is not null;
+    private bool HasChanges => Level is { } current
+        && (model.Name.Trim() != current.Name || model.LevelNumber != current.Level || model.MinPoints != current.MinPoints);
+
+    protected override void OnInitialized()
+    {
+        model = new FormModel { Name = Level?.Name ?? string.Empty, LevelNumber = Level?.Level ?? 1, MinPoints = Level?.MinPoints ?? 0 };
+        editContext = new EditContext(model);
+    }
+
+    private async Task SaveAsync()
+    {
+        if (saving || disposed) return;
+        error = null;
+        validationErrors.Clear();
+        if (IsEdit && !HasChanges) return;
+        if (!editContext.Validate())
+        {
+            validationErrors = editContext.GetValidationMessages().Distinct().ToList();
+            return;
+        }
+        if (Session.Current is null) { Navigation.NavigateTo("/auth/login", replace: true); return; }
+        if (!Session.Roles.Contains("Coordinator", StringComparer.Ordinal)) { error = "Solo un coordinador puede gestionar niveles."; return; }
+        saving = true;
+        try
+        {
+            var response = Level is { } existing
+                ? await LevelService.UpdateAsync(new UserLevelUpdateRequest
+                {
+                    Id = existing.Id,
+                    Name = model.Name.Trim() == existing.Name ? null : model.Name,
+                    Level = model.LevelNumber == existing.Level ? null : model.LevelNumber,
+                    MinPoints = model.MinPoints == existing.MinPoints ? null : model.MinPoints
+                }, lifetime.Token)
+                : await LevelService.CreateAsync(new UserLevelCreateRequest { Name = model.Name, Level = model.LevelNumber, MinPoints = model.MinPoints }, lifetime.Token);
+            if (disposed) return;
+            if (response?.Data is not { } saved || response.Error is { ErrorCode: not 0 })
+            {
+                error = response?.Error?.ErrorMessage ?? "No se pudo confirmar el guardado. Inténtalo de nuevo.";
+                return;
+            }
+            await OnSaved.InvokeAsync(saved);
+        }
+        catch (HttpRequestException ex)
+        {
+            if (disposed) return;
+            if (ex.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                Session.Clear();
+                Navigation.NavigateTo("/auth/login", replace: true);
+            }
+            error = ex.StatusCode switch
+            {
+                HttpStatusCode.Conflict => "Ya existe un nivel con ese número, ese nombre o esos puntos mínimos.",
+                HttpStatusCode.NotFound => "El nivel ya no existe. Actualiza el listado.",
+                HttpStatusCode.Forbidden => "Solo un coordinador puede gestionar niveles.",
+                HttpStatusCode.BadRequest => "Revisa los datos: los puntos mínimos deben aumentar con el número de nivel y siempre debe haber un nivel activo con 0 puntos.",
+                _ => "No se pudo guardar el nivel. Inténtalo de nuevo."
+            };
+        }
+        catch (OperationCanceledException) { if (!disposed) error = "El guardado tardó demasiado. Inténtalo de nuevo."; }
+        catch (JsonException) { if (!disposed) error = "No se pudo interpretar la respuesta del servidor."; }
+        catch (System.ComponentModel.DataAnnotations.ValidationException ex) { if (!disposed) error = ex.Message; }
+        finally { saving = false; }
+    }
+
+    public void Dispose()
+    {
+        if (disposed) return;
+        disposed = true;
+        lifetime.Cancel();
+        lifetime.Dispose();
+    }
+}

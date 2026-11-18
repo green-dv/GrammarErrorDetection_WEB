@@ -28,6 +28,9 @@ public partial class GamificationAdmin : IDisposable
     private bool Allowed => Session.Current is not null && (Session.IsInRole("Coordinator") || Session.IsInRole("Teacher") || Session.IsInRole("Student"));
     private bool CanManage => Session.Current is not null && Session.IsInRole("Coordinator");
     private int RowCount => achievementsTab ? achievements.Count : challenges.Count;
+    private long? total;
+    private string PagerInfo => !busy && error is null && RowCount > 0 ? $"Mostrando {(page - 1) * pageSize + 1}–{(page - 1) * pageSize + RowCount}{(total is { } all ? $" de {all}" : "")}" : "";
+    private string PageOf => total is { } all ? $" de {Math.Max(1, (all + pageSize - 1) / pageSize)}" : "";
 
     protected override async Task OnInitializedAsync() { if (CheckPermission()) await Task.WhenAll(LoadAsync(1), LoadCollectionsAsync()); }
     private async Task LoadCollectionsAsync()
@@ -82,24 +85,28 @@ public partial class GamificationAdmin : IDisposable
             bool? enabled = bool.TryParse(appliedActive, out var parsed) ? parsed : null;
             if (achievementsTab)
             {
-                var rows = Require(await Service.SearchAchievementsAsync(new() { PageNumber = requestedPage, PageSize = pageSize, Active = enabled, Name = appliedName, AchievementCollectionId = appliedCollectionId }, lifetime.Token));
+                var pageResponse = await Service.SearchAchievementsAsync(new() { PageNumber = requestedPage, PageSize = pageSize, Active = enabled, Name = appliedName, AchievementCollectionId = appliedCollectionId }, lifetime.Token);
+                var rows = Require(pageResponse);
+                total = pageResponse?.TotalCount;
                 if (requestedPage > page && rows.Count == 0) { hasNext = false; message = "Has llegado al final del listado."; return; }
                 achievements = rows;
             }
             else
             {
-                var rows = Require(await Service.SearchChallengesAsync(new() { PageNumber = requestedPage, PageSize = pageSize, Active = enabled, Status = appliedPublication }, lifetime.Token));
+                var pageResponse = await Service.SearchChallengesAsync(new() { PageNumber = requestedPage, PageSize = pageSize, Active = enabled, Status = appliedPublication }, lifetime.Token);
+                var rows = Require(pageResponse);
+                total = pageResponse?.TotalCount;
                 if (requestedPage > page && rows.Count == 0) { hasNext = false; message = "Has llegado al final del listado."; return; }
                 challenges = rows;
             }
             page = requestedPage;
-            hasNext = RowCount == pageSize;
+            hasNext = total is { } all ? (long)page * pageSize < all : RowCount == pageSize;
         }
         catch (OperationCanceledException) { if (!disposed) error = "La consulta tardó demasiado. Intenta de nuevo."; }
         catch (HttpRequestException ex) { if (!disposed) error = HandleHttp(ex); }
         catch (Exception ex) when (ex is InvalidOperationException or JsonException)
         { if (!disposed) error = ex is JsonException ? "No se pudo interpretar la respuesta." : ex.Message; }
-        finally { busy = false; if (error is not null) { achievements.Clear(); challenges.Clear(); hasNext = false; } }
+        finally { busy = false; if (error is not null) { achievements.Clear(); challenges.Clear(); total = null; hasNext = false; } }
     }
     internal static T Require<T>(ApiResponse<T>? response) where T : class
     {

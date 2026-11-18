@@ -22,7 +22,9 @@ public partial class PointsDashboard : IDisposable
     private int page = 1, pageSize = 10;
     private bool historyLoading, hasNext;
     private string? historyError, historyStatus;
-    private string HistoryRange => history.Count == 0 ? "0 movimientos" : $"Mostrando {(page - 1) * pageSize + 1}–{(page - 1) * pageSize + history.Count}";
+    private long? historyTotal;
+    private string HistoryRange => history.Count == 0 ? "0 movimientos" : $"Mostrando {(page - 1) * pageSize + 1}–{(page - 1) * pageSize + history.Count}{(historyTotal is { } all ? $" de {all}" : "")}";
+    private string PageOf => historyTotal is { } all ? $" de {Math.Max(1, (all + pageSize - 1) / pageSize)}" : "";
     private Task ChangeHistorySizeAsync() => LoadHistoryAsync(1);
     private Task PreviousHistoryAsync() => page <= 1 ? Task.CompletedTask : LoadHistoryAsync(page - 1);
     private Task NextHistoryAsync() => !hasNext ? Task.CompletedTask : LoadHistoryAsync(page + 1);
@@ -33,7 +35,7 @@ public partial class PointsDashboard : IDisposable
         historyLoading = true; historyError = historyStatus = null;
         try
         {
-            var entries = await Points.GetHistoryAsync(user.Id, requestedPage, pageSize, lifetime.Token);
+            var (entries, total) = await Points.GetHistoryPageAsync(user.Id, requestedPage, pageSize, lifetime.Token);
             if (disposed) return;
             if (requestedPage > page && entries.Count == 0)
             {
@@ -42,8 +44,9 @@ public partial class PointsDashboard : IDisposable
                 return;
             }
             history = entries;
+            historyTotal = total;
             page = requestedPage;
-            hasNext = entries.Count == pageSize;
+            hasNext = total is { } all ? (long)requestedPage * pageSize < all : entries.Count == pageSize;
         }
         catch (HttpRequestException ex)
         {
@@ -57,7 +60,7 @@ public partial class PointsDashboard : IDisposable
         finally
         {
             historyLoading = false;
-            if (historyError is not null) { history = []; page = requestedPage; hasNext = false; }
+            if (historyError is not null) { history = []; historyTotal = null; page = requestedPage; hasNext = false; }
         }
     }
     private async Task LoadAsync()

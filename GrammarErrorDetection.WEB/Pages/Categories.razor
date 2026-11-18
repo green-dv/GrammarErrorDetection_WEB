@@ -1,0 +1,28 @@
+@page "/categories"
+@using GrammarErrorDetection.Services.Services.Auth
+@using GrammarErrorDetection.WEB.Views.Categories
+@inject AuthSessionState Session
+@inject NavigationManager Navigation
+
+<PageTitle>Categorías de error | CETI La Paz</PageTitle>
+
+@if (Session.Current is not null)
+{
+    @if (Session.Roles.Contains("Coordinator", StringComparer.Ordinal))
+    {
+        <CategoryList />
+    }
+    else
+    {
+        <h1>Acceso restringido</h1>
+        <p>La gestión de categorías de error está disponible para coordinadores.</p>
+        <a href="home">Volver al inicio</a>
+    }
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        if (Session.Current is null) Navigation.NavigateTo("/auth/login", replace: true);
+    }
+}

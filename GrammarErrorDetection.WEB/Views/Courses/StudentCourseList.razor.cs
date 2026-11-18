@@ -23,6 +23,8 @@ public partial class StudentCourseList : IDisposable
     private int requestVersion;
     private int page = 1, pageSize = 20;
     private bool loading, hasNext, disposed;
+    private long? total;
+    private string PageOf => total is { } all ? $" de {Math.Max(1, (all + pageSize - 1) / pageSize)}" : "";
     private string? error;
     private Guid TargetUser => UserId ?? owner;
     private bool IsOwn => TargetUser == owner;
@@ -43,6 +45,7 @@ public partial class StudentCourseList : IDisposable
         requestCancellation?.Cancel();
         loading = false;
         courses = [];
+        total = null;
         hasNext = false;
         error = null;
         await LoadAsync(1);
@@ -52,7 +55,7 @@ public partial class StudentCourseList : IDisposable
         if (Allowed) return;
         requestVersion++;
         requestCancellation?.Cancel();
-        courses = []; hasNext = false; loading = false; error = null;
+        courses = []; total = null; hasNext = false; loading = false; error = null;
         _ = InvokeAsync(StateHasChanged);
     }
     private Task RetryAsync() => LoadAsync(page);
@@ -62,7 +65,7 @@ public partial class StudentCourseList : IDisposable
     private async Task LoadAsync(int requestedPage)
     {
         if (disposed || loading || !Allowed) return;
-        loading = true; courses = []; error = null; hasNext = false; page = requestedPage;
+        loading = true; courses = []; total = null; error = null; hasNext = false; page = requestedPage;
         requestCancellation?.Dispose();
         requestCancellation = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
         var token = requestCancellation.Token;
@@ -76,7 +79,8 @@ public partial class StudentCourseList : IDisposable
             token.ThrowIfCancellationRequested();
             if (disposed || !Allowed || current != requestVersion || studentId != TargetUser) return;
             var data = Data(response);
-            hasNext = data.Count == pageSize;
+            total = response?.TotalCount;
+            hasNext = total is { } all ? (long)requestedPage * pageSize < all : data.Count == pageSize;
             courses = data.Where(item => item.Status?.Trim().ToLowerInvariant() is not ("rejected" or "cancelled" or "canceled")).ToList();
         }
         catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or JsonException or InvalidOperationException)

@@ -23,15 +23,20 @@ public sealed class StudentGradeDraft
         var exam = value.Period.Value - 1;
         Ids[exam] = value.Id;
         Exams[exam] = [value.WritingScore, value.OralScore, value.ListeningScore,
-            value.ReadingScore, value.GrammarScore, value.AcademicPerformance];
+            value.ReadingScore, GrammarAndVocabulary(value), value.AcademicPerformance];
     }
     public EvaluationWriteRequest Request(Guid registrationId, int exam) => new()
     {
         RegistrationId = registrationId, Period = exam + 1,
         WritingScore = (int?)Exams[exam][0], OralScore = (int?)Exams[exam][1],
         ListeningScore = (int?)Exams[exam][2], ReadingScore = (int?)Exams[exam][3],
-        GrammarScore = (int?)Exams[exam][4], AcademicPerformance = (int?)Exams[exam][5]
+        // El formulario captura gramática y vocabulario como un solo puntaje (máximo 10 compartido): va en GrammarScore
+        // y VocabularyScore se fija en 0 para que no sobreviva un valor anterior y la API cuente la evaluación completa.
+        GrammarScore = (int?)Exams[exam][4], VocabularyScore = Exams[exam][4] is null ? null : 0,
+        AcademicPerformance = (int?)Exams[exam][5]
     };
+    private static decimal? GrammarAndVocabulary(EvaluationResponse value)
+        => value.GrammarScore is null ? null : value.GrammarScore + (value.VocabularyScore ?? 0);
     public static string Result(decimal? score) => score is null ? "Pendiente" : score >= 70 ? "Aprobado" : "Reprobado";
     public static string Color(decimal? score) => score is null ? "" : score < 70m ? "grade-below" : "grade-passed";
 }

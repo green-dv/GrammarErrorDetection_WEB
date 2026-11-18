@@ -1,0 +1,21 @@
+@* Estado vacío o de carga de una lista de fichas: solo Message ("Cargando…"), o Title + Hint con el botón de limpiar filtros. *@
+<li class="lcard-empty">
+    @if (Message is not null)
+    {
+        @Message
+    }
+    else
+    {
+        <strong>@Title</strong>
+        @if (Hint is not null) { <p>@Hint</p> }
+        @if (OnClear.HasDelegate) { <button type="button" class="data-table-button" @onclick="OnClear">Limpiar filtros</button> }
+    }
+</li>
+
+@code {
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Hint { get; set; }
+    /// <summary>Si se asigna, se muestra el botón "Limpiar filtros".</summary>
+    [Parameter] public EventCallback OnClear { get; set; }
+}

@@ -1,0 +1,129 @@
+@using System.Net
+@using System.Text.Json
+@using GrammarErrorDetection.Models.Categories
+@using GrammarErrorDetection.Services.Interfaces
+@using GrammarErrorDetection.Services.Services.Auth
+@using GrammarErrorDetection.WEB.Components.Dialogs
+@implements IDisposable
+@inject IErrorCategoryService CategoryService
+@inject AuthSessionState Session
+@inject NavigationManager Navigation
+
+@* Alta y edición de una categoría de error gramatical. Con Category = null crea; con una categoría, edita. *@
+<ModalDialog Title="@(IsEdit ? "Editar categoría" : "Nueva categoría")" Subtitle="@(IsEdit ? Category!.Name : "Clasificación de errores gramaticales")" Busy="@saving" OnClose="OnClose">
+    <EditForm EditContext="editContext" OnSubmit="SaveAsync" novalidate>
+        <DataAnnotationsValidator />
+        <div class="ceti-modal-body">
+            @if (error is not null || validationErrors.Count > 0)
+            {
+                <div class="ceti-modal-errors" role="alert">
+                    @if (error is not null) { <p>@error</p> }
+                    @foreach (var validationError in validationErrors) { <p>@validationError</p> }
+                </div>
+            }
+            <fieldset disabled="@saving" class="users-edit-fields">
+                <div class="users-edit-grid">
+                    <label class="data-table-field"><span>Nombre *</span><input @bind="model.Name" @bind:event="oninput" maxlength="100" autofocus /></label>
+                    <label class="data-table-field"><span>Descripción <small>(opcional)</small></span><textarea @bind="model.Description" @bind:event="oninput" rows="3"></textarea></label>
+                </div>
+                <p class="gamification-help">El nombre debe ser único. Las categorías deshabilitadas se conservan, pero dejan de usarse al analizar textos.</p>
+            </fieldset>
+        </div>
+        <footer class="ceti-modal-footer"><span role="status">@(saving ? "Guardando…" : IsEdit && !HasChanges ? "No hay cambios para guardar." : "")</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">Cancelar</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@(saving || (IsEdit && !HasChanges))">@(IsEdit ? "Guardar cambios" : "Crear categoría")</button></div></footer>
+    </EditForm>
+</ModalDialog>
+
+@code {
+    [Parameter] public ErrorCategory? Category { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<ErrorCategory> OnSaved { get; set; }
+
+    private sealed class FormModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "El nombre es obligatorio.")]
+        [System.ComponentModel.DataAnnotations.StringLength(100, ErrorMessage = "El nombre admite hasta 100 caracteres.")]
+        public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
+    }
+
+    private readonly CancellationTokenSource lifetime = new();
+    private FormModel model = new();
+    private EditContext editContext = default!;
+    private List<string> validationErrors = [];
+    private string? error;
+    private bool saving, disposed;
+    private bool IsEdit => Category is not null;
+    private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    private bool HasChanges => Category is { } category
+        && (!string.Equals(model.Name.Trim(), category.Name, StringComparison.Ordinal)
+            || !string.Equals(Clean(model.Description) ?? "", category.Description?.Trim() ?? "", StringComparison.Ordinal));
+
+    protected override void OnInitialized()
+    {
+        model = new FormModel { Name = Category?.Name ?? string.Empty, Description = Category?.Description };
+        editContext = new EditContext(model);
+    }
+
+    private async Task SaveAsync()
+    {
+        if (saving || disposed) return;
+        error = null;
+        validationErrors.Clear();
+        if (IsEdit && !HasChanges) return;
+        if (!editContext.Validate())
+        {
+            validationErrors = editContext.GetValidationMessages().Distinct().ToList();
+            return;
+        }
+        if (Session.Current is null) { Navigation.NavigateTo("/auth/login", replace: true); return; }
+        if (!Session.Roles.Contains("Coordinator", StringComparer.Ordinal)) { error = "Solo un coordinador puede gestionar categorías."; return; }
+        saving = true;
+        try
+        {
+            var response = Category is { } existing
+                ? await CategoryService.UpdateAsync(new ErrorCategoryUpdateRequest
+                {
+                    Id = existing.Id,
+                    Name = model.Name.Trim() == existing.Name ? null : model.Name,
+                    Description = (Clean(model.Description) ?? "") == (existing.Description?.Trim() ?? "") ? null : model.Description?.Trim() ?? ""
+                }, lifetime.Token)
+                : await CategoryService.CreateAsync(new ErrorCategoryCreateRequest { Name = model.Name, Description = model.Description }, lifetime.Token);
+            if (disposed) return;
+            if (response?.Data is not { } saved || response.Error is { ErrorCode: not 0 })
+            {
+                error = response?.Error?.ErrorMessage ?? "No se pudo confirmar el guardado. Inténtalo de nuevo.";
+                return;
+            }
+            await OnSaved.InvokeAsync(saved);
+        }
+        catch (HttpRequestException ex)
+        {
+            if (disposed) return;
+            if (ex.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                Session.Clear();
+                Navigation.NavigateTo("/auth/login", replace: true);
+            }
+            error = ex.StatusCode switch
+            {
+                HttpStatusCode.Conflict => "Ya existe una categoría con ese nombre.",
+                HttpStatusCode.NotFound => "La categoría ya no existe. Actualiza el listado.",
+                HttpStatusCode.Forbidden => "Solo un coordinador puede gestionar categorías.",
+                HttpStatusCode.BadRequest => "Revisa los datos: el nombre no puede estar vacío ni superar 100 caracteres.",
+                _ => "No se pudo guardar la categoría. Inténtalo de nuevo."
+            };
+        }
+        catch (OperationCanceledException) { if (!disposed) error = "El guardado tardó demasiado. Inténtalo de nuevo."; }
+        catch (JsonException) { if (!disposed) error = "No se pudo interpretar la respuesta del servidor."; }
+        catch (System.ComponentModel.DataAnnotations.ValidationException ex) { if (!disposed) error = ex.Message; }
+        finally { saving = false; }
+    }
+
+    public void Dispose()
+    {
+        if (disposed) return;
+        disposed = true;
+        lifetime.Cancel();
+        lifetime.Dispose();
+    }
+}

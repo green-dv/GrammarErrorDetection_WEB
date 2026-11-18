@@ -21,6 +21,9 @@ public partial class RegistrationList : IDisposable
     private RegistrationListItem? reviewing;
     private Guid owner;
     private bool loading, deciding, applying, approving, hasNext, disposed;
+    private long? total;
+    private string PagerInfo => total is { } all ? $"Mostrando {(page - 1) * pageSize + 1}–{(page - 1) * pageSize + entries.Count} de {all}" : $"{entries.Count} resultados en esta página";
+    private string PageOf => total is { } all ? $" de {Math.Max(1, (all + pageSize - 1) / pageSize)}" : "";
     private string? error, message, decisionError;
     private int page = 1, pageSize = 20;
     private bool Allowed => Session.Current?.User?.Id == owner && Session.IsInRole(Mine ? "Student" : "Coordinator");
@@ -65,6 +68,7 @@ public partial class RegistrationList : IDisposable
         loading = true;
         error = null;
         entries = [];
+        total = null;
         hasNext = false;
         page = requestedPage;
         try
@@ -75,7 +79,8 @@ public partial class RegistrationList : IDisposable
             var data = Data(response);
             if (data.Any(item => Mine && item.UserId.HasValue && item.UserId != owner))
                 throw new InvalidOperationException("El servicio devolvió inscripciones no válidas para esta consulta.");
-            hasNext = data.Count == pageSize;
+            total = response?.TotalCount;
+            hasNext = total is { } all ? (long)requestedPage * pageSize < all : data.Count == pageSize;
             entries = CoursesOnly ? data.Where(item => item.Active != false && !string.Equals(item.Status, "Rejected", StringComparison.OrdinalIgnoreCase)).ToList() : data;
         }
         catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or JsonException or InvalidOperationException)

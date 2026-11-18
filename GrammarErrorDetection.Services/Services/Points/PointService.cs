@@ -19,6 +19,9 @@ public sealed class PointService(IApiClient apiClient) : IPointService
     }
 
     public async Task<List<PointTransactionResponse>> GetHistoryAsync(Guid userId, int pageNumber, int pageSize, CancellationToken cancellationToken = default)
+        => (await GetHistoryPageAsync(userId, pageNumber, pageSize, cancellationToken)).Items;
+
+    public async Task<(List<PointTransactionResponse> Items, long? TotalCount)> GetHistoryPageAsync(Guid userId, int pageNumber, int pageSize, CancellationToken cancellationToken = default)
     {
         if (userId == Guid.Empty) throw new ArgumentException("El usuario no es válido.");
         ArgumentOutOfRangeException.ThrowIfLessThan(pageNumber, 1);
@@ -26,8 +29,8 @@ public sealed class PointService(IApiClient apiClient) : IPointService
         var response = await apiClient.GetAsync<ApiResponse<List<PointTransactionResponse>>>(
             $"api/PointTransaction?Filter.UserId={userId:D}&PageNumber={pageNumber.ToString(CultureInfo.InvariantCulture)}&PageSize={pageSize.ToString(CultureInfo.InvariantCulture)}", cancellationToken);
         if (response?.Data is null || response.Error is { ErrorCode: not 0 }) throw new InvalidOperationException("No se pudo consultar el historial de puntos.");
-        // Count indica filas devueltas; no es un total global para calcular páginas.
-        return response.Data;
+        // Count son las filas de la página; el total sin paginar viaja en TotalCount.
+        return (response.Data, response.TotalCount);
     }
 
     public async Task<List<UserLevelResponse>> GetLevelsAsync(CancellationToken cancellationToken = default)

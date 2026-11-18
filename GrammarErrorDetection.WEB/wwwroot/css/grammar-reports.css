@@ -90,3 +90,49 @@ small.grammar-muted { display: block; margin-top: 5px; font-size: calc(10px * va
 @media (max-width: 760px) { .grammar-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } .grammar-bottom-grid { grid-template-columns: minmax(0, 1fr); } .grammar-report-heading { flex-direction: column; } .grammar-preview-label { white-space: normal; } .grammar-card > header { padding-inline: 16px; } }
 @media (max-width: 460px) { .grammar-filters { grid-template-columns: minmax(0, 1fr); } .grammar-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .grammar-kpi { padding: 12px; } .grammar-kpi > strong { font-size: calc(25px * var(--ui-scale, 1)); } .grammar-bar-row { grid-template-columns: 110px minmax(30px, 1fr) 25px; gap: 6px; } .grammar-bar-axis { margin-left: 116px; } }
 @media (prefers-reduced-motion: reduce) { .grammar-bar-fill { transition: none; } }
+
+/* Fichas de categoría para celular (≤640px): sustituyen a las tablas del ranking y de la evolución.
+   Cada ficha toma el color de su categoría (--cat), que es el mismo de las barras y de la telaraña. */
+.gcards { display: none; }
+@keyframes gcard-grow { from { transform: scaleX(0); } }
+@media (max-width: 640px) {
+    .grammar-table-region { display: none; }
+    .gcards { display: grid; gap: 12px; margin: 0; padding: 4px 16px 16px; list-style: none; }
+    .gcard { position: relative; display: grid; gap: 14px; min-width: 0; padding: 16px; border: 1px solid var(--t-line); border-radius: 14px; background: linear-gradient(180deg, color-mix(in srgb, var(--cat) 10%, var(--t-surface)), var(--t-surface) 72px); box-shadow: 0 1px 2px var(--t-shadow), 0 8px 18px -12px var(--t-shadow); }
+    .gcard.is-selected { border-color: var(--cat); box-shadow: 0 0 0 1px var(--cat), 0 8px 18px -12px var(--t-shadow); }
+    .gcard:has(:focus-visible) { outline: 2px solid var(--t-accent); outline-offset: 2px; }
+    .gcard-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; }
+    .gcard-compare .gcard-head { grid-template-columns: minmax(0, 1fr) auto; }
+    .gcard-rank { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: color-mix(in srgb, var(--cat) 24%, var(--t-surface)); color: var(--t-text); font-size: calc(12px * var(--ui-scale, 1)); font-weight: 700; font-variant-numeric: tabular-nums; }
+    .gcard-name { padding: 0; border: 0; background: transparent; color: var(--t-text); font: inherit; font-size: calc(15px * var(--ui-scale, 1)); font-weight: 650; line-height: 1.3; text-align: left; overflow-wrap: anywhere; cursor: pointer; }
+    .gcard-name::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+    .gcard-name:focus-visible { outline: none; }
+    .gcard-name-static { display: flex; align-items: center; gap: 8px; color: var(--t-text); font-size: calc(15px * var(--ui-scale, 1)); font-weight: 650; line-height: 1.3; overflow-wrap: anywhere; }
+    .gcard-total { display: grid; justify-items: end; line-height: 1.1; }
+    .gcard-total strong { color: var(--t-text); font-size: calc(24px * var(--ui-scale, 1)); font-weight: 700; font-variant-numeric: tabular-nums; }
+    .gcard-total small { color: var(--t-muted); font-size: calc(10px * var(--ui-scale, 1)); }
+    .gcard-share { display: grid; gap: 6px; }
+    .gcard-track { display: block; height: 8px; overflow: hidden; border-radius: 999px; background: color-mix(in srgb, var(--t-muted) 18%, transparent); }
+    .gcard-fill { display: block; height: 100%; border-radius: 999px; background: var(--cat); transform-origin: left; animation: gcard-grow .7s cubic-bezier(.16, 1, .3, 1) both; }
+    .gcard-fill.is-before { background: color-mix(in srgb, var(--t-muted) 55%, transparent); }
+    .gcard-share-label { color: var(--t-muted); font-size: calc(11px * var(--ui-scale, 1)); font-variant-numeric: tabular-nums; }
+    .gcard-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px 16px; margin: 0; padding-top: 12px; border-top: 1px solid var(--t-line); }
+    .gcard-stats > div { min-width: 0; }
+    .gcard-stats dt { color: var(--t-muted); font-size: calc(10px * var(--ui-scale, 1)); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+    .gcard-stats dd { margin: 3px 0 0; color: var(--t-text); font-size: calc(16px * var(--ui-scale, 1)); font-weight: 650; font-variant-numeric: tabular-nums; }
+    .gcard-stats dd > span { color: var(--t-muted); font-size: calc(12px * var(--ui-scale, 1)); font-weight: 400; }
+    .gcard-stats dd.gcard-sub { margin-top: 2px; color: var(--t-muted); font-size: calc(11px * var(--ui-scale, 1)); font-weight: 400; }
+    .gcard-delta { display: flex; align-items: baseline; gap: 6px; margin: 0; color: var(--t-muted); font-size: calc(12px * var(--ui-scale, 1)); font-variant-numeric: tabular-nums; }
+    .gcard-delta strong { color: var(--t-text); font-size: calc(26px * var(--ui-scale, 1)); font-weight: 700; letter-spacing: -.02em; }
+    .gcard-delta strong.gcard-delta-empty { font-size: calc(15px * var(--ui-scale, 1)); font-weight: 600; letter-spacing: 0; color: var(--t-muted); }
+    .gcard-delta small { margin-left: auto; font-size: calc(12px * var(--ui-scale, 1)); font-weight: 600; }
+    .gcard-delta.improved strong, .gcard-delta.improved small { color: #176748; }
+    .gcard-delta.worsened strong, .gcard-delta.worsened small { color: #935122; }
+    :root[data-theme="dark"] .gcard-delta.improved strong, :root[data-theme="dark"] .gcard-delta.improved small { color: #6fd6a2; }
+    :root[data-theme="dark"] .gcard-delta.worsened strong, :root[data-theme="dark"] .gcard-delta.worsened small { color: #f5a46a; }
+    .gcard-versus { display: grid; gap: 8px; }
+    .gcard-versus > div { display: grid; grid-template-columns: 44px minmax(0, 1fr) 34px; align-items: center; gap: 10px; color: var(--t-muted); font-size: calc(11px * var(--ui-scale, 1)); }
+    .gcard-versus strong { color: var(--t-text); font-size: calc(13px * var(--ui-scale, 1)); font-variant-numeric: tabular-nums; text-align: right; }
+    .gcard-note { margin: 0; color: var(--t-muted); font-size: calc(11px * var(--ui-scale, 1)); }
+}
+@media (prefers-reduced-motion: reduce) { .gcard-fill { animation: none; } }

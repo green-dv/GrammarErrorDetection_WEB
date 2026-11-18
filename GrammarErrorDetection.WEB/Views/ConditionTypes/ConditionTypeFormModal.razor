@@ -1,0 +1,135 @@
+@using System.Net
+@using System.Text.Json
+@using GrammarErrorDetection.Models.ConditionTypes
+@using GrammarErrorDetection.Services.Interfaces
+@using GrammarErrorDetection.Services.Services.Auth
+@using GrammarErrorDetection.WEB.Components.Dialogs
+@implements IDisposable
+@inject IConditionTypeCatalogService ConditionService
+@inject AuthSessionState Session
+@inject NavigationManager Navigation
+
+@* Alta y edición de un tipo de condición. Con Type = null crea; con un tipo, edita nombre y descripción (el código no cambia). *@
+<ModalDialog Title="@(IsEdit ? "Editar tipo de condición" : "Nuevo tipo de condición")" Subtitle="@(IsEdit ? Type!.Code : "Solo para códigos que el motor ya calcula")" Busy="@saving" OnClose="OnClose">
+    <EditForm EditContext="editContext" OnSubmit="SaveAsync" novalidate>
+        <DataAnnotationsValidator />
+        <div class="ceti-modal-body">
+            @if (error is not null || validationErrors.Count > 0)
+            {
+                <div class="ceti-modal-errors" role="alert">
+                    @if (error is not null) { <p>@error</p> }
+                    @foreach (var validationError in validationErrors) { <p>@validationError</p> }
+                </div>
+            }
+            <fieldset disabled="@saving" class="users-edit-fields">
+                <div class="users-edit-grid">
+                    <label class="data-table-field"><span>Código *</span><input @bind="model.Code" @bind:event="oninput" maxlength="50" disabled="@IsEdit" placeholder="TEXTS_ANALYZED" autofocus="@(!IsEdit)" /></label>
+                    <label class="data-table-field"><span>Nombre *</span><input @bind="model.Name" @bind:event="oninput" maxlength="100" autofocus="@IsEdit" /></label>
+                    <label class="data-table-field"><span>Descripción <small>(opcional)</small></span><textarea @bind="model.Description" @bind:event="oninput" rows="3"></textarea></label>
+                </div>
+                <p class="gamification-help">@(IsEdit
+                    ? "El código lo calcula el motor de gamificación y no se puede cambiar. Aquí se edita cómo se muestra el tipo."
+                    : "Un tipo nuevo solo se acepta si el motor de gamificación ya sabe calcular su código; si no, el servidor lo rechaza.")</p>
+            </fieldset>
+        </div>
+        <footer class="ceti-modal-footer"><span role="status">@(saving ? "Guardando…" : IsEdit && !HasChanges ? "No hay cambios para guardar." : "")</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">Cancelar</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@(saving || (IsEdit && !HasChanges))">@(IsEdit ? "Guardar cambios" : "Crear tipo")</button></div></footer>
+    </EditForm>
+</ModalDialog>
+
+@code {
+    [Parameter] public ConditionTypeItem? Type { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<ConditionTypeItem> OnSaved { get; set; }
+
+    private sealed class FormModel
+    {
+        [System.ComponentModel.DataAnnotations.RegularExpression("^[A-Z][A-Z0-9_]{1,49}$", ErrorMessage = "El código va en MAYÚSCULAS, con números o guion bajo (2 a 50 caracteres).")]
+        public string Code { get; set; } = string.Empty;
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "El nombre es obligatorio.")]
+        [System.ComponentModel.DataAnnotations.StringLength(100, ErrorMessage = "El nombre admite hasta 100 caracteres.")]
+        public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
+    }
+
+    private readonly CancellationTokenSource lifetime = new();
+    private FormModel model = new();
+    private EditContext editContext = default!;
+    private List<string> validationErrors = [];
+    private string? error;
+    private bool saving, disposed;
+    private bool IsEdit => Type is not null;
+    private static string Clean(string? value) => string.IsNullOrWhiteSpace(value) ? "" : value.Trim();
+    private bool HasChanges => Type is { } current
+        && (model.Name.Trim() != current.Name || Clean(model.Description) != Clean(current.Description));
+
+    protected override void OnInitialized()
+    {
+        model = new FormModel { Code = Type?.Code ?? string.Empty, Name = Type?.Name ?? string.Empty, Description = Type?.Description };
+        editContext = new EditContext(model);
+    }
+
+    private async Task SaveAsync()
+    {
+        if (saving || disposed) return;
+        error = null;
+        validationErrors.Clear();
+        if (IsEdit && !HasChanges) return;
+        if (!editContext.Validate())
+        {
+            validationErrors = editContext.GetValidationMessages().Distinct().ToList();
+            return;
+        }
+        if (Session.Current is null) { Navigation.NavigateTo("/auth/login", replace: true); return; }
+        if (!Session.Roles.Contains("Coordinator", StringComparer.Ordinal)) { error = "Solo un coordinador puede gestionar tipos de condición."; return; }
+        saving = true;
+        try
+        {
+            var response = Type is { } existing
+                ? await ConditionService.UpdateAsync(new ConditionTypeUpdateRequest
+                {
+                    Id = existing.Id,
+                    Name = model.Name.Trim() == existing.Name ? null : model.Name,
+                    Description = Clean(model.Description) == Clean(existing.Description) ? null : Clean(model.Description)
+                }, lifetime.Token)
+                : await ConditionService.CreateAsync(new ConditionTypeCreateRequest { Code = model.Code, Name = model.Name, Description = model.Description }, lifetime.Token);
+            if (disposed) return;
+            if (response?.Data is not { } saved || response.Error is { ErrorCode: not 0 })
+            {
+                error = response?.Error?.ErrorMessage ?? "No se pudo confirmar el guardado. Inténtalo de nuevo.";
+                return;
+            }
+            await OnSaved.InvokeAsync(saved);
+        }
+        catch (HttpRequestException ex)
+        {
+            if (disposed) return;
+            if (ex.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                Session.Clear();
+                Navigation.NavigateTo("/auth/login", replace: true);
+            }
+            error = ex.StatusCode switch
+            {
+                HttpStatusCode.Conflict => "Ya existe un tipo de condición con ese código.",
+                HttpStatusCode.NotFound => "El tipo de condición ya no existe. Actualiza el listado.",
+                HttpStatusCode.Forbidden => "Solo un coordinador puede gestionar tipos de condición.",
+                HttpStatusCode.BadRequest => IsEdit
+                    ? "Revisa los datos: el nombre no puede estar vacío y el código no se puede cambiar."
+                    : "Revisa los datos: el código va en MAYÚSCULAS y el motor de gamificación debe saber calcularlo.",
+                _ => "No se pudo guardar el tipo de condición. Inténtalo de nuevo."
+            };
+        }
+        catch (OperationCanceledException) { if (!disposed) error = "El guardado tardó demasiado. Inténtalo de nuevo."; }
+        catch (JsonException) { if (!disposed) error = "No se pudo interpretar la respuesta del servidor."; }
+        catch (System.ComponentModel.DataAnnotations.ValidationException ex) { if (!disposed) error = ex.Message; }
+        finally { saving = false; }
+    }
+
+    public void Dispose()
+    {
+        if (disposed) return;
+        disposed = true;
+        lifetime.Cancel();
+        lifetime.Dispose();
+    }
+}

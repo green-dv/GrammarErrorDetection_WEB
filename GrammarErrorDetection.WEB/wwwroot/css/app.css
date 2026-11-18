@@ -7,6 +7,23 @@ html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
+/* Barras de desplazamiento del portal: delgadas, de fondo transparente y con los colores del tema (claro/oscuro). */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--t-muted, #627187) 45%, transparent) transparent;
+}
+
+*:hover {
+    scrollbar-color: color-mix(in srgb, var(--t-muted, #627187) 70%, transparent) transparent;
+}
+
+@supports not (scrollbar-width: thin) {
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { border-radius: 999px; background: #62718773; }
+    ::-webkit-scrollbar-thumb:hover { background: #627187b3; }
+}
+
 h1:focus {
     outline: none;
 }

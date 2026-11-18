@@ -37,7 +37,7 @@
             }
         </div>
         <div class="data-filter-actions"><button type="submit" class="data-table-button data-table-button-primary" disabled="@(loading || ActionBusy)">Buscar</button><button type="button" class="data-table-button" disabled="@(loading || ActionBusy)" @onclick="ClearFiltersAsync">Limpiar filtros</button></div>
-        <span class="materials-count" role="status">@(loading ? "Cargando materiales…" : $"{materials.Count} recursos en esta página")</span>
+        <span class="materials-count" role="status">@(loading ? "Cargando materiales…" : $"{total ?? materials.Count} recursos {(total is null ? "en esta página" : "en total")}")</span>
     </form>
 
     @if (categoryError is not null) { <div class="materials-notice is-error" role="alert"><p>@categoryError</p><button type="button" class="data-table-button" disabled="@loadingCategories" @onclick="LoadCategoriesAsync">Reintentar clasificaciones</button></div> }
@@ -48,6 +48,8 @@
     {
         <div class="materials-notice is-error" role="alert"><p>@error</p><button type="button" class="data-table-button" disabled="@(loading || ActionBusy)" @onclick="RetryAsync">Reintentar</button></div>
     }
+
+    <ListPager Top="true" Label="Paginación de materiales" @bind-PageSize="pageSize" @bind-PageSize:after="ChangePageSizeAsync" PageSizes="10,20,30" PageSizeLabel="Por página" PageSizeDisabled="@(loading || ActionBusy)" Page="page" PageOf="@PageOf" Info="@ResultRange" PreviousDisabled="@(loading || ActionBusy || page <= 1)" NextDisabled="@(loading || ActionBusy || !hasNext)" OnPrevious="PreviousPageAsync" OnNext="NextPageAsync" />
 
     <div class="materials-grid">
         @foreach (var material in materials)
@@ -108,11 +110,7 @@
     {
         <div class="materials-empty"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h7l2 2h9v11H3ZM3 7V4h7l2 3h9v2"/></svg><h2>@EmptyTitle</h2><p>@EmptyHint</p><button type="button" class="data-table-button" @onclick="ClearFiltersAsync">Limpiar filtros</button></div>
     }
-    <footer class="materials-pagination">
-        <label class="data-table-page-size">Por página <select @bind="pageSize" @bind:after="ChangePageSizeAsync" disabled="@(loading || ActionBusy)"><option value="10">10</option><option value="20">20</option><option value="30">30</option></select></label>
-        <span>@ResultRange</span>
-        <nav class="data-table-pagination" aria-label="Paginación de materiales"><button type="button" disabled="@(loading || ActionBusy || page <= 1)" @onclick="PreviousPageAsync">Anterior</button><span>Página @(page)</span><button type="button" disabled="@(loading || ActionBusy || !hasNext)" @onclick="NextPageAsync">Siguiente</button></nav>
-    </footer>
+    <ListPager Label="Paginación de materiales" @bind-PageSize="pageSize" @bind-PageSize:after="ChangePageSizeAsync" PageSizes="10,20,30" PageSizeLabel="Por página" PageSizeDisabled="@(loading || ActionBusy)" Page="page" PageOf="@PageOf" Info="@ResultRange" PreviousDisabled="@(loading || ActionBusy || page <= 1)" NextDisabled="@(loading || ActionBusy || !hasNext)" OnPrevious="PreviousPageAsync" OnNext="NextPageAsync" />
     </div>
 </section>
 
