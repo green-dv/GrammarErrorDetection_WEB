@@ -22,6 +22,8 @@ public partial class AchievementCollections : IDisposable
     private bool showAchievementEditor;
     private bool loading, disposed, hasNext, showCreate;
     private const int PageSize = 10;
+    private long? total;
+    private string PageOf => total is { } all ? $" de {Math.Max(1, (all + PageSize - 1) / PageSize)}" : "";
     private int page = 1;
     private string name = "", active = "", appliedName = "", appliedActive = "";
     private string? error, message;
@@ -51,10 +53,12 @@ public partial class AchievementCollections : IDisposable
                     if (rows.Count != 1 || rows[0].Id != id) throw new InvalidOperationException("No se encontró la colección solicitada.");
                     collection = rows[0];
                 }
-                var rowsOfAchievements = GamificationAdmin.Require(await Service.SearchAchievementsAsync(new()
+                var achievementsResponse = await Service.SearchAchievementsAsync(new()
                 {
                     AchievementCollectionId = id, PageNumber = number, PageSize = PageSize
-                }, lifetime.Token));
+                }, lifetime.Token);
+                var rowsOfAchievements = GamificationAdmin.Require(achievementsResponse);
+                total = achievementsResponse?.TotalCount;
                 if (disposed) return;
                 if (rowsOfAchievements.Any(item => item.AchievementCollectionId != id))
                     throw new InvalidOperationException("Los logros recibidos no corresponden a esta colección.");
@@ -63,17 +67,19 @@ public partial class AchievementCollections : IDisposable
             }
             else
             {
-                var rows = GamificationAdmin.Require(await Service.SearchAchievementCollectionsAsync(new()
+                var collectionsResponse = await Service.SearchAchievementCollectionsAsync(new()
                 {
                     Name = appliedName, Active = bool.TryParse(appliedActive, out var enabled) ? enabled : null,
                     PageNumber = number, PageSize = PageSize
-                }, lifetime.Token));
+                }, lifetime.Token);
+                var rows = GamificationAdmin.Require(collectionsResponse);
+                total = collectionsResponse?.TotalCount;
                 if (disposed) return;
                 if (number > page && rows.Count == 0) { hasNext = false; message = "Has llegado al final de las colecciones."; return; }
                 collections = rows;
             }
             page = number;
-            hasNext = RowCount == PageSize;
+            hasNext = total is { } all ? (long)page * PageSize < all : RowCount == PageSize;
         }
         catch (OperationCanceledException) { if (!disposed) error = "La consulta tardó demasiado. Intenta de nuevo."; }
         catch (HttpRequestException ex)
@@ -89,7 +95,7 @@ public partial class AchievementCollections : IDisposable
         finally
         {
             loading = false;
-            if (error is not null) { collections = []; achievements = []; hasNext = false; }
+            if (error is not null) { collections = []; achievements = []; total = null; hasNext = false; }
         }
     }
     private void OpenCreate() { if (!loading && CanManage && CheckPermission()) { editingCollection = null; showCreate = true; } }

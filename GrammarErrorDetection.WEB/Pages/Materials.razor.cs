@@ -80,8 +80,10 @@ public partial class Materials : IDisposable
     private string EmptyHint => appliedFilter.OnlyHelpful == true
         ? "Usa «Marcar útil» en los materiales que te ayuden para encontrarlos aquí rápidamente."
         : "Prueba otro nombre, clasificación o tipo de archivo.";
+    private long? total;
+    private string PageOf => total is { } all ? $" de {Math.Max(1, (all + pageSize - 1) / pageSize)}" : "";
     private string ResultRange => materials.Count == 0 ? "0 resultados"
-        : $"Mostrando {(page - 1) * loadedPageSize + 1}–{(page - 1) * loadedPageSize + materials.Count}";
+        : $"Mostrando {(page - 1) * loadedPageSize + 1}–{(page - 1) * loadedPageSize + materials.Count}{(total is { } all ? $" de {all}" : "")}";
     private bool HasChanges => editForm is not null && (pendingFile is not null || dialogMode == "create" || selected is not null && (
         editForm.Name.Trim() != selected.Name || editForm.FileLink.Trim() != selected.FileLink
         || !Guid.TryParse(editForm.ErrorClassificationId, out var category) || category != selected.ErrorClassificationId
@@ -213,9 +215,10 @@ public partial class Materials : IDisposable
             // Count es el número de registros de esta página, no el total global.
             if (requestedPage > page && rows.Count == 0) { hasNext = false; return; }
             materials = rows;
+            total = response?.TotalCount;
             page = requestedPage;
             loadedPageSize = requestedSize;
-            hasNext = rows.Count == requestedSize;
+            hasNext = total is { } all ? (long)requestedPage * requestedSize < all : rows.Count == requestedSize;
             foreach (var material in rows) RememberOptions(material);
         }
         catch (OperationCanceledException)
@@ -228,7 +231,7 @@ public partial class Materials : IDisposable
             {
                 loading = false;
                 searchCancellation = null;
-                if (error is not null) { materials = []; hasNext = false; }
+                if (error is not null) { materials = []; total = null; hasNext = false; }
             }
         }
     }

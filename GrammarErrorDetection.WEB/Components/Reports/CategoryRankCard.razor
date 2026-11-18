@@ -1,0 +1,38 @@
+@using GrammarErrorDetection.Models.Reports
+@using static GrammarErrorDetection.WEB.Components.Reports.GrammarFormat
+@* Ficha del ranking de fallas por categoría (celular): posición, nombre, total de errores, participación y métricas.
+   Toda la ficha es tocable: filtra el reporte por esa categoría. *@
+<li class="gcard @(Selected ? "is-selected" : "")" style="--cat:@Color">
+    <div class="gcard-head">
+        <span class="gcard-rank" aria-hidden="true">@Rank</span>
+        <button type="button" class="gcard-name" aria-pressed="@Selected.ToString().ToLowerInvariant()" @onclick="OnSelect">@Row.ErrorClassificationName</button>
+        <span class="gcard-total"><strong>@Row.ErrorCount</strong><small>errores</small></span>
+    </div>
+    <div class="gcard-share" role="img" aria-label="@(Number(Row.ErrorPercentage, "0.#")) % del total de errores">
+        <span class="gcard-track"><span class="gcard-fill" style="width:@Share(Row.ErrorPercentage)%"></span></span>
+        <span class="gcard-share-label">@Number(Row.ErrorPercentage, "0.#") % del total</span>
+    </div>
+    <dl class="gcard-stats">
+        <div><dt>Párrafos relacionados</dt><dd>@Row.RelatedTextCount</dd></div>
+        @if (!Personal)
+        {
+            <div>
+                <dt>Estudiantes afectados</dt>
+                <dd>@Row.AffectedStudentCount<span> de @Row.EnrolledStudentCount</span></dd>
+                <dd class="gcard-sub">@Number(Row.AffectedStudentPercentage, "0.#") % de los inscritos</dd>
+            </div>
+        }
+    </dl>
+</li>
+
+@code {
+    [Parameter, EditorRequired] public GrammarCategoryReport Row { get; set; } = default!;
+    /// <summary>Posición de la categoría en el ranking completo.</summary>
+    [Parameter] public int Rank { get; set; }
+    [Parameter] public bool Selected { get; set; }
+    /// <summary>Color CSS de la categoría (el mismo de las barras y la telaraña).</summary>
+    [Parameter, EditorRequired] public string Color { get; set; } = string.Empty;
+    /// <summary>Reporte personal: no hay base de estudiantes inscritos.</summary>
+    [Parameter] public bool Personal { get; set; }
+    [Parameter] public EventCallback OnSelect { get; set; }
+}

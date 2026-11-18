@@ -1,4 +1,6 @@
 @using GrammarErrorDetection.Models.Reports
+@using GrammarErrorDetection.WEB.Components.Reports
+@using static GrammarErrorDetection.WEB.Components.Reports.GrammarFormat
 @using GrammarErrorDetection.WEB.Components.Materials
 
 <section class="grammar-dashboard" aria-labelledby="grammar-dashboard-title">
@@ -62,7 +64,7 @@
         <div class="grammar-top-grid">
             <article class="grammar-card grammar-ranking">
                 <header><div><h3>Fallas por categoría</h3><p>Ordenadas por cantidad de errores · @CurrentLabel</p></div>@if (!string.IsNullOrEmpty(category)) { <button type="button" class="data-table-text-button" @onclick="ClearCategory">Ver todas</button> }</header>
-                <div class="data-table-scroll" tabindex="0" role="region" aria-label="Ranking de fallas y estudiantes afectados">
+                <div class="data-table-scroll grammar-table-region" tabindex="0" role="region" aria-label="Ranking de fallas y estudiantes afectados">
                     <table class="data-table">
                         <caption class="data-table-sr-only">Errores y párrafos relacionados por categoría, con sus bases de estudiantes afectados.</caption>
                         <thead><tr><th scope="col">Categoría</th><th scope="col">Errores</th><th scope="col">Párrafos relacionados</th>@if (!IsPersonal) { <th scope="col">Estudiantes afectados</th> }</tr></thead>
@@ -74,6 +76,14 @@
                         }</tbody>
                     </table>
                 </div>
+                <ul class="gcards" aria-label="Fallas por categoría">
+                    @foreach (var row in FilteredCategories)
+                    {
+                        var rank = data.Categories.TakeWhile(item => item.ErrorClassificationId != row.ErrorClassificationId).Count() + 1;
+                        var selected = category == row.ErrorClassificationId.ToString();
+                        <CategoryRankCard Row="row" Rank="rank" Selected="selected" Color="@Color(row.ErrorClassificationId)" Personal="IsPersonal" OnSelect="() => SelectCategory(row.ErrorClassificationId)" />
+                    }
+                </ul>
                 <p class="grammar-footnote">Un párrafo puede contener errores de varias categorías. Los párrafos relacionados no se suman para obtener el total.</p>
                 @if (!FilteredCategories.Any()) { <p class="grammar-footnote">No hay errores registrados para la selección.</p> }
             </article>
@@ -146,7 +156,7 @@
         {
         <article class="grammar-card grammar-period-table">
             <header><div><h3>Evolución por categoría</h3><p>@PreviousLabel → @CurrentLabel. Incluye categorías nuevas y resueltas.</p></div></header>
-            <div class="data-table-scroll" tabindex="0" role="region" aria-label="Comparación histórica de las categorías">
+            <div class="data-table-scroll grammar-table-region" tabindex="0" role="region" aria-label="Comparación histórica de las categorías">
                 <table class="data-table"><thead><tr><th scope="col">Categoría</th><th scope="col">Errores anteriores</th><th scope="col">Errores actuales</th><th scope="col">Cambio</th><th scope="col">Errores / párrafo analizado</th>@if (!IsPersonal) { <th scope="col">Afectados</th> }<th scope="col">Tendencia</th></tr></thead><tbody>
                     @foreach (var row in FilteredComparison)
                     {
@@ -154,6 +164,12 @@
                     }
                 </tbody></table>
             </div>
+            <ul class="gcards" aria-label="Evolución por categoría">
+                @foreach (var row in FilteredComparison)
+                {
+                    <CategoryEvolutionCard Row="row" Color="@Color(row.ErrorClassificationId ?? Guid.Empty)" Personal="IsPersonal" />
+                }
+            </ul>
         </article>
         }
         }

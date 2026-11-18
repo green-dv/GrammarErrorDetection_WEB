@@ -8,7 +8,17 @@
 .ceti-brand img { border-radius: 50%; background: var(--t-surface); object-fit: contain; }
 .ceti-brand-dot { color: #ef6664; }
 .is-expanded .ceti-brand { flex-direction: row; justify-content: flex-start; gap: 12px; padding-left: 22px; font-size: 21px; }
-.ceti-nav-main { flex: 1; min-height: 0; overflow-y: auto; padding: 18px 12px; }
+/* Sin scroll horizontal. En la barra reducida (72px) no hay espacio para una barra vertical: se oculta y se sigue
+   desplazando con la rueda o el teclado. Expandida se muestra una barra delgada que no roba ancho a los enlaces. */
+.ceti-nav-main { flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; padding: 18px 12px; scrollbar-width: none; }
+.ceti-nav-main::-webkit-scrollbar { display: none; }
+.is-expanded .ceti-nav-main { scrollbar-width: thin; scrollbar-color: #ffffff3d transparent; scrollbar-gutter: stable; padding-right: 6px; }
+.is-expanded .ceti-nav-main:hover { scrollbar-color: #ffffff66 transparent; }
+@supports not (scrollbar-width: thin) {
+  .is-expanded .ceti-nav-main::-webkit-scrollbar { display: block; width: 6px; }
+  .is-expanded .ceti-nav-main::-webkit-scrollbar-thumb { border-radius: 999px; background: #ffffff3d; }
+  .is-expanded .ceti-nav-main::-webkit-scrollbar-thumb:hover { background: #ffffff66; }
+}
 .ceti-sidebar svg { width: 20px; height: 20px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .ceti-menu-link, .ceti-rail-button, .ceti-nav-toggle { display: flex; align-items: center; justify-content: center; gap: 12px; width: 48px; min-height: 46px; margin: 0 0 10px; padding: 10px; border: 1px solid transparent; border-radius: 9px; background: transparent; color: #d4e2f3; text-decoration: none; cursor: pointer; }
 .ceti-menu-link:hover, .ceti-rail-button:hover, .ceti-nav-toggle:hover { background: #ffffff12; color: #fff; }

@@ -17,6 +17,8 @@ public partial class TeacherCourseList : IDisposable
     private Guid owner;
     private int page = 1, pageSize = 20;
     private bool loading, hasNext, disposed;
+    private long? total;
+    private string PageOf => total is { } all ? $" de {Math.Max(1, (all + pageSize - 1) / pageSize)}" : "";
     private string? error;
     private bool Allowed => owner != Guid.Empty && Session.Current?.User?.Id == owner && Session.IsInRole("Teacher");
 
@@ -30,7 +32,7 @@ public partial class TeacherCourseList : IDisposable
     {
         if (Allowed) return;
         lifetime.Cancel();
-        courses = []; hasNext = false; error = null;
+        courses = []; total = null; hasNext = false; error = null;
         _ = InvokeAsync(StateHasChanged);
     }
     private Task RetryAsync() => LoadAsync(page);
@@ -40,7 +42,7 @@ public partial class TeacherCourseList : IDisposable
     private async Task LoadAsync(int requestedPage)
     {
         if (disposed || loading || !Allowed || lifetime.IsCancellationRequested) return;
-        loading = true; courses = []; error = null; hasNext = false; page = requestedPage;
+        loading = true; courses = []; total = null; error = null; hasNext = false; page = requestedPage;
         var token = lifetime.Token;
         try
         {
@@ -57,7 +59,8 @@ public partial class TeacherCourseList : IDisposable
             if (response.Data.Any(course => course.TeacherId != owner))
                 throw new InvalidOperationException("El servicio devolvió cursos que no corresponden al docente de la sesión.");
             courses = response.Data;
-            hasNext = courses.Count == pageSize;
+            total = response.TotalCount;
+            hasNext = total is { } all ? (long)requestedPage * pageSize < all : courses.Count == pageSize;
         }
         catch (HttpRequestException ex)
         {

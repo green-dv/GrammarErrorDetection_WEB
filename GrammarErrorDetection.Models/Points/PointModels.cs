@@ -24,7 +24,8 @@ public sealed class PointTransactionUpdateRequest
 public sealed class PointTransactionResponse
 {
     public Guid Id { get; set; }
-    public Guid RegistrationId { get; set; }
+    /// <summary>Null en los premios de logros, desafíos y textos personales: pertenecen al usuario, no a una inscripción.</summary>
+    public Guid? RegistrationId { get; set; }
     public int Amount { get; set; }
     public string Reason { get; set; } = string.Empty;
     public DateTime GrantedAt { get; set; }

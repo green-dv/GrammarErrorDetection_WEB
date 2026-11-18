@@ -33,8 +33,9 @@
             }
             @if (error is not null) { <div class="data-table-error" role="alert"><span>@error</span><button type="button" class="data-table-text-button" @onclick="RetryAsync" disabled="@loading">Reintentar</button></div> }
             @if (message is not null) { <p class="data-table-message" role="status">@message</p> }
-            <p class="data-table-summary" role="status">@(loading ? "Cargando inscripciones…" : $"{entries.Count} inscripciones en esta página")</p>
-            <div class="data-table-scroll" role="region" aria-label="Listado de inscripciones" aria-busy="@loading.ToString().ToLowerInvariant()" tabindex="0">
+            <p class="data-table-summary" role="status">@(loading ? "Cargando inscripciones…" : $"{total ?? entries.Count} inscripciones {(total is null ? "en esta página" : "en total")}")</p>
+            <ListPager Top="true" Label="Paginación de inscripciones" @bind-PageSize="pageSize" @bind-PageSize:after="ChangeSizeAsync" PageSizes="5,20,50" PageSizeLabel="Filas por página" PageSizeDisabled="@(loading || deciding)" Page="page" PageOf="@PageOf" Info="@PagerInfo" PreviousDisabled="@(loading || deciding || page <= 1)" NextDisabled="@(loading || deciding || !hasNext)" OnPrevious="PreviousAsync" OnNext="NextAsync" />
+            <div class="data-table-scroll registrations-table-region" role="region" aria-label="Listado de inscripciones" aria-busy="@loading.ToString().ToLowerInvariant()" tabindex="0">
                 <table class="data-table registrations-table">
                     <caption class="data-table-sr-only">Fecha de inscripción, nombre, apellido, CIC y teléfono del estudiante, módulo, estado y actualización.</caption>
                     <thead><tr><th scope="col">Fecha de inscripción</th><th scope="col">Nombre</th><th scope="col">Apellido</th><th scope="col">CIC</th><th scope="col">Teléfono</th><th scope="col">Módulo</th><th scope="col">Estado</th><th scope="col">Actualización</th></tr></thead>
@@ -51,7 +52,7 @@
                                     <td>@Text(item.Ci)</td>
                                     <td>@Text(item.Phone)</td>
                                     <td>@Text(item.ModuleName)</td>
-                                    <td><span class="data-table-status @StatusClass(item)">@Status(item)</span>
+                                    <td><StatusPill Class="@StatusClass(item)" Text="@Status(item)" />
                                         @if (!Mine && IsPending(item))
                                         {
                                             <div class="registration-decision-actions"><button type="button" class="data-table-button data-table-button-primary" disabled="@deciding" @onclick="() => Review(item, true)" aria-label="Aprobar inscripción de @item.FirstName @item.LastName" aria-haspopup="dialog">Aprobar</button><button type="button" class="data-table-button data-table-button-danger" disabled="@deciding" @onclick="() => Review(item, false)" aria-label="Rechazar inscripción de @item.FirstName @item.LastName" aria-haspopup="dialog">Rechazar</button></div>
@@ -65,11 +66,46 @@
                     </tbody>
                 </table>
             </div>
-            <footer class="data-table-footer">
-                <label class="data-table-page-size">Filas por página <select @bind="pageSize" @bind:after="ChangeSizeAsync" disabled="@(loading || deciding)"><option value="5">5</option><option value="20">20</option><option value="50">50</option></select></label>
-                <span>@entries.Count resultados en esta página</span>
-                <nav class="data-table-pagination" aria-label="Paginación de inscripciones"><button type="button" @onclick="PreviousAsync" disabled="@(loading || deciding || page <= 1)" aria-label="Página anterior">‹</button><span>Página <strong>@(page)</strong></span><button type="button" @onclick="NextAsync" disabled="@(loading || deciding || !hasNext)" aria-label="Página siguiente">›</button></nav>
-            </footer>
+            @* Celular (≤640px): fichas en lugar de la tabla. En escritorio quedan ocultas por CSS. *@
+            <ul class="lcards" aria-label="Inscripciones" aria-busy="@loading.ToString().ToLowerInvariant()">
+                @if (loading) { <ListCardEmpty Message="Cargando inscripciones…" /> }
+                else
+                {
+                    @foreach (var item in entries)
+                    {
+                        var fullName = $"{Text(item.FirstName)} {Text(item.LastName)}";
+                        var pending = IsPending(item);
+                        <li class="lcard @(pending ? "is-pending" : "")" @key="item">
+                            <div class="lcard-head">
+                                @if (Mine)
+                                {
+                                    <div class="lcard-who"><strong>@Text(item.ModuleName)</strong><span>Inscripción del @(item.RegistrationDate?.ToString("dd/MM/yyyy") ?? "—")</span></div>
+                                }
+                                else
+                                {
+                                    <span class="lcard-avatar" aria-hidden="true">@($"{item.FirstName?.FirstOrDefault()}{item.LastName?.FirstOrDefault()}")</span>
+                                    <div class="lcard-who"><strong>@fullName</strong><span>CIC @Text(item.Ci) · @Text(item.Phone)</span></div>
+                                }
+                                <StatusPill Class="@StatusClass(item)" Text="@Status(item)" />
+                            </div>
+                            @if (!Mine)
+                            {
+                                <p class="lcard-module"><span>Módulo</span><strong>@Text(item.ModuleName)</strong></p>
+                            }
+                            <dl class="lcard-grid">
+                                @if (!Mine) { <div><dt>Inscripción</dt><dd>@(item.RegistrationDate?.ToString("dd/MM/yyyy") ?? "—")</dd></div> }
+                                <div><dt>Última actualización</dt><dd>@(item.UpdatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "—")</dd></div>
+                            </dl>
+                            @if (!Mine && pending)
+                            {
+                                <div class="lcard-actions"><button type="button" class="data-table-button data-table-button-primary" disabled="@deciding" @onclick="() => Review(item, true)" aria-label="Aprobar inscripción de @item.FirstName @item.LastName" aria-haspopup="dialog">Aprobar</button><button type="button" class="data-table-button data-table-button-danger" disabled="@deciding" @onclick="() => Review(item, false)" aria-label="Rechazar inscripción de @item.FirstName @item.LastName" aria-haspopup="dialog">Rechazar</button></div>
+                            }
+                        </li>
+                    }
+                    @if (entries.Count == 0 && error is null) { <ListCardEmpty Title="No se encontraron inscripciones" Hint="@(Mine ? "Puedes enviar una solicitud desde Mis inscripciones." : "Prueba con otros filtros.")" /> }
+                }
+            </ul>
+            <ListPager Label="Paginación de inscripciones" @bind-PageSize="pageSize" @bind-PageSize:after="ChangeSizeAsync" PageSizes="5,20,50" PageSizeLabel="Filas por página" PageSizeDisabled="@(loading || deciding)" Page="page" PageOf="@PageOf" Info="@PagerInfo" PreviousDisabled="@(loading || deciding || page <= 1)" NextDisabled="@(loading || deciding || !hasNext)" OnPrevious="PreviousAsync" OnNext="NextAsync" />
         </div>
     </section>
     @if (reviewing is { } entry && !Mine)

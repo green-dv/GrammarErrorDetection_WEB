@@ -103,6 +103,7 @@ public partial class UserList : IDisposable
     private UserSearchFilter filters = new();
     private UserSearchFilter? appliedFilter;
     private List<UserSearchResponse> users = [];
+    private long? total;
     private List<UserLookupOption> roles = [], modules = [];
     private UserSearchResponse? editingUser, statusUser;
     private bool updatingStatus;
@@ -113,7 +114,8 @@ public partial class UserList : IDisposable
     private List<string> validationErrors = [];
     private readonly CancellationTokenSource lifetime = new();
     private CancellationTokenSource? searchCancellation;
-    private string ResultRange => users.Count == 0 ? "0 resultados" : $"Mostrando {(page - 1) * loadedPageSize + 1}–{(page - 1) * loadedPageSize + users.Count}";
+    private string ResultRange => users.Count == 0 ? "0 resultados" : $"Mostrando {(page - 1) * loadedPageSize + 1}–{(page - 1) * loadedPageSize + users.Count}{(total is { } all ? $" de {all}" : "")}";
+    private string PageOf => total is { } all ? $" de {Math.Max(1, (all + loadedPageSize - 1) / loadedPageSize)}" : "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -188,9 +190,10 @@ public partial class UserList : IDisposable
                 return;
             }
             users = response.Data;
+            total = response.TotalCount;
             page = requestedPage;
             loadedPageSize = requestedSize;
-            hasNext = users.Count == requestedSize;
+            hasNext = total is { } all ? (long)requestedPage * requestedSize < all : users.Count == requestedSize;
             if (CanRegisterGrades) await LoadGradesAsync(cancellation.Token, version);
         }
         catch (OperationCanceledException)
@@ -217,6 +220,7 @@ public partial class UserList : IDisposable
                 if (error is not null)
                 {
                     users = [];
+                    total = null;
                     hasNext = false;
                     page = requestedPage;
                 }

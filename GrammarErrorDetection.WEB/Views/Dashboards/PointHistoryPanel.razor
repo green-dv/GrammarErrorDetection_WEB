@@ -20,17 +20,17 @@
     else
     {
         <div class="data-table-scroll" role="region" aria-label="Historial de puntos" tabindex="0">
-            <table class="data-table">
+            <table class="data-table data-table-cards">
                 <caption class="data-table-sr-only">Fecha, origen, motivo y puntos de cada movimiento.</caption>
                 <thead><tr><th scope="col">Fecha</th><th scope="col">Origen</th><th scope="col">Motivo</th><th scope="col">Puntos</th></tr></thead>
                 <tbody>
                     @foreach (var entry in results.Items)
                     {
                         <tr @key="entry.Id">
-                            <td><time datetime="@entry.GrantedAt.ToString("s")">@entry.GrantedAt.ToString("dd/MM/yyyy HH:mm", StudentDashboard.Culture)</time></td>
-                            <td><span class="sd-badge">@SourceLabel(entry.Source)</span></td>
-                            <th scope="row">@entry.Reason @if (entry.ModuleName is not null) { <small class="sd-muted">· @entry.ModuleName</small> }</th>
-                            <td><span class="points-amount @(entry.Amount < 0 ? "points-amount-negative" : "")">@(entry.Amount > 0 ? $"+{entry.Amount}" : entry.Amount.ToString(StudentDashboard.Culture))</span></td>
+                            <td data-label="Fecha"><time datetime="@entry.GrantedAt.ToString("s")">@entry.GrantedAt.ToString("dd/MM/yyyy HH:mm", StudentDashboard.Culture)</time></td>
+                            <td data-label="Origen"><span class="sd-badge">@SourceLabel(entry.Source)</span></td>
+                            <th data-label="Motivo" scope="row">@entry.Reason @if (entry.ModuleName is not null) { <small class="sd-muted">· @entry.ModuleName</small> }</th>
+                            <td data-label="Puntos"><span class="points-amount @(entry.Amount < 0 ? "points-amount-negative" : "")">@(entry.Amount > 0 ? $"+{entry.Amount}" : entry.Amount.ToString(StudentDashboard.Culture))</span></td>
                         </tr>
                     }
                 </tbody>

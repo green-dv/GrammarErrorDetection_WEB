@@ -1,0 +1,28 @@
+@page "/classrooms"
+@using GrammarErrorDetection.Services.Services.Auth
+@using GrammarErrorDetection.WEB.Views.Classrooms
+@inject AuthSessionState Session
+@inject NavigationManager Navigation
+
+<PageTitle>Aulas | CETI La Paz</PageTitle>
+
+@if (Session.Current is not null)
+{
+    @if (Session.Roles.Contains("Coordinator", StringComparer.Ordinal))
+    {
+        <ClassroomList />
+    }
+    else
+    {
+        <h1>Acceso restringido</h1>
+        <p>La gestión de aulas está disponible para coordinadores.</p>
+        <a href="home">Volver al inicio</a>
+    }
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        if (Session.Current is null) Navigation.NavigateTo("/auth/login", replace: true);
+    }
+}

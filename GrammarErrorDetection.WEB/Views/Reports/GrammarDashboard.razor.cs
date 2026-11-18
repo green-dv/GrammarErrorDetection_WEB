@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net;
 using System.Text.Json;
 using GrammarErrorDetection.Models.Reports;
+using static GrammarErrorDetection.WEB.Components.Reports.GrammarFormat;
 using GrammarErrorDetection.Models.Responses;
 using GrammarErrorDetection.Services.Interfaces;
 using GrammarErrorDetection.Services.Services.Auth;
@@ -20,7 +21,6 @@ public partial class GrammarDashboard : IAsyncDisposable
     [Inject] private ICourseService Courses { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
     [Inject] private IJSRuntime JS { get; set; } = default!;
-    private static readonly CultureInfo Spanish = CultureInfo.GetCultureInfo("es-ES");
     private static readonly string[] Colors = ["#f27672", "#a486ec", "#22b5ad", "#efb54d", "#4e9fe6"];
     private Guid selectedClass;
     private Guid? previousClass, previousUser;
@@ -178,12 +178,6 @@ public partial class GrammarDashboard : IAsyncDisposable
     private static T Require<T>(ApiResponse<T>? response) where T : class => response?.Data is not null && response.Error is not { ErrorCode: not 0 } ? response.Data : throw new InvalidOperationException(response?.Error?.ErrorMessage ?? "No se pudo consultar el listado de cursos.");
     private void SelectCategory(Guid id) => category = category == id.ToString() ? "" : id.ToString();
     private void ClearCategory() => category = "";
-    private static string Number(decimal? value, string format = "0.00") => value?.ToString(format, Spanish) ?? "—";
-    private static string Signed(decimal? value) => value.HasValue ? value.Value.ToString("+0.##;-0.##;0", Spanish) : "Sin comparación";
-    private static string ChangeWithUnit(decimal? value, string unit, bool fractional = false) => value.HasValue ? $"{(fractional ? value.Value.ToString("+0.00;-0.00;0.00", Spanish) : Signed(value))} {unit}" : "Sin comparación";
-    private static string RelativeChange(decimal? value) => value.HasValue ? $"{value.Value.ToString("+0.00;-0.00;0.00", Spanish)} %" : "Sin base porcentual";
-    private static string TrendLabel(string trend) => trend switch { "Improved" => "Mejora", "Worsened" => "Aumenta la dificultad", "Unchanged" => "Sin cambios", _ => "Sin datos comparables" };
-    private static string TrendClass(string trend) => trend switch { "Improved" => "improved", "Worsened" => "worsened", "Unchanged" => "unchanged", _ => "insufficient" };
     private string ComparisonDescription(GrammarReportComparison row) => row.ComparisonStatus switch
     {
         "NoCurrentAnalysis" => "No hay textos analizados en el curso actual.",
@@ -192,7 +186,6 @@ public partial class GrammarDashboard : IAsyncDisposable
         _ => $"{Number(row.PreviousErrorsPerAnalyzedText)} antes y {Number(row.CurrentErrorsPerAnalyzedText)} ahora, por párrafo analizado."
     };
     private string Color(Guid id) => Colors[Math.Max(0, ChartCategories.FindIndex(row => row.ErrorClassificationId == id)) % Colors.Length];
-    private static string Percent(long value, long maximum) => (100m * value / maximum).ToString("0.##", CultureInfo.InvariantCulture);
     private static string Svg(double value) => value.ToString("0.##", CultureInfo.InvariantCulture);
     private (double X, double Y) RadarPoint(int index, double scale) { var angle = -Math.PI / 2 + index * 2 * Math.PI / Math.Max(1, ChartCategories.Count); return (200 + 90 * scale * Math.Cos(angle), 142 + 90 * scale * Math.Sin(angle)); }
     private string RadarPoints(double scale) => string.Join(" ", Enumerable.Range(0, ChartCategories.Count).Select(index => { var point = RadarPoint(index, scale); return $"{Svg(point.X)},{Svg(point.Y)}"; }));

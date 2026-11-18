@@ -69,7 +69,9 @@ public partial class CourseList : IDisposable
         if (!disposed) status = error is null ? "Curso e inscripciones creados correctamente." : "El curso y sus inscripciones se crearon. No se pudo actualizar el listado; pulsa Reintentar para consultarlo.";
     }
     private CourseSearchFilter DefaultFilters() => new() { TeacherId = IsTeacher ? Session.Current?.User?.Id.ToString("D") : null };
-    private string ResultRange => courses.Count == 0 ? "0 resultados" : $"Mostrando {(page - 1) * loadedPageSize + 1}–{(page - 1) * loadedPageSize + courses.Count}";
+    private long? total;
+    private string ResultRange => courses.Count == 0 ? "0 resultados" : $"Mostrando {(page - 1) * loadedPageSize + 1}–{(page - 1) * loadedPageSize + courses.Count}{(total is { } all ? $" de {all}" : "")}";
+    private string PageOf => total is { } all ? $" de {Math.Max(1, (all + loadedPageSize - 1) / loadedPageSize)}" : "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -147,9 +149,10 @@ public partial class CourseList : IDisposable
                 return;
             }
             courses = response.Data;
+            total = response.TotalCount;
             page = requestedPage;
             loadedPageSize = requestedSize;
-            hasNext = courses.Count == requestedSize;
+            hasNext = total is { } all ? (long)requestedPage * requestedSize < all : courses.Count == requestedSize;
         }
         catch (OperationCanceledException)
         {
@@ -175,6 +178,7 @@ public partial class CourseList : IDisposable
                 if (error is not null)
                 {
                     courses = [];
+                    total = null;
                     hasNext = false;
                     page = requestedPage;
                 }

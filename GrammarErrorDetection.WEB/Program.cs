@@ -43,6 +43,11 @@ builder.Services.AddScoped<ISupportMaterialService, GrammarErrorDetection.Servic
 builder.Services.AddScoped<IOcrService>(_ => new GrammarErrorDetection.Services.Services.OcrService(
     new HttpClient { BaseAddress = ocrBaseUri, Timeout = TimeSpan.FromMinutes(3) }));
 builder.Services.AddScoped<ICourseService, CourseService>();
+builder.Services.AddScoped<IErrorCategoryService, GrammarErrorDetection.Services.Services.Categories.ErrorCategoryService>();
+builder.Services.AddScoped<IModuleCatalogService, GrammarErrorDetection.Services.Services.Catalogs.ModuleCatalogService>();
+builder.Services.AddScoped<IClassroomCatalogService, GrammarErrorDetection.Services.Services.Catalogs.ClassroomCatalogService>();
+builder.Services.AddScoped<IUserLevelCatalogService, GrammarErrorDetection.Services.Services.Catalogs.UserLevelCatalogService>();
+builder.Services.AddScoped<IConditionTypeCatalogService, GrammarErrorDetection.Services.Services.Catalogs.ConditionTypeCatalogService>();
 builder.Services.AddScoped<IGamificationService, GrammarErrorDetection.Services.Services.Gamification.GamificationService>();
 builder.Services.AddScoped<IEvaluationService, GrammarErrorDetection.Services.Services.Evaluations.EvaluationService>();
 builder.Services.AddScoped<IRegistrationService, GrammarErrorDetection.Services.Services.Registrations.RegistrationService>();
