@@ -1,6 +1,8 @@
 using System.Net;
 using System.Text.Json;
 using GrammarErrorDetection.Models.Texts;
+using GrammarErrorDetection.Models.Vocabulary;
+using GrammarErrorDetection.WEB.Components.Analysis;
 using GrammarErrorDetection.Models.Courses;
 using GrammarErrorDetection.Services.Interfaces;
 using GrammarErrorDetection.Services.Services.Auth;
@@ -15,6 +17,7 @@ public partial class Nlp : IDisposable
     [Inject] private ITextService Texts { get; set; } = default!;
     [Inject] private IRegistrationService Registrations { get; set; } = default!;
     [Inject] private IOcrService Ocr { get; set; } = default!;
+    [Inject] private IVocabularyService VocabularyLookup { get; set; } = default!;
     [Inject] private AuthSessionState Session { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
     private string text = "", search = "", appliedSearch = "";
@@ -34,6 +37,81 @@ public partial class Nlp : IDisposable
     private bool EditorBusy => uploading || recognizingPhoto;
     private TextResponse? CurrentAnalysis => selected?.OriginalContent == text ? selected : null;
     protected override Task OnInitializedAsync() => Task.WhenAll(LoadHistoryAsync(1), LoadUploadCoursesAsync());
+
+    // --- Pestaña "Vocabulary": alternativa entre errores gramaticales y recomendaciones de vocabulario.
+    private AnalysisView analysisView = AnalysisView.Grammar;
+    private VocabularyAnalysisResponse? vocabulary;
+    // Párrafo cuya verificación se pidió (o se cargó): evita pedirla de nuevo al volver a mostrar la pestaña.
+    private Guid vocabularyTextId;
+    private string? vocabularyError;
+    private bool loadingVocabulary;
+    private int vocabularyVersion;
+    private CancellationTokenSource? vocabularyCancellation;
+
+    private void ChangeView(AnalysisView view) => analysisView = view;
+    private Task ReloadVocabularyAsync() => LoadVocabularyAsync();
+
+    private VocabularyAnalysisResponse? VocabularyFor(TextResponse analysis) => vocabulary?.TextId == analysis.Id ? vocabulary : null;
+    private string? VocabularyErrorFor(TextResponse analysis) => vocabularyTextId == analysis.Id ? vocabularyError : null;
+    // Pendiente: cargando, o a punto de cargar (la carga empieza tras mostrar la pestaña).
+    private bool VocabularyPending(TextResponse analysis) => loadingVocabulary || vocabularyTextId != analysis.Id;
+
+    private bool NeedsVocabulary => !disposed && !loadingVocabulary
+        && CurrentAnalysis is { Sentences.Count: > 0 } analysis && IsProcessed(analysis) && analysis.Id != vocabularyTextId;
+
+    // Se carga al mostrar el análisis (el párrafo completo también marca el vocabulario), no solo al abrir su pestaña.
+    // Cubre todos los caminos que cambian el párrafo mostrado (historial, nueva subida, actualizar) sin enganchar cada uno.
+    protected override Task OnAfterRenderAsync(bool firstRender) => NeedsVocabulary ? LoadVocabularyAsync() : Task.CompletedTask;
+
+    private async Task LoadVocabularyAsync()
+    {
+        if (disposed || CurrentAnalysis is not { } analysis || !CheckSession()) return;
+        var id = analysis.Id;
+        vocabularyCancellation?.Cancel();
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
+        vocabularyCancellation = cancellation;
+        var version = ++vocabularyVersion;
+        vocabularyTextId = id; vocabulary = null; vocabularyError = null; loadingVocabulary = true;
+        StateHasChanged();
+        try
+        {
+            var response = await VocabularyLookup.GetAsync(id, cancellation.Token);
+            if (disposed || version != vocabularyVersion) return;
+            if (response?.Data is not { } data || response.Error is { ErrorCode: not 0 } || data.TextId != id)
+                throw new InvalidOperationException("No se pudo cargar el vocabulario de este párrafo.");
+            vocabulary = data;
+        }
+        catch (OperationCanceledException)
+        { if (!disposed && version == vocabularyVersion && !cancellation.IsCancellationRequested) vocabularyError = "La verificación del vocabulario tardó demasiado. Inténtalo de nuevo."; }
+        catch (Exception ex) when (ex is HttpRequestException or JsonException or InvalidOperationException)
+        { if (!disposed && version == vocabularyVersion) vocabularyError = VocabularyErrorMessage(ex); }
+        finally
+        {
+            if (version == vocabularyVersion)
+            {
+                loadingVocabulary = false;
+                vocabularyCancellation = null;
+                if (!disposed) StateHasChanged();
+            }
+        }
+    }
+
+    private string VocabularyErrorMessage(Exception ex)
+    {
+        if (ex is HttpRequestException http)
+        {
+            if (http.StatusCode == HttpStatusCode.Unauthorized)
+            { Session.Clear(); CheckSession(); return "Tu sesión venció. Vuelve a iniciar sesión."; }
+            return http.StatusCode switch
+            {
+                HttpStatusCode.Forbidden => "No tienes permiso para consultar el vocabulario de este párrafo.",
+                HttpStatusCode.NotFound => "No se encontró el párrafo seleccionado.",
+                HttpStatusCode.TooManyRequests => "Hay demasiadas consultas de vocabulario. Espera un momento antes de reintentar.",
+                _ => "No se pudo verificar el vocabulario. Inténtalo de nuevo."
+            };
+        }
+        return ex is InvalidOperationException ? ex.Message : "La respuesta del vocabulario no tiene el formato esperado.";
+    }
 
     private async Task LoadUploadCoursesAsync()
     {
@@ -214,19 +292,6 @@ public partial class Nlp : IDisposable
     }
 
     private static bool IsProcessed(TextResponse item) => string.Equals(item.Status, "Procesado", StringComparison.OrdinalIgnoreCase);
-    private static string CorrectionText(TextSentenceResponse sentence)
-    {
-        if (string.IsNullOrWhiteSpace(sentence.CorrectedSentence)) return "";
-        var correction = WebUtility.HtmlDecode(sentence.CorrectedSentence).Trim();
-        var marker = correction.IndexOf("Corrección:", StringComparison.OrdinalIgnoreCase);
-        if (marker >= 0) correction = correction[(marker + "Corrección:".Length)..].Trim();
-        foreach (var ruleMarker in new[] { "Regla:", "Rule:" })
-        {
-            var rule = correction.IndexOf(ruleMarker, StringComparison.OrdinalIgnoreCase);
-            if (rule >= 0) correction = correction[..rule].Trim();
-        }
-        return correction.Trim('*', ' ', '\t', '\r', '\n');
-    }
     private static string Title(TextResponse item)
     {
         var title = string.Join(" ", item.OriginalContent.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Take(6));
@@ -315,6 +380,7 @@ public partial class Nlp : IDisposable
     {
         disposed = true;
         historyCancellation?.Cancel();
+        vocabularyCancellation?.Cancel();
         lifetime.Cancel(); lifetime.Dispose();
     }
 }

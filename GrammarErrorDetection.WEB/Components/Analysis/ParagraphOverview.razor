@@ -1,0 +1,100 @@
+@* Párrafo completo con todos los errores marcados (gramática y vocabulario): la vista general, antes de las pestañas. *@
+@using GrammarErrorDetection.Models.Texts
+@using GrammarErrorDetection.Models.Vocabulary
+
+<details class="an-overview" open>
+    <summary class="an-overview-head"><span>Párrafo completo</span><AnalysisIcon Name="chevron" Class="an-chev" /></summary>
+    <p id="an-paragraph" class="an-paragraph @(Long && !expanded ? "is-clamped" : "")" lang="en">
+        @foreach (var (sentence, position) in Sentences.Select((sentence, position) => (sentence, position)))
+        {
+            @(position == 0 ? "" : " ")
+            @foreach (var segment in Marked(sentence))
+            {
+                if (segment.Kind == MarkKind.None) { @segment.Text }
+                else { <mark class="@AnalysisFormat.MarkClass(segment.Kind)">@segment.Text<span class="ceti-sr-only"> (@AnalysisFormat.MarkLabel(segment.Kind))</span></mark> }
+            }
+        }
+    </p>
+    @* En celular un párrafo largo ocuparía varias pantallas antes de las pestañas: se recorta y se despliega con este botón (en escritorio no hace falta). *@
+    @if (Long)
+    {
+        <button type="button" class="an-link-button an-expand" aria-expanded="@(expanded ? "true" : "false")" aria-controls="an-paragraph" @onclick="() => expanded = !expanded">
+            <AnalysisIcon Name="chevron" Class="@(expanded ? "an-up" : "")" />@(expanded ? "Ver menos" : "Ver todo el párrafo")
+        </button>
+    }
+    <div class="an-legend">
+        <ul class="an-legend-list" aria-label="Qué marca cada estilo">
+            <li><span class="an-mark an-mark--grammar">Gramática</span><span class="an-legend-count">@GrammarCount</span></li>
+            @if (Vocabulary is not null)
+            {
+                <li><span class="an-mark an-mark--vocab">Vocabulario</span><span class="an-legend-count">@Vocabulary.IssueCount</span></li>
+            }
+            @if (BothCount > 0)
+            {
+                <li><span class="an-mark an-mark--both">Ambos</span><span class="an-legend-count">@BothCount</span></li>
+            }
+        </ul>
+        @if (Loading)
+        {
+            <p class="an-legend-status" role="status">Verificando el vocabulario…</p>
+        }
+        else if (Error is not null)
+        {
+            <p class="an-legend-status" role="@(QuietStatus ? "status" : "alert")">
+                @if (QuietStatus)
+                {
+                    <span>Vocabulario sin verificar: solo se marca la gramática.</span>
+                }
+                else
+                {
+                    <span>No se pudo verificar el vocabulario, así que solo se marca la gramática.</span>
+                    <button type="button" class="an-link-button" @onclick="OnRetry"><AnalysisIcon Name="retry" />Reintentar</button>
+                }
+            </p>
+        }
+        else if (Vocabulary is { UncheckedCount: > 0 } partial)
+        {
+            <p class="an-legend-status" role="status">
+                <span>@(partial.UncheckedCount == 1 ? "1 palabra sin verificar" : $"{partial.UncheckedCount} palabras sin verificar"): puede haber errores de vocabulario sin marcar.</span>
+                @if (!QuietStatus)
+                {
+                    <button type="button" class="an-link-button" @onclick="OnRetry"><AnalysisIcon Name="retry" />Completar</button>
+                }
+            </p>
+        }
+        else if (Vocabulary is not null && GrammarCount == 0 && Vocabulary.IssueCount == 0)
+        {
+            <p class="an-legend-status is-ok"><AnalysisIcon Name="check" /><span>No encontramos errores en el párrafo.</span></p>
+        }
+    </div>
+</details>
+
+@code {
+    /// <summary>Más de estos caracteres se considera un párrafo largo (en celular se recorta con "Ver todo el párrafo").</summary>
+    private const int LongParagraphCharacters = 420;
+
+    [Parameter, EditorRequired] public TextResponse Analysis { get; set; } = default!;
+    [Parameter] public VocabularyAnalysisResponse? Vocabulary { get; set; }
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public string? Error { get; set; }
+    [Parameter] public EventCallback OnRetry { get; set; }
+    /// <summary>Con la pestaña de vocabulario abierta, esa pestaña ya muestra el aviso con su reintento: aquí queda una línea corta.</summary>
+    [Parameter] public bool QuietStatus { get; set; }
+
+    private bool expanded;
+
+    private IEnumerable<TextSentenceResponse> Sentences => Analysis.Sentences.OrderBy(sentence => sentence.SentenceIndex);
+    private bool Long => Analysis.Sentences.Sum(sentence => sentence.OriginalSentence.Length) > LongParagraphCharacters;
+    private int GrammarCount => AnalysisFormat.ErrorCount(Analysis);
+    private int BothCount => Analysis.Sentences.Sum(sentence => Marked(sentence).Count(segment => segment.Kind == (MarkKind.Grammar | MarkKind.Vocabulary)));
+
+    // Las marcas de gramática y de vocabulario de una oración, superpuestas.
+    private List<KindSegment> Marked(TextSentenceResponse sentence)
+    {
+        var marks = AnalysisFormat.GrammarRanges(sentence.OriginalSentence, sentence.Errors).Select(range => (range, MarkKind.Grammar)).ToList();
+        var vocabulary = Vocabulary?.Sentences.FirstOrDefault(item => item.SentenceId == sentence.Id);
+        if (vocabulary is not null)
+            marks.AddRange(AnalysisFormat.VocabularyRanges(vocabulary.Issues).Select(range => (range, MarkKind.Vocabulary)));
+        return AnalysisFormat.Overlay(sentence.OriginalSentence, marks);
+    }
+}

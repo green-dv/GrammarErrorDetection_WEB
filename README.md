@@ -256,6 +256,31 @@ dotnet build checks/SupportMaterialChecks/SupportMaterialChecks.csproj --no-rest
 dotnet checks/SupportMaterialChecks/bin/Debug/net10.0/SupportMaterialChecks.dll
 ```
 
+### Análisis del párrafo (Procesar)
+
+En `/process`, el análisis de un párrafo procesado empieza con el **párrafo completo**: todas sus oraciones con las palabras con error
+marcadas, con un estilo por tipo (gramática: relleno rosa y subrayado ondulado; vocabulario: relleno ámbar y subrayado punteado; ambos:
+relleno ámbar con subrayado ondulado rojo y línea punteada ámbar) y una leyenda con los conteos; cada marca lleva además un texto oculto para lectores de pantalla ("error de gramática", etc.). Se puede plegar y, en celular, un párrafo largo se recorta a unas siete líneas con "Ver todo el párrafo". Debajo hay un toggle
+**Errores gramaticales | Vocabulary**.
+
+- **Errores gramaticales:** por oración, la palabra con error, su corrección, la categoría y la confianza, y la oración corregida.
+- **Vocabulary** ("Recomendaciones en vocabulary"): por oración, las palabras con error con su alternativa y definiciones (en inglés,
+  con la categoría gramatical). Sin errores muestra "Sin errores de vocabulario". Si el servicio externo no pudo verificar algunas palabras
+  lo avisa y ofrece completar la verificación, sin afirmar que no haya errores. Detecta palabras mal escritas o inexistentes, no el uso
+  incorrecto de palabras válidas.
+- **Oraciones plegables:** cada oración con errores se pliega desde su resumen ("2 errores", "3 palabras") para recorrer el párrafo con
+  menos scroll, y "Ocultar detalles / Mostrar detalles" pliega todas las de la pestaña. El estado se conserva al cambiar de pestaña o de filtro.
+- **Filtro:** "Todas / Con errores" cuando hay oraciones con y sin errores.
+
+El vocabulario se verifica **al mostrar el análisis** (`GET api/Vocabulary/text/{id}`, una vez por párrafo; cambiar de pestaña no vuelve a
+consultar), porque el párrafo completo también marca el vocabulario. Cada palabra nueva consulta la API externa Datamuse una sola vez en
+toda la aplicación (caché en `VocabularyWord`). Componentes: `Components/Analysis/` y
+`Components/Vocabulary/VocabularyRecommendations.razor`; estilos en `wwwroot/css/analysis.css`; estado en `Pages/Nlp.razor.cs`.
+Comprobaciones (`tests/Vocabulary.ViewChecks`):
+
+```powershell
+dotnet run --project tests/Vocabulary.ViewChecks
+```
 ### Listado de usuarios y tablas
 
 `/users` está disponible para el rol `Coordinator` del JWT. La página comprueba el rol incluso al acceder por URL, y el menú muestra Usuarios únicamente para coordinadores. `Views/Users/UserList.razor` define la tabla y `UserList.razor.cs` coordina filtros, carga y paginación. `IUserService` y `Services/Users/UserService` consumen `POST /api/User/search`, enviando siempre `pageNumber` y `pageSize` (20 por defecto); `filter` y sus campos nulos se omiten cuando no se usan. Se admiten nombre, apellido, CI, teléfono, correo, fecha de registro, rol, estado y módulo actual. El estado Inactivo se envía como `false`, sin confundirlo con el filtro vacío.

@@ -38,6 +38,7 @@ builder.Services.AddScoped<GrammarErrorDetection.Services.Services.Points.PointR
 builder.Services.AddScoped<IPointService, GrammarErrorDetection.Services.Services.Points.PointService>();
 builder.Services.AddScoped<IDashboardService, GrammarErrorDetection.Services.Services.Dashboards.DashboardService>();
 builder.Services.AddScoped<ITextService, GrammarErrorDetection.Services.Services.Texts.TextService>();
+builder.Services.AddScoped<IVocabularyService, GrammarErrorDetection.Services.Services.Vocabulary.VocabularyService>();
 builder.Services.AddScoped<IGrammarReportService, GrammarErrorDetection.Services.Services.Reports.GrammarReportService>();
 builder.Services.AddScoped<ISupportMaterialService, GrammarErrorDetection.Services.Services.Materials.SupportMaterialService>();
 builder.Services.AddScoped<IOcrService>(_ => new GrammarErrorDetection.Services.Services.OcrService(
