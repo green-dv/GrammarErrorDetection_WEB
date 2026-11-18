@@ -1,0 +1,16 @@
+@* Etiqueta de estado de las tablas y fichas: activo/inactivo, o un estado propio con su clase (aprobada, pendiente…). *@
+<span class="data-table-status @Css">@Label</span>
+
+@code {
+    /// <summary>Estado activo o inactivo; elige la clase y el texto entre On y Off.</summary>
+    [Parameter] public bool Active { get; set; }
+    [Parameter] public string On { get; set; } = "Activo";
+    [Parameter] public string Off { get; set; } = "Inactivo";
+
+    /// <summary>Texto y clase propios (por ejemplo, el estado de una inscripción); sustituyen a Active/On/Off.</summary>
+    [Parameter] public string? Text { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private string Css => Class ?? (Active ? "is-active" : "is-inactive");
+    private string Label => Text ?? (Active ? On : Off);
+}

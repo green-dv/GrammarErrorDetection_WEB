@@ -1,0 +1,36 @@
+@using GrammarErrorDetection.Models.Reports
+@using static GrammarErrorDetection.WEB.Components.Reports.GrammarFormat
+@* Ficha de evolución de una categoría frente a los cursos anteriores (celular): tendencia, cambio y barras antes/ahora. *@
+@{
+    var top = Math.Max(1L, Math.Max(Row.PreviousErrorCount, Row.CurrentErrorCount));
+}
+<li class="gcard gcard-compare" style="--cat:@Color">
+    <div class="gcard-head">
+        <span class="gcard-name-static"><span class="grammar-dot" aria-hidden="true" style="background:@Color"></span>@Row.ErrorClassificationName</span>
+        <span class="grammar-trend @TrendClass(Row.Trend)">@TrendLabel(Row.Trend)</span>
+    </div>
+    <p class="gcard-delta @TrendClass(Row.Trend)">
+        @if (Row.ErrorCountChange is null) { <strong class="gcard-delta-empty">Sin comparación</strong> }
+        else { <strong>@Signed(Row.ErrorCountChange)</strong> <span>errores</span><small>@RelativeChange(Row.ErrorCountChangePercentage)</small> }
+    </p>
+    <div class="gcard-versus">
+        <div><span>Antes</span><span class="gcard-track"><span class="gcard-fill is-before" style="width:@Percent(Row.PreviousErrorCount, top)%"></span></span><strong>@Row.PreviousErrorCount</strong></div>
+        <div><span>Ahora</span><span class="gcard-track"><span class="gcard-fill" style="width:@Percent(Row.CurrentErrorCount, top)%"></span></span><strong>@Row.CurrentErrorCount</strong></div>
+    </div>
+    <dl class="gcard-stats">
+        <div><dt>Errores por párrafo</dt><dd>@Number(Row.PreviousErrorsPerAnalyzedText) <span>→</span> @Number(Row.CurrentErrorsPerAnalyzedText)</dd></div>
+        @if (!Personal)
+        {
+            <div><dt>Estudiantes afectados</dt><dd>@Row.PreviousAffectedStudentCount <span>→</span> @Row.CurrentAffectedStudentCount</dd><dd class="gcard-sub">@ChangeWithUnit(Row.AffectedStudentPercentagePointChange, "pp de inscritos", true)</dd></div>
+        }
+    </dl>
+    @if (Row.ComparisonStatus == "Comparable" && Row.PreviousErrorCount == 0 && Row.CurrentErrorCount > 0) { <p class="gcard-note">No se detectaba antes</p> }
+    @if (Row.ComparisonStatus == "Comparable" && Row.PreviousErrorCount > 0 && Row.CurrentErrorCount == 0) { <p class="gcard-note">Sin errores actuales</p> }
+</li>
+
+@code {
+    [Parameter, EditorRequired] public GrammarReportComparison Row { get; set; } = default!;
+    [Parameter, EditorRequired] public string Color { get; set; } = string.Empty;
+    /// <summary>Reporte personal: no hay base de estudiantes inscritos.</summary>
+    [Parameter] public bool Personal { get; set; }
+}

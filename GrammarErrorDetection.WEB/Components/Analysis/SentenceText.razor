@@ -1,0 +1,9 @@
+@* Texto de una oración con las palabras con error resaltadas (subrayado ondulado, como un corrector ortográfico). *@
+@foreach (var part in AnalysisFormat.Segments(Text, Ranges)) { if (part.Marked) { <mark class="@AnalysisFormat.MarkClass(Kind)">@part.Text</mark> } else { @part.Text } }
+
+@code {
+    [Parameter, EditorRequired] public string Text { get; set; } = "";
+    [Parameter] public IReadOnlyList<TextRange> Ranges { get; set; } = [];
+    /// <summary>Tipo de error que marcan los rangos (define el estilo de la marca).</summary>
+    [Parameter] public MarkKind Kind { get; set; } = MarkKind.Grammar;
+}

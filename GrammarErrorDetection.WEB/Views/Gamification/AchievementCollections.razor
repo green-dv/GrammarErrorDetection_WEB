@@ -66,16 +66,17 @@
             }
             else if (!IsDetail)
             {
-                <div class="data-table-scroll" role="region" aria-label="Colecciones de logros" tabindex="0"><table class="data-table">
+                <ListPager Top="true" Label="@($"Paginación de {(IsDetail ? "logros" : "colecciones")}")" Page="page" PageOf="@PageOf" Info="@(!loading && error is null ? $"{total ?? RowCount} {(IsDetail ? "logros" : "colecciones")} {(total is null ? "en esta página" : "en total")}" : "")" PreviousDisabled="@(loading || page <= 1)" NextDisabled="@(loading || !hasNext)" OnPrevious="() => LoadAsync(page - 1)" OnNext="() => LoadAsync(page + 1)" />
+                <div class="data-table-scroll" role="region" aria-label="Colecciones de logros" tabindex="0"><table class="data-table data-table-cards">
                     <thead><tr><th scope="col">Colección</th><th scope="col">Estado</th><th scope="col">Registro</th><th scope="col">Acciones</th></tr></thead>
                     <tbody>@foreach (var item in collections)
                     {
-                        <tr @key="item.Id"><th scope="row"><span class="data-table-primary">@item.Name</span><span class="data-table-secondary gamification-description">@(string.IsNullOrWhiteSpace(item.Description) ? "Sin descripción" : item.Description)</span></th><td><span class="data-table-chip">@(item.Active ? "Activa" : "Inactiva")</span></td><td>@item.CreatedAt.ToString("dd/MM/yyyy")</td><td><GamificationActions Label="@($"colección {item.Name}")" ViewHref="@($"/gamification/collections/{item.Id:D}")" Active="item.Active" Disabled="loading" OnEdit="() => OpenEditCollection(item)" OnToggleActive="() => OpenStatus(item)" /></td></tr>
+                        <tr @key="item.Id"><th data-label="Colección" scope="row"><span class="data-table-primary">@item.Name</span><span class="data-table-secondary gamification-description">@(string.IsNullOrWhiteSpace(item.Description) ? "Sin descripción" : item.Description)</span></th><td data-label="Estado"><span class="data-table-chip">@(item.Active ? "Activa" : "Inactiva")</span></td><td data-label="Registro">@item.CreatedAt.ToString("dd/MM/yyyy")</td><td data-label=""><GamificationActions Label="@($"colección {item.Name}")" ViewHref="@($"/gamification/collections/{item.Id:D}")" Active="item.Active" Disabled="loading" OnEdit="() => OpenEditCollection(item)" OnToggleActive="() => OpenStatus(item)" /></td></tr>
                     }
                     @if (collections.Count == 0 && error is null) { <tr><td colspan="4" class="data-table-empty"><strong>No se encontraron colecciones</strong><p>Prueba con otros filtros.</p></td></tr> }</tbody>
                 </table></div>
             }
-            <footer class="data-table-footer"><span>@(!loading && error is null ? $"{RowCount} {(IsDetail ? "logros" : "colecciones")} en esta página" : "")</span><nav class="data-table-pagination" aria-label="Paginación de @(IsDetail ? "logros" : "colecciones")"><button disabled="@(loading || page <= 1)" @onclick="() => LoadAsync(page - 1)" aria-label="Página anterior">‹</button><span>Página <strong>@(page)</strong></span><button disabled="@(loading || !hasNext)" @onclick="() => LoadAsync(page + 1)" aria-label="Página siguiente">›</button></nav></footer>
+            <ListPager Label="@($"Paginación de {(IsDetail ? "logros" : "colecciones")}")" Page="page" PageOf="@PageOf" Info="@(!loading && error is null ? $"{total ?? RowCount} {(IsDetail ? "logros" : "colecciones")} {(total is null ? "en esta página" : "en total")}" : "")" PreviousDisabled="@(loading || page <= 1)" NextDisabled="@(loading || !hasNext)" OnPrevious="() => LoadAsync(page - 1)" OnNext="() => LoadAsync(page + 1)" />
         </div>
     </section>
     @if (CanManage && showCreate) { <CollectionCreateModal Collection="editingCollection" OnClose="CloseAndReloadAsync" OnCreated="CreatedAsync" OnSaved="CollectionSavedAsync" /> }

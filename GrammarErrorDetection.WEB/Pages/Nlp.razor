@@ -1,5 +1,6 @@
 @page "/process"
 @page "/nlp"
+@using GrammarErrorDetection.WEB.Components.Analysis
 
 <PageTitle>Procesar | CETI La Paz</PageTitle>
 
@@ -75,50 +76,24 @@
             </article>
 
             <section class="nlp-analysis" aria-labelledby="nlp-analysis-title">
-                <header class="nlp-analysis-heading"><h2 id="nlp-analysis-title">Análisis</h2>@if (CurrentAnalysis is { } summary) { <span>@summary.Sentences.Count oraciones · @summary.ErrorCount errores · @summary.Status</span> }</header>
                 @if (CurrentAnalysis is not { } analysis)
                 {
+                    <header class="nlp-analysis-heading"><h2 id="nlp-analysis-title">Análisis</h2></header>
                     <p class="nlp-analysis-empty">Sube tu párrafo para analizarlo o selecciona uno del historial. Si editas un texto, vuelve a subirlo para obtener su nuevo análisis.</p>
                 }
                 else if (analysis.Sentences.Count == 0)
                 {
+                    <header class="nlp-analysis-heading"><h2 id="nlp-analysis-title">Análisis</h2><span>@analysis.Status</span></header>
                     <p class="nlp-analysis-empty">@(IsProcessed(analysis) ? "No se recibieron oraciones para este análisis." : $"Estado del párrafo: {analysis.Status}.")</p>
                     <button type="button" class="data-table-text-button" disabled="@(loading || EditorBusy)" @onclick="RefreshAnalysisAsync">Actualizar análisis</button>
                 }
                 else
                 {
-                    <ol class="nlp-sentences">
-                        @foreach (var sentence in analysis.Sentences.OrderBy(item => item.SentenceIndex))
-                        {
-                            <li class="nlp-sentence" @key="sentence.Id">
-                                <header><span class="nlp-sentence-number">@sentence.SentenceIndex</span><div><p>@sentence.OriginalSentence</p></div></header>
-                                @if (sentence.ErrorCount == 0 && sentence.Errors.Count == 0)
-                                {
-                                    <p class="nlp-no-errors"><span aria-hidden="true">✓</span><strong>No tiene errores</strong></p>
-                                }
-                                else
-                                {
-                                    @if (CorrectionText(sentence) is { Length: > 0 } correction) { <p class="nlp-compact-correction"><strong>Corrección:</strong> @correction</p> }
-                                    @if (sentence.Errors.Count == 0) { <p class="nlp-feedback">Se detectaron @sentence.ErrorCount errores, pero no se recibió su detalle.</p> }
-                                    <ul class="nlp-errors" aria-label="Errores de la oración @sentence.SentenceIndex">
-                                        @foreach (var error in sentence.Errors)
-                                        {
-                                            <li @key="error.Id"><strong class="nlp-error-word"><span class="ceti-sr-only">Palabra errónea:</span>@(error.ErrorToken ?? "—")</strong><span>@(error.ErrorClassificationName ?? "Sin clasificación")</span>@if (!string.IsNullOrWhiteSpace(error.SuggestedCorrection)) { <span>→ @error.SuggestedCorrection</span> }@if (error.ConfidenceScore is { } confidence) { <span class="nlp-compact-confidence" title="Confianza"><span class="ceti-sr-only">Confianza:</span>@((confidence * 100m).ToString("0.#")) %</span> }</li>
-                                        }
-                                    </ul>
-                                }
-                            </li>
-                        }
-                    </ol>
-                    @if (Session.IsInRole("Student") && analysis.ErrorCount > 0)
-                    {
-                        <aside class="nlp-recommendation-cta" aria-label="Material recomendado">
-                            <div><strong>Refuerza estos errores</strong><span>Revisa el material de apoyo elegido según tus errores más frecuentes.</span></div>
-                            <a class="data-table-button" href="recommendations">Ver recomendaciones →</a>
-                        </aside>
-                    }
-                }
-            </section>
+                    <AnalysisPanel @key="analysis.Id" Analysis="analysis" View="analysisView" ViewChanged="ChangeView"
+                                   Vocabulary="@VocabularyFor(analysis)" VocabularyLoading="@VocabularyPending(analysis)"
+                                   VocabularyError="@VocabularyErrorFor(analysis)" OnRetryVocabulary="ReloadVocabularyAsync"
+                                   ShowReinforcement="@Session.IsInRole("Student")" />
+                }            </section>
         </div>
     </div>
 </section>

@@ -38,11 +38,17 @@ builder.Services.AddScoped<GrammarErrorDetection.Services.Services.Points.PointR
 builder.Services.AddScoped<IPointService, GrammarErrorDetection.Services.Services.Points.PointService>();
 builder.Services.AddScoped<IDashboardService, GrammarErrorDetection.Services.Services.Dashboards.DashboardService>();
 builder.Services.AddScoped<ITextService, GrammarErrorDetection.Services.Services.Texts.TextService>();
+builder.Services.AddScoped<IVocabularyService, GrammarErrorDetection.Services.Services.Vocabulary.VocabularyService>();
 builder.Services.AddScoped<IGrammarReportService, GrammarErrorDetection.Services.Services.Reports.GrammarReportService>();
 builder.Services.AddScoped<ISupportMaterialService, GrammarErrorDetection.Services.Services.Materials.SupportMaterialService>();
 builder.Services.AddScoped<IOcrService>(_ => new GrammarErrorDetection.Services.Services.OcrService(
     new HttpClient { BaseAddress = ocrBaseUri, Timeout = TimeSpan.FromMinutes(3) }));
 builder.Services.AddScoped<ICourseService, CourseService>();
+builder.Services.AddScoped<IErrorCategoryService, GrammarErrorDetection.Services.Services.Categories.ErrorCategoryService>();
+builder.Services.AddScoped<IModuleCatalogService, GrammarErrorDetection.Services.Services.Catalogs.ModuleCatalogService>();
+builder.Services.AddScoped<IClassroomCatalogService, GrammarErrorDetection.Services.Services.Catalogs.ClassroomCatalogService>();
+builder.Services.AddScoped<IUserLevelCatalogService, GrammarErrorDetection.Services.Services.Catalogs.UserLevelCatalogService>();
+builder.Services.AddScoped<IConditionTypeCatalogService, GrammarErrorDetection.Services.Services.Catalogs.ConditionTypeCatalogService>();
 builder.Services.AddScoped<IGamificationService, GrammarErrorDetection.Services.Services.Gamification.GamificationService>();
 builder.Services.AddScoped<IEvaluationService, GrammarErrorDetection.Services.Services.Evaluations.EvaluationService>();
 builder.Services.AddScoped<IRegistrationService, GrammarErrorDetection.Services.Services.Registrations.RegistrationService>();

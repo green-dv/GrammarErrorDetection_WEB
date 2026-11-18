@@ -1,0 +1,59 @@
+@* Barra de paginación compartida por todos los listados.
+   Se usa dos veces por listado: arriba (Top="true") y abajo, con los mismos parámetros. *@
+<footer class="data-table-footer @(Top ? "data-table-footer-top" : "")">
+    @if (Sizes.Length > 0)
+    {
+        <label class="data-table-page-size">@PageSizeLabel <select value="@PageSize" @onchange="SizeChanged" disabled="@PageSizeDisabled">
+            @foreach (var size in Sizes) { <option value="@size" selected="@(size == PageSize)">@size</option> }
+        </select></label>
+    }
+    <span>@MiddleText</span>
+    <nav class="data-table-pagination" aria-label="@(Top ? $"{Label} (superior)" : Label)">
+        <button type="button" disabled="@PreviousDisabled" @onclick="OnPrevious" aria-label="Página anterior">‹</button>
+        <span>Página <strong>@Page</strong>@PageOf</span>
+        <button type="button" disabled="@NextDisabled" @onclick="OnNext" aria-label="Página siguiente">›</button>
+    </nav>
+</footer>
+
+@code {
+    /// <summary>Nombre accesible de la navegación ("Paginación de cursos").</summary>
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    /// <summary>Repite la barra sobre el listado: usa el borde hacia el contenido y oculta la nota.</summary>
+    [Parameter] public bool Top { get; set; }
+
+    [Parameter] public int Page { get; set; } = 1;
+    /// <summary>Texto tras el número de página, por ejemplo " de 11". Vacío si el total no se conoce.</summary>
+    [Parameter] public string PageOf { get; set; } = "";
+    [Parameter] public bool PreviousDisabled { get; set; }
+    [Parameter] public bool NextDisabled { get; set; }
+    [Parameter] public EventCallback OnPrevious { get; set; }
+    [Parameter] public EventCallback OnNext { get; set; }
+
+    /// <summary>Filas por página (enlace de dos vías: @bind-PageSize).</summary>
+    [Parameter] public int PageSize { get; set; }
+    [Parameter] public EventCallback<int> PageSizeChanged { get; set; }
+    /// <summary>Opciones separadas por coma ("5,10,20"). Vacío oculta el selector.</summary>
+    [Parameter] public string PageSizes { get; set; } = "";
+    [Parameter] public string PageSizeLabel { get; set; } = "Filas por página";
+    [Parameter] public bool PageSizeDisabled { get; set; }
+
+    /// <summary>Rango o conteo ("Mostrando 1–10 de 101"); se muestra arriba y abajo.</summary>
+    [Parameter] public string? Info { get; set; }
+    /// <summary>Texto informativo que solo aparece abajo y sustituye a Info cuando no hay.</summary>
+    [Parameter] public string? Note { get; set; }
+
+    private string MiddleText => Info ?? (Top ? "" : Note ?? "");
+
+    private int[] Sizes => PageSizes
+        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .Select(value => int.TryParse(value, out var size) ? size : 0)
+        .Where(size => size > 0)
+        .ToArray();
+
+    private async Task SizeChanged(ChangeEventArgs args)
+    {
+        if (!int.TryParse(args.Value?.ToString(), out var size) || size <= 0 || size == PageSize) return;
+        PageSize = size;
+        await PageSizeChanged.InvokeAsync(size);
+    }
+}

@@ -1,0 +1,107 @@
+@* Errores gramaticales de un párrafo: por oración, qué palabra falló, cómo corregirla y de qué categoría es. Cada oración con errores se puede plegar. *@
+@using GrammarErrorDetection.Models.Texts
+
+<h3 class="an-panel-title">Errores gramaticales</h3>
+@if (ErrorCount == 0)
+{
+    <p class="an-summary is-ok"><AnalysisIcon Name="check" /><span>¡Buen trabajo! No encontramos errores gramaticales en @Total @AnalysisFormat.Plural(Total, "oración", "oraciones").</span></p>
+}
+else
+{
+    <p class="an-summary">@ErrorCount @AnalysisFormat.Plural(ErrorCount, "error", "errores") en @WithErrors de @Total @AnalysisFormat.Plural(Total, "oración", "oraciones").</p>
+}
+@Toolbar
+<ol class="an-list">
+    @foreach (var sentence in Visible)
+    {
+        var errors = sentence.Errors;
+        var count = Math.Max(sentence.ErrorCount, errors.Count);
+        var clean = count == 0;
+        var open = !Collapsed.Contains(sentence.Id);
+        <li class="an-item @(clean ? "is-clean" : "has-issues")" @key="sentence.Id">
+            <div class="an-sentence">
+                <span class="an-index">@sentence.SentenceIndex</span>
+                <p class="an-text" lang="en"><SentenceText Text="@sentence.OriginalSentence" Ranges="@AnalysisFormat.GrammarRanges(sentence.OriginalSentence, errors)" Kind="MarkKind.Grammar" /></p>
+                @if (clean)
+                {
+                    <span class="an-flag is-ok"><AnalysisIcon Name="check" /><span>Sin errores gramaticales</span></span>
+                }
+                else
+                {
+                    <button type="button" class="an-flag an-flag--toggle is-err" aria-expanded="@(open ? "true" : "false")" aria-controls="an-body-@sentence.Id" @onclick="() => OnToggle.InvokeAsync(sentence.Id)">
+                        <AnalysisIcon Name="alert" /><span>@count @AnalysisFormat.Plural(count, "error", "errores")@(open ? "" : " · Ver corrección")</span><AnalysisIcon Name="chevron" Class="an-chev" />
+                        <span class="ceti-sr-only"> de la oración @sentence.SentenceIndex</span>
+                    </button>
+                }
+            </div>
+            @if (!clean)
+            {
+                <div id="an-body-@sentence.Id" class="an-body" hidden="@(!open)">
+                    @if (errors.Count == 0)
+                    {
+                        <p class="an-note">Se detectaron @count @AnalysisFormat.Plural(count, "error", "errores"), pero no se recibió su detalle.</p>
+                    }
+                    else
+                    {
+                        <ul class="an-issues" aria-label="Errores de la oración @sentence.SentenceIndex">
+                            @foreach (var error in errors)
+                            {
+                                <li class="an-issue" @key="error.Id">
+                                    <p class="an-change">
+                                        <del class="an-wrong"><span class="ceti-sr-only">Palabra con error: </span>@(error.ErrorToken ?? "—")</del>
+                                        @if (!string.IsNullOrWhiteSpace(error.SuggestedCorrection))
+                                        {
+                                            <AnalysisIcon Name="arrow" />
+                                            <ins class="an-right"><span class="ceti-sr-only">Se escribe: </span>@error.SuggestedCorrection</ins>
+                                        }
+                                    </p>
+                                    <p class="an-meta">
+                                        <span class="an-tag"><span class="ceti-sr-only">Categoría: </span>@AnalysisFormat.Category(error.ErrorClassificationName)</span>
+                                        @if (error.ConfidenceScore is { } confidence)
+                                        {
+                                            <span class="an-conf" title="Confianza del modelo en este error">@AnalysisFormat.Confidence(confidence) % de confianza</span>
+                                        }
+                                    </p>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    @if (AnalysisFormat.CorrectionText(sentence.CorrectedSentence) is { Length: > 0 } correction)
+                    {
+                        <div class="an-fix">
+                            <AnalysisIcon Name="check" />
+                            <div><p class="an-fix-label">Así quedaría</p><p class="an-fix-text" lang="en">@correction</p></div>
+                        </div>
+                    }
+                </div>
+            }
+        </li>
+    }
+</ol>
+@if (ShowReinforcement && ErrorCount > 0)
+{
+    <aside class="an-next" aria-label="Material recomendado">
+        <AnalysisIcon Name="book" />
+        <div class="an-next-copy"><strong>Refuerza estos errores</strong><span>Revisa el material de apoyo elegido según tus errores más frecuentes.</span></div>
+        <a class="data-table-button data-table-button-primary" href="recommendations">Ver recomendaciones</a>
+    </aside>
+}
+
+@code {
+    [Parameter, EditorRequired] public TextResponse Analysis { get; set; } = default!;
+    /// <summary>Muestra solo las oraciones con errores.</summary>
+    [Parameter] public bool OnlyIssues { get; set; }
+    /// <summary>Estudiantes: enlace al material de apoyo recomendado.</summary>
+    [Parameter] public bool ShowReinforcement { get; set; }
+    /// <summary>Contenido que el panel ubica antes de la lista (filtro y botón de plegar).</summary>
+    [Parameter] public RenderFragment? Toolbar { get; set; }
+    /// <summary>Oraciones con el detalle oculto (lo guarda el panel, así se conserva al cambiar de pestaña).</summary>
+    [Parameter] public IReadOnlySet<Guid> Collapsed { get; set; } = new HashSet<Guid>();
+    [Parameter] public EventCallback<Guid> OnToggle { get; set; }
+
+    private int Total => Analysis.Sentences.Count;
+    private int ErrorCount => AnalysisFormat.ErrorCount(Analysis);
+    private int WithErrors => AnalysisFormat.SentencesWithErrors(Analysis);
+    private List<TextSentenceResponse> Visible => Analysis.Sentences.OrderBy(item => item.SentenceIndex)
+        .Where(item => !OnlyIssues || Math.Max(item.ErrorCount, item.Errors.Count) > 0).ToList();
+}

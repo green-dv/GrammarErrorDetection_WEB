@@ -57,3 +57,11 @@ node_modules/
 .DS_Store
 Thumbs.db
 Desktop.ini
+
+# Contexto de diseno local (Impeccable)
+PRODUCT.md
+
+
+#Checks
+checks/
+Checks/

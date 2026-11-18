@@ -1,0 +1,169 @@
+@using System.Net
+@using System.Text.Json
+@using GrammarErrorDetection.Models.Modules
+@using GrammarErrorDetection.Services.Interfaces
+@using GrammarErrorDetection.Services.Services.Auth
+@using GrammarErrorDetection.WEB.Components.Dialogs
+@implements IDisposable
+@inject IModuleCatalogService ModuleService
+@inject AuthSessionState Session
+@inject NavigationManager Navigation
+
+@* Alta y edición de un módulo. Con Module = null crea; con un módulo, edita. *@
+<ModalDialog Title="@(IsEdit ? "Editar módulo" : "Nuevo módulo")" Subtitle="@(IsEdit ? Module!.Name : "Nivel del ciclo de cursos")" Busy="@saving" OnClose="OnClose">
+    <EditForm EditContext="editContext" OnSubmit="SaveAsync" novalidate>
+        <DataAnnotationsValidator />
+        <div class="ceti-modal-body">
+            @if (error is not null || validationErrors.Count > 0)
+            {
+                <div class="ceti-modal-errors" role="alert">
+                    @if (error is not null) { <p>@error</p> }
+                    @foreach (var validationError in validationErrors) { <p>@validationError</p> }
+                </div>
+            }
+            <fieldset disabled="@saving" class="users-edit-fields">
+                <div class="users-edit-grid">
+                    <label class="data-table-field"><span>Nombre *</span><input @bind="model.Name" @bind:event="oninput" maxlength="30" autofocus /></label>
+                    <label class="data-table-field"><span>Nivel *</span><input type="number" min="1" step="1" @bind="model.Level" /></label>
+                    <label class="data-table-field"><span>Módulo siguiente</span>
+                        <select @bind="model.NextModuleId" disabled="@(loadingOptions || saving)">
+                            <option value="">@(loadingOptions ? "Cargando módulos…" : "Sin módulo siguiente")</option>
+                            @foreach (var option in options) { <option value="@option.Id">@option.Name</option> }
+                        </select>
+                    </label>
+                </div>
+                <p class="gamification-help">El módulo siguiente es al que se promueve a los estudiantes. El nombre debe ser único y la ruta no puede formar ciclos.</p>
+            </fieldset>
+            @if (optionsError is not null)
+            {
+                <p class="data-table-message" role="status">@optionsError</p>
+            }
+        </div>
+        <footer class="ceti-modal-footer"><span role="status">@(saving ? "Guardando…" : IsEdit && !HasChanges ? "No hay cambios para guardar." : "")</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">Cancelar</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@(saving || loadingOptions || (IsEdit && !HasChanges))">@(IsEdit ? "Guardar cambios" : "Crear módulo")</button></div></footer>
+    </EditForm>
+</ModalDialog>
+
+@code {
+    [Parameter] public ModuleItem? Module { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<ModuleItem> OnSaved { get; set; }
+
+    private sealed class FormModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "El nombre es obligatorio.")]
+        [System.ComponentModel.DataAnnotations.StringLength(30, ErrorMessage = "El nombre admite hasta 30 caracteres.")]
+        public string Name { get; set; } = string.Empty;
+        [System.ComponentModel.DataAnnotations.Range(1, int.MaxValue, ErrorMessage = "El nivel debe ser un entero positivo.")]
+        public int Level { get; set; } = 1;
+        public string NextModuleId { get; set; } = string.Empty;
+    }
+
+    private readonly CancellationTokenSource lifetime = new();
+    private FormModel model = new();
+    private EditContext editContext = default!;
+    private List<ModuleItem> options = [];
+    private List<string> validationErrors = [];
+    private string? error, optionsError;
+    private bool saving, loadingOptions = true, disposed;
+    private bool IsEdit => Module is not null;
+    private Guid? SelectedNext => Guid.TryParse(model.NextModuleId, out var id) ? id : null;
+    private bool HasChanges => Module is { } module
+        && (model.Name.Trim() != module.Name || model.Level != module.Level || SelectedNext != module.NextModule);
+
+    protected override async Task OnInitializedAsync()
+    {
+        model = new FormModel { Name = Module?.Name ?? string.Empty, Level = Module?.Level ?? 1, NextModuleId = Module?.NextModule?.ToString() ?? string.Empty };
+        editContext = new EditContext(model);
+        await LoadOptionsAsync();
+    }
+
+    // Todos los módulos (el catálogo es corto): activos, más el siguiente actual aunque esté deshabilitado.
+    private async Task LoadOptionsAsync()
+    {
+        try
+        {
+            var all = new List<ModuleItem>();
+            for (var pageNumber = 1; ; pageNumber++)
+            {
+                var response = await ModuleService.SearchAsync(new ModuleSearchRequest { PageNumber = pageNumber, PageSize = 100 }, lifetime.Token);
+                if (disposed) return;
+                if (response?.Data is null || response.TotalCount is null) throw new InvalidOperationException();
+                all.AddRange(response.Data);
+                if (all.Count >= response.TotalCount || response.Data.Count == 0) break;
+            }
+            options = all.Where(item => item.Id != Module?.Id && (item.Active || item.Id == Module?.NextModule))
+                .OrderBy(item => item.Level).ThenBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
+        }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException or JsonException or OperationCanceledException)
+        {
+            if (!disposed) optionsError = "No se pudieron cargar los módulos para elegir el siguiente. Puedes guardar sin cambiarlo.";
+        }
+        finally { loadingOptions = false; }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (saving || disposed) return;
+        error = null;
+        validationErrors.Clear();
+        if (IsEdit && !HasChanges) return;
+        if (!editContext.Validate())
+        {
+            validationErrors = editContext.GetValidationMessages().Distinct().ToList();
+            return;
+        }
+        if (Session.Current is null) { Navigation.NavigateTo("/auth/login", replace: true); return; }
+        if (!Session.Roles.Contains("Coordinator", StringComparer.Ordinal)) { error = "Solo un coordinador puede gestionar módulos."; return; }
+        saving = true;
+        try
+        {
+            var response = Module is { } existing
+                ? await ModuleService.UpdateAsync(new ModuleUpdateRequest
+                {
+                    Id = existing.Id,
+                    Name = model.Name.Trim() == existing.Name ? null : model.Name,
+                    Level = model.Level == existing.Level ? null : model.Level,
+                    // Elegir "Sin módulo siguiente" se envía como ClearNextModule: un NextModule nulo significa "no cambiar".
+                    NextModule = SelectedNext is { } selected && selected != existing.NextModule ? selected : null,
+                    ClearNextModule = SelectedNext is null && existing.NextModule is not null
+                }, lifetime.Token)
+                : await ModuleService.CreateAsync(new ModuleCreateRequest { Name = model.Name, Level = model.Level, NextModule = SelectedNext }, lifetime.Token);
+            if (disposed) return;
+            if (response?.Data is not { } saved || response.Error is { ErrorCode: not 0 })
+            {
+                error = response?.Error?.ErrorMessage ?? "No se pudo confirmar el guardado. Inténtalo de nuevo.";
+                return;
+            }
+            await OnSaved.InvokeAsync(saved);
+        }
+        catch (HttpRequestException ex)
+        {
+            if (disposed) return;
+            if (ex.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                Session.Clear();
+                Navigation.NavigateTo("/auth/login", replace: true);
+            }
+            error = ex.StatusCode switch
+            {
+                HttpStatusCode.Conflict => "Ya existe un módulo con ese nombre.",
+                HttpStatusCode.NotFound => "El módulo ya no existe. Actualiza el listado.",
+                HttpStatusCode.Forbidden => "Solo un coordinador puede gestionar módulos.",
+                HttpStatusCode.BadRequest => "Revisa los datos: el nivel debe ser positivo, el módulo siguiente debe existir y la ruta no puede formar un ciclo.",
+                _ => "No se pudo guardar el módulo. Inténtalo de nuevo."
+            };
+        }
+        catch (OperationCanceledException) { if (!disposed) error = "El guardado tardó demasiado. Inténtalo de nuevo."; }
+        catch (JsonException) { if (!disposed) error = "No se pudo interpretar la respuesta del servidor."; }
+        catch (Exception ex) when (ex is System.ComponentModel.DataAnnotations.ValidationException or ArgumentException) { if (!disposed) error = ex.Message; }
+        finally { saving = false; }
+    }
+
+    public void Dispose()
+    {
+        if (disposed) return;
+        disposed = true;
+        lifetime.Cancel();
+        lifetime.Dispose();
+    }
+}

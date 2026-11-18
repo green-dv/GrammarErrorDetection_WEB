@@ -122,14 +122,14 @@
             <details class="student-progress-details">
                 <summary>Ver notas por estudiante y módulo</summary>
                 <div class="data-table-scroll">
-                    <table class="data-table">
+                    <table class="data-table data-table-cards">
                         <thead><tr><th scope="col">Estudiante</th><th scope="col">Módulo</th><th scope="col">Periodo</th><th scope="col">Nota final</th></tr></thead>
                         <tbody>
                             @foreach (var student in visible)
                             {
                                 @foreach (var attempt in student.Attempts.OrderBy(attempt => columns.IndexOf(attempt.Course)))
                                 {
-                                    <tr><th scope="row">@student.Name</th><td>@attempt.Course.Name</td><td>@attempt.Course.Period</td><td>@Score(attempt.Score)</td></tr>
+                                    <tr><th data-label="Estudiante" scope="row">@student.Name</th><td data-label="Módulo">@attempt.Course.Name</td><td data-label="Periodo">@attempt.Course.Period</td><td data-label="Nota final">@Score(attempt.Score)</td></tr>
                                 }
                             }
                         </tbody>

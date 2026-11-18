@@ -1,0 +1,127 @@
+@using System.Net
+@using System.Text.Json
+@using GrammarErrorDetection.Models.Classrooms
+@using GrammarErrorDetection.Services.Interfaces
+@using GrammarErrorDetection.Services.Services.Auth
+@using GrammarErrorDetection.WEB.Components.Dialogs
+@implements IDisposable
+@inject IClassroomCatalogService ClassroomService
+@inject AuthSessionState Session
+@inject NavigationManager Navigation
+
+@* Alta y edición de un aula. Con Classroom = null crea; con un aula, edita. *@
+<ModalDialog Title="@(IsEdit ? "Editar aula" : "Nueva aula")" Subtitle="@(IsEdit ? Classroom!.Name : "Espacio donde se dictan los cursos")" Busy="@saving" OnClose="OnClose">
+    <EditForm EditContext="editContext" OnSubmit="SaveAsync" novalidate>
+        <DataAnnotationsValidator />
+        <div class="ceti-modal-body">
+            @if (error is not null || validationErrors.Count > 0)
+            {
+                <div class="ceti-modal-errors" role="alert">
+                    @if (error is not null) { <p>@error</p> }
+                    @foreach (var validationError in validationErrors) { <p>@validationError</p> }
+                </div>
+            }
+            <fieldset disabled="@saving" class="users-edit-fields">
+                <div class="users-edit-grid">
+                    <label class="data-table-field"><span>Nombre *</span><input @bind="model.Name" @bind:event="oninput" maxlength="30" autofocus /></label>
+                    <label class="data-table-field"><span>Capacidad *</span><input type="number" min="1" max="1000" step="1" @bind="model.Capacity" /></label>
+                </div>
+                <p class="gamification-help">La capacidad es el máximo de estudiantes por curso (entre 1 y 1000). El nombre debe ser único.</p>
+            </fieldset>
+        </div>
+        <footer class="ceti-modal-footer"><span role="status">@(saving ? "Guardando…" : IsEdit && !HasChanges ? "No hay cambios para guardar." : "")</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">Cancelar</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@(saving || (IsEdit && !HasChanges))">@(IsEdit ? "Guardar cambios" : "Crear aula")</button></div></footer>
+    </EditForm>
+</ModalDialog>
+
+@code {
+    [Parameter] public ClassroomItem? Classroom { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<ClassroomItem> OnSaved { get; set; }
+
+    private sealed class FormModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "El nombre es obligatorio.")]
+        [System.ComponentModel.DataAnnotations.StringLength(30, ErrorMessage = "El nombre admite hasta 30 caracteres.")]
+        public string Name { get; set; } = string.Empty;
+        [System.ComponentModel.DataAnnotations.Range(1, 1000, ErrorMessage = "La capacidad debe estar entre 1 y 1000.")]
+        public int Capacity { get; set; } = 20;
+    }
+
+    private readonly CancellationTokenSource lifetime = new();
+    private FormModel model = new();
+    private EditContext editContext = default!;
+    private List<string> validationErrors = [];
+    private string? error;
+    private bool saving, disposed;
+    private bool IsEdit => Classroom is not null;
+    private bool HasChanges => Classroom is { } room && (model.Name.Trim() != room.Name || model.Capacity != room.Capacity);
+
+    protected override void OnInitialized()
+    {
+        model = new FormModel { Name = Classroom?.Name ?? string.Empty, Capacity = Classroom?.Capacity ?? 20 };
+        editContext = new EditContext(model);
+    }
+
+    private async Task SaveAsync()
+    {
+        if (saving || disposed) return;
+        error = null;
+        validationErrors.Clear();
+        if (IsEdit && !HasChanges) return;
+        if (!editContext.Validate())
+        {
+            validationErrors = editContext.GetValidationMessages().Distinct().ToList();
+            return;
+        }
+        if (Session.Current is null) { Navigation.NavigateTo("/auth/login", replace: true); return; }
+        if (!Session.Roles.Contains("Coordinator", StringComparer.Ordinal)) { error = "Solo un coordinador puede gestionar aulas."; return; }
+        saving = true;
+        try
+        {
+            var response = Classroom is { } existing
+                ? await ClassroomService.UpdateAsync(new ClassroomUpdateRequest
+                {
+                    Id = existing.Id,
+                    Name = model.Name.Trim() == existing.Name ? null : model.Name,
+                    Capacity = model.Capacity == existing.Capacity ? null : model.Capacity
+                }, lifetime.Token)
+                : await ClassroomService.CreateAsync(new ClassroomCreateRequest { Name = model.Name, Capacity = model.Capacity }, lifetime.Token);
+            if (disposed) return;
+            if (response?.Data is not { } saved || response.Error is { ErrorCode: not 0 })
+            {
+                error = response?.Error?.ErrorMessage ?? "No se pudo confirmar el guardado. Inténtalo de nuevo.";
+                return;
+            }
+            await OnSaved.InvokeAsync(saved);
+        }
+        catch (HttpRequestException ex)
+        {
+            if (disposed) return;
+            if (ex.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                Session.Clear();
+                Navigation.NavigateTo("/auth/login", replace: true);
+            }
+            error = ex.StatusCode switch
+            {
+                HttpStatusCode.Conflict => "Ya existe un aula con ese nombre.",
+                HttpStatusCode.NotFound => "El aula ya no existe. Actualiza el listado.",
+                HttpStatusCode.Forbidden => "Solo un coordinador puede gestionar aulas.",
+                HttpStatusCode.BadRequest => "Revisa los datos: el nombre no puede estar vacío y la capacidad debe estar entre 1 y 1000.",
+                _ => "No se pudo guardar el aula. Inténtalo de nuevo."
+            };
+        }
+        catch (OperationCanceledException) { if (!disposed) error = "El guardado tardó demasiado. Inténtalo de nuevo."; }
+        catch (JsonException) { if (!disposed) error = "No se pudo interpretar la respuesta del servidor."; }
+        catch (System.ComponentModel.DataAnnotations.ValidationException ex) { if (!disposed) error = ex.Message; }
+        finally { saving = false; }
+    }
+
+    public void Dispose()
+    {
+        if (disposed) return;
+        disposed = true;
+        lifetime.Cancel();
+        lifetime.Dispose();
+    }
+}
