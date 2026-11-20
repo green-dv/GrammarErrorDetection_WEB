@@ -26,7 +26,7 @@ public partial class CourseStudents : IDisposable
         course = null; error = null;
         if (Session.Current is not { User: { } user }) { Navigation.NavigateTo("/auth/login", replace: true); return; }
         var isTeacher = Session.IsInRole("Teacher");
-        if ((!isTeacher && !Session.IsInRole("Coordinator")) || ClassId == Guid.Empty) { error = "No tienes acceso a este curso."; return; }
+        if ((!isTeacher && !Session.IsInRole("Coordinator")) || ClassId == Guid.Empty) { error = I18n.T("No tienes acceso a este curso."); return; }
         loading = true;
         try
         {
@@ -36,11 +36,11 @@ public partial class CourseStudents : IDisposable
                 Filter = new() { Id = ClassId.ToString("D"), TeacherId = isTeacher ? user.Id.ToString("D") : null }
             }, lifetime.Token);
             if (disposed) return;
-            if (response?.Data is null || response.Error is { ErrorCode: not 0 }) throw new InvalidOperationException("No se pudo consultar el curso. Inténtalo de nuevo.");
+            if (response?.Data is null || response.Error is { ErrorCode: not 0 }) throw new InvalidOperationException(I18n.T("No se pudo consultar el curso. Inténtalo de nuevo."));
             var found = response.Data.Count == 1 ? response.Data[0] : null;
             if (found is null || found.Id != ClassId || (isTeacher && found.TeacherId != user.Id))
             {
-                error = "El curso no está disponible o no tienes permiso para consultarlo.";
+                error = I18n.T("El curso no está disponible o no tienes permiso para consultarlo.");
                 return;
             }
             course = found;
@@ -51,14 +51,14 @@ public partial class CourseStudents : IDisposable
             if (ex.StatusCode == HttpStatusCode.Unauthorized) { Session.Clear(); Navigation.NavigateTo("/auth/login", replace: true); }
             error = ex.StatusCode switch
             {
-                HttpStatusCode.Unauthorized => "Tu sesión venció. Vuelve a iniciar sesión.",
-                HttpStatusCode.Forbidden => "No tienes permiso para consultar el curso.",
-                HttpStatusCode.NotFound => "No se encontró el curso.",
-                _ => "No se pudo cargar el curso. Inténtalo de nuevo."
+                HttpStatusCode.Unauthorized => I18n.T("Tu sesión venció. Vuelve a iniciar sesión."),
+                HttpStatusCode.Forbidden => I18n.T("No tienes permiso para consultar el curso."),
+                HttpStatusCode.NotFound => I18n.T("No se encontró el curso."),
+                _ => I18n.T("No se pudo cargar el curso. Inténtalo de nuevo.")
             };
         }
-        catch (OperationCanceledException) { if (!disposed) error = "La consulta tardó demasiado. Inténtalo de nuevo."; }
-        catch (JsonException) { if (!disposed) error = "No se pudo interpretar la información del curso."; }
+        catch (OperationCanceledException) { if (!disposed) error = I18n.T("La consulta tardó demasiado. Inténtalo de nuevo."); }
+        catch (JsonException) { if (!disposed) error = I18n.T("No se pudo interpretar la información del curso."); }
         catch (InvalidOperationException ex) { if (!disposed) error = ex.Message; }
         finally { loading = false; }
     }

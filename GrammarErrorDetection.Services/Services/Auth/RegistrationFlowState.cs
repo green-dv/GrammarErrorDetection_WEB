@@ -12,7 +12,7 @@ public sealed class RegistrationFlowState : IDisposable
     public void BeginVerification(AuthChallengeResponse challenge, SignupRequest user)
     {
         Clear();
-        if (challenge.ExpiresAt <= DateTimeOffset.UtcNow) throw new InvalidOperationException("El código ya venció.");
+        if (challenge.ExpiresAt <= DateTimeOffset.UtcNow) throw new InvalidOperationException(I18n.T("El código ya venció."));
         pendingUser = new SignupRequest { FirstName = user.FirstName, LastName = user.LastName, CI = user.CI, Email = user.Email, Password = user.Password, Phone = user.Phone, BirthDate = user.BirthDate };
         Challenge = challenge;
         expiration = new Timer(_ =>
@@ -26,7 +26,7 @@ public sealed class RegistrationFlowState : IDisposable
         if (!HasPendingSignup)
         {
             Clear();
-            throw new InvalidOperationException("El registro pendiente venció. Vuelve a comenzar.");
+            throw new InvalidOperationException(I18n.T("El registro pendiente venció. Vuelve a comenzar."));
         }
         return new SignupConfirmationRequest { FirstName = pendingUser!.FirstName, LastName = pendingUser.LastName, CI = pendingUser.CI, Email = pendingUser.Email, Password = pendingUser.Password, Phone = pendingUser.Phone, BirthDate = pendingUser.BirthDate, ChallengeId = Challenge!.ChallengeId, Code = code };
     }

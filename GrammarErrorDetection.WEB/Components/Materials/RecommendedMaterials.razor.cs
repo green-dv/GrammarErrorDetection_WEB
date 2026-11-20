@@ -18,7 +18,7 @@ public partial class RecommendedMaterials : IDisposable
 {
     [Parameter] public Guid? UserId { get; set; }
     [Parameter] public Guid? ClassId { get; set; }
-    [Parameter] public string Title { get; set; } = "Recomendado para ti";
+    [Parameter] public string Title { get; set; } = I18n.T("Recomendado para ti");
     [Parameter] public int CategoryLimit { get; set; } = 3;
     [Parameter] public int MaterialsPerCategory { get; set; } = 3;
 
@@ -27,7 +27,7 @@ public partial class RecommendedMaterials : IDisposable
     [Inject] private NavigationManager Navigation { get; set; } = default!;
     [Inject] private IConfiguration Configuration { get; set; } = default!;
 
-    private static readonly CultureInfo Spanish = CultureInfo.GetCultureInfo("es-ES");
+    private static readonly CultureInfo Spanish = I18n.Culture;
     private readonly string headingId = $"recommended-{Guid.NewGuid():N}";
     private readonly CancellationTokenSource lifetime = new();
     private CancellationTokenSource? request;
@@ -61,8 +61,8 @@ public partial class RecommendedMaterials : IDisposable
             var response = await MaterialService.GetRecommendationsAsync(UserId, ClassId, CategoryLimit, MaterialsPerCategory, cancellation.Token);
             if (disposed || cancellation.IsCancellationRequested) return;
             if (response?.Error is { } apiError)
-                throw new InvalidOperationException(apiError.ErrorMessage ?? "No se pudieron obtener las recomendaciones.");
-            var rows = response?.Data ?? throw new InvalidOperationException("La respuesta de recomendaciones no tiene el formato esperado.");
+                throw new InvalidOperationException(apiError.ErrorMessage ?? I18n.T("No se pudieron obtener las recomendaciones."));
+            var rows = response?.Data ?? throw new InvalidOperationException(I18n.T("La respuesta de recomendaciones no tiene el formato esperado."));
             recommendations = rows.OrderBy(row => row.Rank)
                 .Select(row => { row.Materials = row.Materials.OrderBy(material => material.Rank).ToList(); return row; })
                 .Where(row => row.Materials.Count > 0)
@@ -71,7 +71,7 @@ public partial class RecommendedMaterials : IDisposable
         catch (OperationCanceledException)
         {
             if (!disposed && !lifetime.IsCancellationRequested && ReferenceEquals(request, cancellation))
-                error = "La consulta tardó demasiado. Inténtalo de nuevo.";
+                error = I18n.T("La consulta tardó demasiado. Inténtalo de nuevo.");
         }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or InvalidOperationException or ArgumentException)
         {
@@ -107,11 +107,11 @@ public partial class RecommendedMaterials : IDisposable
 
     private static string? ReasonLabel(RecommendedMaterialResponse material) => material.ReasonCode switch
     {
-        "EFFECTIVE" => "Ayudó a otros a reducir este error",
-        "PEERS_HELPFUL" => "Útil para tus compañeros",
-        "FORMAT_PREFERENCE" => "En un formato que te funciona",
-        "REVIEW" => "Para repasar",
-        "NEW" => "Nuevo para ti",
+        "EFFECTIVE" => I18n.T("Ayudó a otros a reducir este error"),
+        "PEERS_HELPFUL" => I18n.T("Útil para tus compañeros"),
+        "FORMAT_PREFERENCE" => I18n.T("En un formato que te funciona"),
+        "REVIEW" => I18n.T("Para repasar"),
+        "NEW" => I18n.T("Nuevo para ti"),
         _ => null
     };
 
@@ -143,7 +143,7 @@ public partial class RecommendedMaterials : IDisposable
         }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or InvalidOperationException or ArgumentException)
         {
-            feedbackError = "No se pudo guardar tu respuesta. Inténtalo de nuevo.";
+            feedbackError = I18n.T("No se pudo guardar tu respuesta. Inténtalo de nuevo.");
         }
         catch (OperationCanceledException) { }
         finally { voting.Remove(material.Id); }
@@ -164,7 +164,7 @@ public partial class RecommendedMaterials : IDisposable
         commentSent = false;
         feedbackError = null;
         viewing = new MaterialView(material.Name, category.ErrorClassificationName, category.ErrorClassificationDescription,
-            Format(material), string.IsNullOrWhiteSpace(material.FileTypeName) ? "Recurso" : material.FileTypeName,
+            Format(material), string.IsNullOrWhiteSpace(material.FileTypeName) ? I18n.T("Recurso") : material.FileTypeName,
             material.FileSize, material.UploadDate,
             string.IsNullOrWhiteSpace(material.UploadedByName) ? null : material.UploadedByName,
             link, material.FileExtension);
@@ -184,22 +184,22 @@ public partial class RecommendedMaterials : IDisposable
             {
                 Session.Clear();
                 Navigation.NavigateTo("/auth/login", replace: true);
-                return "Tu sesión venció. Vuelve a iniciar sesión.";
+                return I18n.T("Tu sesión venció. Vuelve a iniciar sesión.");
             }
             return http.StatusCode switch
             {
-                HttpStatusCode.Forbidden => "No tienes permiso para ver las recomendaciones de este estudiante.",
-                HttpStatusCode.BadRequest => "No se pudieron calcular las recomendaciones para la selección actual.",
-                HttpStatusCode.NotFound or HttpStatusCode.MethodNotAllowed => "La API en ejecución todavía no ofrece recomendaciones de material.",
-                _ => "No se pudo consultar el material recomendado. Inténtalo de nuevo."
+                HttpStatusCode.Forbidden => I18n.T("No tienes permiso para ver las recomendaciones de este estudiante."),
+                HttpStatusCode.BadRequest => I18n.T("No se pudieron calcular las recomendaciones para la selección actual."),
+                HttpStatusCode.NotFound or HttpStatusCode.MethodNotAllowed => I18n.T("La API en ejecución todavía no ofrece recomendaciones de material."),
+                _ => I18n.T("No se pudo consultar el material recomendado. Inténtalo de nuevo.")
             };
         }
         return exception switch
         {
-            JsonException => "La respuesta no tiene el formato esperado.",
+            JsonException => I18n.T("La respuesta no tiene el formato esperado."),
             // Mensajes de la API o propios (en español); las guardas de argumentos traen textos técnicos.
             InvalidOperationException when !string.IsNullOrWhiteSpace(exception.Message) => exception.Message,
-            _ => "No se pudo preparar la consulta. Recarga la página e inténtalo de nuevo."
+            _ => I18n.T("No se pudo preparar la consulta. Recarga la página e inténtalo de nuevo.")
         };
     }
 

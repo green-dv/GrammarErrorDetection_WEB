@@ -8,12 +8,12 @@ public sealed class PointRegistrationResolver(ICourseService courses, IRegistrat
 {
     public async Task<PointRegistrationTarget> ResolveAsync(Guid userId, Guid? classId, CancellationToken cancellationToken = default)
     {
-        if (userId == Guid.Empty || classId == Guid.Empty) throw new ArgumentException("El usuario o curso no es válido.");
+        if (userId == Guid.Empty || classId == Guid.Empty) throw new ArgumentException(I18n.T("El usuario o curso no es válido."));
         if (classId is { } courseId)
         {
             var id = await FindInCourseAsync(userId, courseId, cancellationToken);
             return id is { } found ? new(found, courseId, "")
-                : throw new InvalidOperationException("No se encontró una inscripción activa de este usuario en el curso seleccionado.");
+                : throw new InvalidOperationException(I18n.T("No se encontró una inscripción activa de este usuario en el curso seleccionado."));
         }
 
         // CurrentCourse puede faltar o no incluir registrationId. Consultar las
@@ -23,18 +23,18 @@ public sealed class PointRegistrationResolver(ICourseService courses, IRegistrat
         for (var page = 1; ; page++)
         {
             var response = await registrations.SearchAsync(new() { PageNumber = page, PageSize = 100, Filter = new() { UserId = userId } }, cancellationToken);
-            if (response?.Data is null || response.Error is { ErrorCode: not 0 }) throw new InvalidOperationException("No se pudieron consultar las inscripciones del usuario.");
+            if (response?.Data is null || response.Error is { ErrorCode: not 0 }) throw new InvalidOperationException(I18n.T("No se pudieron consultar las inscripciones del usuario."));
             var added = 0;
             foreach (var item in response.Data)
             {
-                if (item.UserId != userId) throw new InvalidOperationException("La consulta devolvió inscripciones de otro usuario.");
-                if (item.RegistrationId is not { } id || id == Guid.Empty) throw new InvalidOperationException("La API devolvió una inscripción sin identificador.");
+                if (item.UserId != userId) throw new InvalidOperationException(I18n.T("La consulta devolvió inscripciones de otro usuario."));
+                if (item.RegistrationId is not { } id || id == Guid.Empty) throw new InvalidOperationException(I18n.T("La API devolvió una inscripción sin identificador."));
                 if (!seen.Add(id)) continue;
                 added++;
-                if (item.ClassId is { } candidate && candidate != Guid.Empty) candidates.TryAdd(candidate, item.ModuleName ?? "Curso del estudiante");
+                if (item.ClassId is { } candidate && candidate != Guid.Empty) candidates.TryAdd(candidate, item.ModuleName ?? I18n.T("Curso del estudiante"));
             }
             if (response.Data.Count < 100) break;
-            if (added == 0) throw new InvalidOperationException("La consulta de inscripciones no avanzó de página.");
+            if (added == 0) throw new InvalidOperationException(I18n.T("La consulta de inscripciones no avanzó de página."));
         }
         PointRegistrationTarget? target = null;
         foreach (var candidate in candidates)
@@ -42,10 +42,10 @@ public sealed class PointRegistrationResolver(ICourseService courses, IRegistrat
             // El resumen no siempre incluye Active; validarlo en el endpoint del curso.
             var id = await FindInCourseAsync(userId, candidate.Key, cancellationToken);
             if (id is null) continue;
-            if (target is not null) throw new InvalidOperationException("El usuario tiene inscripciones activas en varios cursos. Asigna los puntos desde el curso correspondiente.");
+            if (target is not null) throw new InvalidOperationException(I18n.T("El usuario tiene inscripciones activas en varios cursos. Asigna los puntos desde el curso correspondiente."));
             target = new(id.Value, candidate.Key, candidate.Value);
         }
-        return target ?? throw new InvalidOperationException("No se encontraron inscripciones activas para este usuario.");
+        return target ?? throw new InvalidOperationException(I18n.T("No se encontraron inscripciones activas para este usuario."));
     }
 
     private async Task<Guid?> FindInCourseAsync(Guid userId, Guid classId, CancellationToken cancellationToken)
@@ -55,19 +55,19 @@ public sealed class PointRegistrationResolver(ICourseService courses, IRegistrat
         for (var page = 1; ; page++)
         {
             var response = await courses.GetRegistrationsAsync(classId, page, cancellationToken);
-            if (response?.Data is null || response.Error is { ErrorCode: not 0 }) throw new InvalidOperationException("No se pudieron consultar las inscripciones del curso.");
+            if (response?.Data is null || response.Error is { ErrorCode: not 0 }) throw new InvalidOperationException(I18n.T("No se pudieron consultar las inscripciones del curso."));
             var added = 0;
             foreach (var item in response.Data)
             {
-                if (item.ClassId != classId || item.Id == Guid.Empty || item.UserId == Guid.Empty) throw new InvalidOperationException("La API devolvió una inscripción no válida para este curso.");
+                if (item.ClassId != classId || item.Id == Guid.Empty || item.UserId == Guid.Empty) throw new InvalidOperationException(I18n.T("La API devolvió una inscripción no válida para este curso."));
                 if (!seen.Add(item.Id)) continue;
                 added++;
                 if (!item.Active || item.UserId != userId) continue;
-                if (registrationId.HasValue) throw new InvalidOperationException("El usuario tiene más de una inscripción activa en este curso.");
+                if (registrationId.HasValue) throw new InvalidOperationException(I18n.T("El usuario tiene más de una inscripción activa en este curso."));
                 registrationId = item.Id;
             }
             if (response.Data.Count < 100) break;
-            if (added == 0) throw new InvalidOperationException("La consulta de inscripciones no avanzó de página.");
+            if (added == 0) throw new InvalidOperationException(I18n.T("La consulta de inscripciones no avanzó de página."));
         }
         return registrationId;
     }

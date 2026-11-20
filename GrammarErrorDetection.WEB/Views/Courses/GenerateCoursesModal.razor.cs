@@ -41,7 +41,7 @@ public partial class GenerateCoursesModal : IDisposable
         error = null;
         validationErrors.Clear();
         if (Session.Current is null) { Navigation.NavigateTo("/auth/login", replace: true); return; }
-        if (!Session.IsInRole("Coordinator") || Session.IsInRole("Teacher")) { error = "No tienes permiso para generar cursos."; return; }
+        if (!Session.IsInRole("Coordinator") || Session.IsInRole("Teacher")) { error = I18n.T("No tienes permiso para generar cursos."); return; }
         if (!editContext.Validate()) { validationErrors = editContext.GetValidationMessages().Distinct().ToList(); return; }
         generating = true;
         try
@@ -51,7 +51,7 @@ public partial class GenerateCoursesModal : IDisposable
             if (response?.Data is not { Generated: true, CreatedClassIds: not null, ReusedClassIds: not null, CreatedRegistrationIds: not null, Skipped: not null } data
                 || response.Error is { ErrorCode: not 0 } || data.SourceYear != SourceYear || data.SourceBimester != SourceBimester)
             {
-                error = "No se pudo confirmar la generación. Revisa el listado antes de volver a enviar.";
+                error = I18n.T("No se pudo confirmar la generación. Revisa el listado antes de volver a enviar.");
                 return;
             }
             result = data;
@@ -63,15 +63,15 @@ public partial class GenerateCoursesModal : IDisposable
             if (ex.StatusCode == HttpStatusCode.Unauthorized) { Session.Clear(); Navigation.NavigateTo("/auth/login", replace: true); }
             error = ex.StatusCode switch
             {
-                HttpStatusCode.Unauthorized => "Tu sesión venció. Vuelve a iniciar sesión.",
-                HttpStatusCode.Forbidden => "No tienes permiso para generar cursos.",
-                HttpStatusCode.BadRequest => "Revisa el periodo y las fechas de destino.",
-                HttpStatusCode.Conflict => "El periodo o los recursos cambiaron. Revisa el listado antes de volver a generar.",
-                _ => "No se pudo confirmar la generación. Puede haber cambios ya guardados; revisa el listado antes de volver a enviar."
+                HttpStatusCode.Unauthorized => I18n.T("Tu sesión venció. Vuelve a iniciar sesión."),
+                HttpStatusCode.Forbidden => I18n.T("No tienes permiso para generar cursos."),
+                HttpStatusCode.BadRequest => I18n.T("Revisa el periodo y las fechas de destino."),
+                HttpStatusCode.Conflict => I18n.T("El periodo o los recursos cambiaron. Revisa el listado antes de volver a generar."),
+                _ => I18n.T("No se pudo confirmar la generación. Puede haber cambios ya guardados; revisa el listado antes de volver a enviar.")
             };
         }
-        catch (OperationCanceledException) { if (!disposed) error = "No se pudo confirmar la generación a tiempo. Revisa el listado antes de volver a enviar."; }
-        catch (JsonException) { if (!disposed) error = "No se pudo interpretar el resultado. Revisa el listado antes de volver a generar."; }
+        catch (OperationCanceledException) { if (!disposed) error = I18n.T("No se pudo confirmar la generación a tiempo. Revisa el listado antes de volver a enviar."); }
+        catch (JsonException) { if (!disposed) error = I18n.T("No se pudo interpretar el resultado. Revisa el listado antes de volver a generar."); }
         finally { generating = false; }
     }
 

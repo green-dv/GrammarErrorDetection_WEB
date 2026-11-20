@@ -29,7 +29,7 @@ public partial class StudyPlan : IDisposable
 
     private const int AllCategories = 50;
     private const int MaterialsPerCategory = 5;
-    private static readonly CultureInfo Spanish = CultureInfo.GetCultureInfo("es-ES");
+    private static readonly CultureInfo Spanish = I18n.Culture;
     // Paleta de pestañas por categoría (color fuerte, fondo suave).
     private static readonly (string Strong, string Soft)[] Palette =
     [
@@ -83,7 +83,7 @@ public partial class StudyPlan : IDisposable
                 .ToList();
         }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or InvalidOperationException or ArgumentException)
-        { coursesError = "No se pudieron cargar tus cursos."; }
+        { coursesError = I18n.T("No se pudieron cargar tus cursos."); }
         catch (OperationCanceledException) { }
         finally { loadingCourses = false; }
     }
@@ -105,8 +105,8 @@ public partial class StudyPlan : IDisposable
             var response = await recommendationsTask;
             if (disposed || cancellation.IsCancellationRequested) return;
             if (response?.Error is { } apiError)
-                throw new InvalidOperationException(apiError.ErrorMessage ?? "No se pudieron obtener las recomendaciones.");
-            categories = (response?.Data ?? throw new InvalidOperationException("La respuesta de recomendaciones no tiene el formato esperado."))
+                throw new InvalidOperationException(apiError.ErrorMessage ?? I18n.T("No se pudieron obtener las recomendaciones."));
+            categories = (response?.Data ?? throw new InvalidOperationException(I18n.T("La respuesta de recomendaciones no tiene el formato esperado.")))
                 .OrderBy(row => row.Rank)
                 .Select(row => { row.Materials = row.Materials.OrderBy(material => material.Rank).ToList(); return row; })
                 .Where(row => row.Materials.Count > 0)
@@ -118,7 +118,7 @@ public partial class StudyPlan : IDisposable
         catch (OperationCanceledException)
         {
             if (!disposed && !lifetime.IsCancellationRequested && ReferenceEquals(request, cancellation))
-                error = "La consulta tardó demasiado. Inténtalo de nuevo.";
+                error = I18n.T("La consulta tardó demasiado. Inténtalo de nuevo.");
         }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or InvalidOperationException or ArgumentException)
         {
@@ -141,7 +141,7 @@ public partial class StudyPlan : IDisposable
         try { return await Reports.LoadAsync(new GrammarReportScope(scopeClass, viewer), token); }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or InvalidOperationException or ArgumentException)
         {
-            reportError = "No se pudo cargar el detalle de tus errores.";
+            reportError = I18n.T("No se pudo cargar el detalle de tus errores.");
             return null;
         }
     }
@@ -183,7 +183,7 @@ public partial class StudyPlan : IDisposable
     private static string DisplayName(string name)
     {
         var text = name.Replace('_', ' ').Trim();
-        return text.Length == 0 ? "Sin categoría" : char.ToUpper(text[0], Spanish) + text[1..];
+        return text.Length == 0 ? I18n.T("Sin categoría") : char.ToUpper(text[0], Spanish) + text[1..];
     }
 
     private static string Priority(SupportMaterialRecommendationResponse category) =>
@@ -191,7 +191,7 @@ public partial class StudyPlan : IDisposable
 
     private static string PriorityLabel(string priority) => priority switch
     {
-        "alta" => "Alta prioridad", "media" => "Media prioridad", _ => "Baja prioridad"
+        "alta" => I18n.T("Alta prioridad"), "media" => I18n.T("Media prioridad"), _ => I18n.T("Baja prioridad")
     };
 
     private static string CategoryKind(string name)
@@ -226,13 +226,13 @@ public partial class StudyPlan : IDisposable
     private static string CourseDetail(StudentCourseResponse course) =>
         string.Join(" · ", new[]
         {
-            string.IsNullOrWhiteSpace(course.Parallel) ? null : $"Paralelo {course.Parallel}",
-            course.Bimester > 0 ? $"{course.Bimester}.º bimestre" : null,
+            string.IsNullOrWhiteSpace(course.Parallel) ? null : I18n.T("Paralelo {0}", course.Parallel),
+            course.Bimester > 0 ? I18n.T("{0}.º bimestre", course.Bimester) : null,
             course.Year > 0 ? course.Year.ToString(CultureInfo.InvariantCulture) : null
         }.Where(part => part is not null));
 
     private static string CourseName(StudentCourseResponse course) =>
-        string.IsNullOrWhiteSpace(course.ModuleName) ? "Curso sin nombre" : course.ModuleName;
+        string.IsNullOrWhiteSpace(course.ModuleName) ? I18n.T("Curso sin nombre") : course.ModuleName;
 
     private static string Format(RecommendedMaterialResponse material) =>
         MaterialPresentation.IsFileServerLink(material.FileLink)
@@ -241,11 +241,11 @@ public partial class StudyPlan : IDisposable
 
     private static string? ReasonLabel(RecommendedMaterialResponse material) => material.ReasonCode switch
     {
-        "EFFECTIVE" => "Ayudó a otros a reducir este error",
-        "PEERS_HELPFUL" => "Útil para tus compañeros",
-        "FORMAT_PREFERENCE" => "En un formato que te funciona",
-        "REVIEW" => "Para repasar",
-        "NEW" => "Nuevo para ti",
+        "EFFECTIVE" => I18n.T("Ayudó a otros a reducir este error"),
+        "PEERS_HELPFUL" => I18n.T("Útil para tus compañeros"),
+        "FORMAT_PREFERENCE" => I18n.T("En un formato que te funciona"),
+        "REVIEW" => I18n.T("Para repasar"),
+        "NEW" => I18n.T("Nuevo para ti"),
         _ => null
     };
 
@@ -291,7 +291,7 @@ public partial class StudyPlan : IDisposable
         }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or InvalidOperationException or ArgumentException)
         {
-            feedbackError = "No se pudo guardar tu respuesta. Inténtalo de nuevo.";
+            feedbackError = I18n.T("No se pudo guardar tu respuesta. Inténtalo de nuevo.");
         }
         catch (OperationCanceledException) { }
         finally { voting.Remove(material.Id); }
@@ -317,14 +317,14 @@ public partial class StudyPlan : IDisposable
         commentSent = false;
         feedbackError = null;
         viewing = new MaterialView(material.Name, DisplayName(category.ErrorClassificationName), category.ErrorClassificationDescription,
-            Format(material), string.IsNullOrWhiteSpace(material.FileTypeName) ? "Recurso" : material.FileTypeName,
+            Format(material), string.IsNullOrWhiteSpace(material.FileTypeName) ? I18n.T("Recurso") : material.FileTypeName,
             material.FileSize, material.UploadDate,
             string.IsNullOrWhiteSpace(material.UploadedByName) ? null : material.UploadedByName,
             link, material.FileExtension);
     }
 
     private string? ViewerSubtitle => lastOpened is { } opened
-        ? $"Material recomendado para {DisplayName(opened.Category.ErrorClassificationName)}" : null;
+        ? I18n.T("Material recomendado para {0}", DisplayName(opened.Category.ErrorClassificationName)) : null;
 
     private void Close()
     {
@@ -340,22 +340,22 @@ public partial class StudyPlan : IDisposable
             {
                 Session.Clear();
                 Navigation.NavigateTo("/auth/login", replace: true);
-                return "Tu sesión venció. Vuelve a iniciar sesión.";
+                return I18n.T("Tu sesión venció. Vuelve a iniciar sesión.");
             }
             return http.StatusCode switch
             {
-                HttpStatusCode.Forbidden => "No tienes acceso a las recomendaciones de este curso.",
-                HttpStatusCode.BadRequest => "No se pudieron calcular las recomendaciones para el curso seleccionado.",
-                HttpStatusCode.NotFound or HttpStatusCode.MethodNotAllowed => "La API en ejecución todavía no ofrece recomendaciones de material.",
-                _ => "No se pudo consultar tu plan de estudio. Inténtalo de nuevo."
+                HttpStatusCode.Forbidden => I18n.T("No tienes acceso a las recomendaciones de este curso."),
+                HttpStatusCode.BadRequest => I18n.T("No se pudieron calcular las recomendaciones para el curso seleccionado."),
+                HttpStatusCode.NotFound or HttpStatusCode.MethodNotAllowed => I18n.T("La API en ejecución todavía no ofrece recomendaciones de material."),
+                _ => I18n.T("No se pudo consultar tu plan de estudio. Inténtalo de nuevo.")
             };
         }
         return exception switch
         {
-            JsonException => "La respuesta no tiene el formato esperado.",
+            JsonException => I18n.T("La respuesta no tiene el formato esperado."),
             // Mensajes de la API o propios (en español); las guardas de argumentos traen textos técnicos.
             InvalidOperationException when !string.IsNullOrWhiteSpace(exception.Message) => exception.Message,
-            _ => "No se pudo preparar la consulta. Recarga la página e inténtalo de nuevo."
+            _ => I18n.T("No se pudo preparar la consulta. Recarga la página e inténtalo de nuevo.")
         };
     }
 

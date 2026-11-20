@@ -8,10 +8,10 @@
         </select></label>
     }
     <span>@MiddleText</span>
-    <nav class="data-table-pagination" aria-label="@(Top ? $"{Label} (superior)" : Label)">
-        <button type="button" disabled="@PreviousDisabled" @onclick="OnPrevious" aria-label="Página anterior">‹</button>
-        <span>Página <strong>@Page</strong>@PageOf</span>
-        <button type="button" disabled="@NextDisabled" @onclick="OnNext" aria-label="Página siguiente">›</button>
+    <nav class="data-table-pagination" aria-label="@(Top ? I18n.T("{0} (superior)", Label) : Label)">
+        <button type="button" disabled="@PreviousDisabled" @onclick="OnPrevious" aria-label="@L["Página anterior"]">‹</button>
+        <span>@L["Página"] <strong>@Page</strong>@PageOf</span>
+        <button type="button" disabled="@NextDisabled" @onclick="OnNext" aria-label="@L["Página siguiente"]">›</button>
     </nav>
 </footer>
 
@@ -34,7 +34,7 @@
     [Parameter] public EventCallback<int> PageSizeChanged { get; set; }
     /// <summary>Opciones separadas por coma ("5,10,20"). Vacío oculta el selector.</summary>
     [Parameter] public string PageSizes { get; set; } = "";
-    [Parameter] public string PageSizeLabel { get; set; } = "Filas por página";
+    [Parameter] public string PageSizeLabel { get; set; } = I18n.T("Filas por página");
     [Parameter] public bool PageSizeDisabled { get; set; }
 
     /// <summary>Rango o conteo ("Mostrando 1–10 de 101"); se muestra arriba y abajo.</summary>

@@ -7,7 +7,7 @@
             <h3 id="@headingId">@Title</h3>
             <p class="sh-muted">@Subtitle</p>
         </div>
-        <ul class="sh-legend" aria-hidden="true"><li class="is-pass">70 o más</li><li class="is-fail">Menos de 70</li></ul>
+        <ul class="sh-legend" aria-hidden="true"><li class="is-pass">@L["70 o más"]</li><li class="is-fail">@L["Menos de 70"]</li></ul>
     </header>
     @if (Items.Count == 0)
     {
@@ -27,13 +27,13 @@
                     {
                         <div class="cd-score @(final >= 70 ? "is-pass" : "is-fail")"><strong>@final.ToString("0.#", StudentDashboard.Culture)</strong><span class="sh-meter" aria-hidden="true"><span style="width:@StudentDashboard.Width(final)"></span></span></div>
                     }
-                    else { <span class="sh-muted">Sin notas</span> }
+                    else { <span class="sh-muted">@L["Sin notas"]</span> }
                     <dl class="m-facts">
-                        <div><dt>Aprobación</dt><dd>@StudentDashboard.Percent(module.PassRatePercentage)</dd></div>
-                        <div><dt>Examen 1 · 2</dt><dd>@Score(module.Exam1Average) · @Score(module.Exam2Average)</dd></div>
-                        <div><dt>Errores por texto</dt><dd>@(module.ErrorsPerText?.ToString("0.##", StudentDashboard.Culture) ?? "—")</dd></div>
-                        <div><dt>Precisión</dt><dd>@StudentDashboard.Percent(module.AccuracyPercentage)</dd></div>
-                        <div class="is-wide"><dt>Error principal</dt><dd>@(module.TopErrorClassificationName is { } topError ? CategoryBars.Label(topError) : "—")</dd></div>
+                        <div><dt>@L["Aprobación"]</dt><dd>@StudentDashboard.Percent(module.PassRatePercentage)</dd></div>
+                        <div><dt>@L["Examen 1 · 2"]</dt><dd>@Score(module.Exam1Average) · @Score(module.Exam2Average)</dd></div>
+                        <div><dt>@L["Errores por texto"]</dt><dd>@(module.ErrorsPerText?.ToString("0.##", StudentDashboard.Culture) ?? "—")</dd></div>
+                        <div><dt>@L["Precisión"]</dt><dd>@StudentDashboard.Percent(module.AccuracyPercentage)</dd></div>
+                        <div class="is-wide"><dt>@L["Error principal"]</dt><dd>@(module.TopErrorClassificationName is { } topError ? CategoryBars.Label(topError) : "—")</dd></div>
                     </dl>
                 </li>
             }
@@ -42,14 +42,14 @@
             <table class="td-table cd-perf-table">
                 <thead>
                     <tr>
-                        <th scope="col">Módulo</th>
-                        <th scope="col">Nota final promedio</th>
-                        <th scope="col">Aprobación</th>
-                        <th scope="col">Examen 1</th>
-                        <th scope="col">Examen 2</th>
-                        <th scope="col">Errores por texto</th>
-                        <th scope="col">Precisión</th>
-                        <th scope="col">Error principal</th>
+                        <th scope="col">@L["Módulo"]</th>
+                        <th scope="col">@L["Nota final promedio"]</th>
+                        <th scope="col">@L["Aprobación"]</th>
+                        <th scope="col">@L["Examen 1"]</th>
+                        <th scope="col">@L["Examen 2"]</th>
+                        <th scope="col">@L["Errores por texto"]</th>
+                        <th scope="col">@L["Precisión"]</th>
+                        <th scope="col">@L["Error principal"]</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -65,7 +65,7 @@
                                         <span class="sh-meter" aria-hidden="true"><span style="width:@StudentDashboard.Width(final)"></span></span>
                                     </div>
                                 }
-                                else { <span class="sh-muted">Sin notas</span> }
+                                else { <span class="sh-muted">@L["Sin notas"]</span> }
                             </td>
                             <td>@StudentDashboard.Percent(module.PassRatePercentage)</td>
                             <td>@Score(module.Exam1Average)</td>
@@ -84,9 +84,9 @@
 @code {
     [Parameter, EditorRequired] public List<ModulePerformanceItem> Items { get; set; } = [];
     [Parameter] public string? AnchorId { get; set; }
-    [Parameter] public string Title { get; set; } = "Rendimiento por tipo de módulo";
+    [Parameter] public string Title { get; set; } = I18n.T("Rendimiento por tipo de módulo");
     [Parameter] public string Subtitle { get; set; } = string.Empty;
-    [Parameter] public string Empty { get; set; } = "No hay cursos en este alcance.";
+    [Parameter] public string Empty { get; set; } = I18n.T("No hay cursos en este alcance.");
     private readonly string headingId = $"perf-{Guid.NewGuid():N}";
 
     private static string Score(decimal? value) => value?.ToString("0.#", StudentDashboard.Culture) ?? "—";

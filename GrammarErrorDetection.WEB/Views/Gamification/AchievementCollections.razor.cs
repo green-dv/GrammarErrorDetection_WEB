@@ -23,7 +23,7 @@ public partial class AchievementCollections : IDisposable
     private bool loading, disposed, hasNext, showCreate;
     private const int PageSize = 10;
     private long? total;
-    private string PageOf => total is { } all ? $" de {Math.Max(1, (all + PageSize - 1) / PageSize)}" : "";
+    private string PageOf => total is { } all ? I18n.T(" de {0}", Math.Max(1, (all + PageSize - 1) / PageSize)) : "";
     private int page = 1;
     private string name = "", active = "", appliedName = "", appliedActive = "";
     private string? error, message;
@@ -50,7 +50,7 @@ public partial class AchievementCollections : IDisposable
                 if (collection is null)
                 {
                     var rows = GamificationAdmin.Require(await Service.SearchAchievementCollectionsAsync(new() { Id = id, PageSize = 1 }, lifetime.Token));
-                    if (rows.Count != 1 || rows[0].Id != id) throw new InvalidOperationException("No se encontró la colección solicitada.");
+                    if (rows.Count != 1 || rows[0].Id != id) throw new InvalidOperationException(I18n.T("No se encontró la colección solicitada."));
                     collection = rows[0];
                 }
                 var achievementsResponse = await Service.SearchAchievementsAsync(new()
@@ -61,8 +61,8 @@ public partial class AchievementCollections : IDisposable
                 total = achievementsResponse?.TotalCount;
                 if (disposed) return;
                 if (rowsOfAchievements.Any(item => item.AchievementCollectionId != id))
-                    throw new InvalidOperationException("Los logros recibidos no corresponden a esta colección.");
-                if (number > page && rowsOfAchievements.Count == 0) { hasNext = false; message = "Has llegado al final de los logros."; return; }
+                    throw new InvalidOperationException(I18n.T("Los logros recibidos no corresponden a esta colección."));
+                if (number > page && rowsOfAchievements.Count == 0) { hasNext = false; message = I18n.T("Has llegado al final de los logros."); return; }
                 achievements = rowsOfAchievements;
             }
             else
@@ -75,23 +75,23 @@ public partial class AchievementCollections : IDisposable
                 var rows = GamificationAdmin.Require(collectionsResponse);
                 total = collectionsResponse?.TotalCount;
                 if (disposed) return;
-                if (number > page && rows.Count == 0) { hasNext = false; message = "Has llegado al final de las colecciones."; return; }
+                if (number > page && rows.Count == 0) { hasNext = false; message = I18n.T("Has llegado al final de las colecciones."); return; }
                 collections = rows;
             }
             page = number;
             hasNext = total is { } all ? (long)page * PageSize < all : RowCount == PageSize;
         }
-        catch (OperationCanceledException) { if (!disposed) error = "La consulta tardó demasiado. Intenta de nuevo."; }
+        catch (OperationCanceledException) { if (!disposed) error = I18n.T("La consulta tardó demasiado. Intenta de nuevo."); }
         catch (HttpRequestException ex)
         {
             if (!disposed)
             {
                 if (ex.StatusCode == HttpStatusCode.Unauthorized) { Session.Clear(); Navigation.NavigateTo("/auth/login", replace: true); }
-                error = ex.StatusCode == HttpStatusCode.Forbidden ? "No tienes permiso para consultar las colecciones." : "No se pudo consultar el servidor. Intenta de nuevo.";
+                error = ex.StatusCode == HttpStatusCode.Forbidden ? I18n.T("No tienes permiso para consultar las colecciones.") : I18n.T("No se pudo consultar el servidor. Intenta de nuevo.");
             }
         }
         catch (Exception ex) when (ex is InvalidOperationException or JsonException or ArgumentException)
-        { if (!disposed) error = ex is InvalidOperationException ? ex.Message : "No se pudo interpretar la colección o sus logros."; }
+        { if (!disposed) error = ex is InvalidOperationException ? ex.Message : I18n.T("No se pudo interpretar la colección o sus logros."); }
         finally
         {
             loading = false;
@@ -110,7 +110,7 @@ public partial class AchievementCollections : IDisposable
     {
         await CloseAndReloadAsync();
         if (!disposed && error is null && RowCount == 0 && page > 1) await LoadAsync(page - 1);
-        if (!disposed) message = error is null ? "Cambios guardados correctamente." : "Los cambios se guardaron. No se pudo actualizar la vista; pulsa Reintentar.";
+        if (!disposed) message = error is null ? I18n.T("Cambios guardados correctamente.") : I18n.T("Los cambios se guardaron. No se pudo actualizar la vista; pulsa Reintentar.");
     }
     private Task CollectionSavedAsync(AchievementCollectionResponse _) => ChangesSavedAsync();
     private async Task CreatedAsync(AchievementCollectionResponse result)
@@ -118,8 +118,8 @@ public partial class AchievementCollections : IDisposable
         CloseCreate();
         name = active = appliedName = appliedActive = "";
         await LoadAsync(1);
-        if (!disposed) message = error is null ? $"Colección «{result.Name}» registrada correctamente."
-            : $"La colección «{result.Name}» se registró. No se pudo actualizar el listado; pulsa Reintentar.";
+        if (!disposed) message = error is null ? I18n.T("Colección «{0}» registrada correctamente.", result.Name)
+            : I18n.T("La colección «{0}» se registró. No se pudo actualizar el listado; pulsa Reintentar.", result.Name);
     }
     public void Dispose() { disposed = true; lifetime.Cancel(); lifetime.Dispose(); }
 }

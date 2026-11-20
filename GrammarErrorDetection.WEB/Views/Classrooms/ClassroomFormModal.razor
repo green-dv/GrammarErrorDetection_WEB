@@ -10,9 +10,9 @@
 @inject NavigationManager Navigation
 
 @* Alta y edición de un aula. Con Classroom = null crea; con un aula, edita. *@
-<ModalDialog Title="@(IsEdit ? "Editar aula" : "Nueva aula")" Subtitle="@(IsEdit ? Classroom!.Name : "Espacio donde se dictan los cursos")" Busy="@saving" OnClose="OnClose">
+<ModalDialog Title="@(IsEdit ? L["Editar aula"] : L["Nueva aula"])" Subtitle="@(IsEdit ? Classroom!.Name : L["Espacio donde se dictan los cursos"])" Busy="@saving" OnClose="OnClose">
     <EditForm EditContext="editContext" OnSubmit="SaveAsync" novalidate>
-        <DataAnnotationsValidator />
+        <LocalizedValidator />
         <div class="ceti-modal-body">
             @if (error is not null || validationErrors.Count > 0)
             {
@@ -23,13 +23,13 @@
             }
             <fieldset disabled="@saving" class="users-edit-fields">
                 <div class="users-edit-grid">
-                    <label class="data-table-field"><span>Nombre *</span><input @bind="model.Name" @bind:event="oninput" maxlength="30" autofocus /></label>
-                    <label class="data-table-field"><span>Capacidad *</span><input type="number" min="1" max="1000" step="1" @bind="model.Capacity" /></label>
+                    <label class="data-table-field"><span>@L["Nombre *"]</span><input @bind="model.Name" @bind:event="oninput" maxlength="30" autofocus /></label>
+                    <label class="data-table-field"><span>@L["Capacidad *"]</span><input type="number" min="1" max="1000" step="1" @bind="model.Capacity" /></label>
                 </div>
-                <p class="gamification-help">La capacidad es el máximo de estudiantes por curso (entre 1 y 1000). El nombre debe ser único.</p>
+                <p class="gamification-help">@L["La capacidad es el máximo de estudiantes por curso (entre 1 y 1000). El nombre debe ser único."]</p>
             </fieldset>
         </div>
-        <footer class="ceti-modal-footer"><span role="status">@(saving ? "Guardando…" : IsEdit && !HasChanges ? "No hay cambios para guardar." : "")</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">Cancelar</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@(saving || (IsEdit && !HasChanges))">@(IsEdit ? "Guardar cambios" : "Crear aula")</button></div></footer>
+        <footer class="ceti-modal-footer"><span role="status">@(saving ? L["Guardando…"] : IsEdit && !HasChanges ? L["No hay cambios para guardar."] : "")</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">@L["Cancelar"]</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@(saving || (IsEdit && !HasChanges))">@(IsEdit ? L["Guardar cambios"] : L["Crear aula"])</button></div></footer>
     </EditForm>
 </ModalDialog>
 
@@ -74,7 +74,7 @@
             return;
         }
         if (Session.Current is null) { Navigation.NavigateTo("/auth/login", replace: true); return; }
-        if (!Session.Roles.Contains("Coordinator", StringComparer.Ordinal)) { error = "Solo un coordinador puede gestionar aulas."; return; }
+        if (!Session.Roles.Contains("Coordinator", StringComparer.Ordinal)) { error = I18n.T("Solo un coordinador puede gestionar aulas."); return; }
         saving = true;
         try
         {
@@ -89,7 +89,7 @@
             if (disposed) return;
             if (response?.Data is not { } saved || response.Error is { ErrorCode: not 0 })
             {
-                error = response?.Error?.ErrorMessage ?? "No se pudo confirmar el guardado. Inténtalo de nuevo.";
+                error = response?.Error?.ErrorMessage ?? I18n.T("No se pudo confirmar el guardado. Inténtalo de nuevo.");
                 return;
             }
             await OnSaved.InvokeAsync(saved);
@@ -104,15 +104,15 @@
             }
             error = ex.StatusCode switch
             {
-                HttpStatusCode.Conflict => "Ya existe un aula con ese nombre.",
-                HttpStatusCode.NotFound => "El aula ya no existe. Actualiza el listado.",
-                HttpStatusCode.Forbidden => "Solo un coordinador puede gestionar aulas.",
-                HttpStatusCode.BadRequest => "Revisa los datos: el nombre no puede estar vacío y la capacidad debe estar entre 1 y 1000.",
-                _ => "No se pudo guardar el aula. Inténtalo de nuevo."
+                HttpStatusCode.Conflict => I18n.T("Ya existe un aula con ese nombre."),
+                HttpStatusCode.NotFound => I18n.T("El aula ya no existe. Actualiza el listado."),
+                HttpStatusCode.Forbidden => I18n.T("Solo un coordinador puede gestionar aulas."),
+                HttpStatusCode.BadRequest => I18n.T("Revisa los datos: el nombre no puede estar vacío y la capacidad debe estar entre 1 y 1000."),
+                _ => I18n.T("No se pudo guardar el aula. Inténtalo de nuevo.")
             };
         }
-        catch (OperationCanceledException) { if (!disposed) error = "El guardado tardó demasiado. Inténtalo de nuevo."; }
-        catch (JsonException) { if (!disposed) error = "No se pudo interpretar la respuesta del servidor."; }
+        catch (OperationCanceledException) { if (!disposed) error = I18n.T("El guardado tardó demasiado. Inténtalo de nuevo."); }
+        catch (JsonException) { if (!disposed) error = I18n.T("No se pudo interpretar la respuesta del servidor."); }
         catch (System.ComponentModel.DataAnnotations.ValidationException ex) { if (!disposed) error = ex.Message; }
         finally { saving = false; }
     }

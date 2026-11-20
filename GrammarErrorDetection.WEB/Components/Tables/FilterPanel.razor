@@ -1,11 +1,11 @@
 @* Panel de filtros de los catálogos: formulario, título, campos (ChildContent) y los botones Buscar / Limpiar filtros. *@
 <EditForm Model="Model" OnValidSubmit="OnSearch" OnInvalidSubmit="OnInvalid" novalidate>
-    <DataAnnotationsValidator />
+    <LocalizedValidator />
     <div class="data-filter-panel data-filter-panel-inset">
-        <div class="data-filter-heading"><span>@Title</span><span>Combina los campos que necesites</span></div>
+        <div class="data-filter-heading"><span>@Title</span><span>@L["Combina los campos que necesites"]</span></div>
         <div class="data-table-toolbar users-filters">
             @ChildContent
-            <div class="data-filter-actions"><button type="submit" class="data-table-button data-table-button-primary" disabled="@Busy">Buscar</button><button type="button" class="data-table-button" @onclick="OnClear" disabled="@Busy">Limpiar filtros</button></div>
+            <div class="data-filter-actions"><button type="submit" class="data-table-button data-table-button-primary" disabled="@Busy">@L["Buscar"]</button><button type="button" class="data-table-button" @onclick="OnClear" disabled="@Busy">@L["Limpiar filtros"]</button></div>
         </div>
     </div>
 </EditForm>

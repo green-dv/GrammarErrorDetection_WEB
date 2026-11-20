@@ -10,11 +10,11 @@ public sealed class PointService(IApiClient apiClient) : IPointService
 {
     public async Task<PointTotalResponse> GetTotalAsync(Guid userId, Guid? classId = null, CancellationToken cancellationToken = default)
     {
-        if (userId == Guid.Empty || classId == Guid.Empty) throw new ArgumentException("El usuario o curso no es válido.");
+        if (userId == Guid.Empty || classId == Guid.Empty) throw new ArgumentException(I18n.T("El usuario o curso no es válido."));
         // Exige usuario para evitar consultar por accidente el total global de la API.
         var path = $"api/PointTransaction/total?UserId={userId:D}" + (classId is { } id ? $"&ClassId={id:D}" : "");
         var response = await apiClient.GetAsync<ApiResponse<PointTotalResponse>>(path, cancellationToken);
-        if (response?.Data is null || response.Error is { ErrorCode: not 0 }) throw new InvalidOperationException("No se pudo consultar el total de puntos.");
+        if (response?.Data is null || response.Error is { ErrorCode: not 0 }) throw new InvalidOperationException(I18n.T("No se pudo consultar el total de puntos."));
         return response.Data;
     }
 
@@ -23,12 +23,12 @@ public sealed class PointService(IApiClient apiClient) : IPointService
 
     public async Task<(List<PointTransactionResponse> Items, long? TotalCount)> GetHistoryPageAsync(Guid userId, int pageNumber, int pageSize, CancellationToken cancellationToken = default)
     {
-        if (userId == Guid.Empty) throw new ArgumentException("El usuario no es válido.");
+        if (userId == Guid.Empty) throw new ArgumentException(I18n.T("El usuario no es válido."));
         ArgumentOutOfRangeException.ThrowIfLessThan(pageNumber, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(pageSize, 1);
         var response = await apiClient.GetAsync<ApiResponse<List<PointTransactionResponse>>>(
             $"api/PointTransaction?Filter.UserId={userId:D}&PageNumber={pageNumber.ToString(CultureInfo.InvariantCulture)}&PageSize={pageSize.ToString(CultureInfo.InvariantCulture)}", cancellationToken);
-        if (response?.Data is null || response.Error is { ErrorCode: not 0 }) throw new InvalidOperationException("No se pudo consultar el historial de puntos.");
+        if (response?.Data is null || response.Error is { ErrorCode: not 0 }) throw new InvalidOperationException(I18n.T("No se pudo consultar el historial de puntos."));
         // Count son las filas de la página; el total sin paginar viaja en TotalCount.
         return (response.Data, response.TotalCount);
     }
@@ -40,34 +40,34 @@ public sealed class PointService(IApiClient apiClient) : IPointService
         {
             var response = await apiClient.GetAsync<ApiResponse<List<UserLevelResponse>>>(
                 $"api/UserLevel?PageNumber={page.ToString(CultureInfo.InvariantCulture)}&PageSize=100&Filter.Active=true", cancellationToken);
-            if (response?.Data is null || response.Error is { ErrorCode: not 0 }) throw new InvalidOperationException("No se pudo consultar el catálogo de niveles.");
+            if (response?.Data is null || response.Error is { ErrorCode: not 0 }) throw new InvalidOperationException(I18n.T("No se pudo consultar el catálogo de niveles."));
             var added = 0;
             foreach (var level in response.Data)
             {
-                if (level.Id == Guid.Empty) throw new InvalidOperationException("El catálogo contiene un nivel sin identificador.");
+                if (level.Id == Guid.Empty) throw new InvalidOperationException(I18n.T("El catálogo contiene un nivel sin identificador."));
                 if (levels.TryAdd(level.Id, level)) added++;
             }
             var total = response.Data.FirstOrDefault()?.TotalCount;
             if (response.Data.Count == 0 || (total.HasValue ? levels.Count >= total.Value : response.Data.Count < 100)) break;
-            if (added == 0) throw new InvalidOperationException("No se pudo completar la paginación de niveles.");
+            if (added == 0) throw new InvalidOperationException(I18n.T("No se pudo completar la paginación de niveles."));
         }
         return levels.Values.Where(x => x.Active).OrderBy(x => x.MinPoints).ToList();
     }
 
     public Task<ApiResponse<PointTransactionResponse>?> CreateAsync(PointTransactionRequest request, CancellationToken cancellationToken = default)
     {
-        if (request.RegistrationId == Guid.Empty) throw new ArgumentException("Selecciona una inscripción válida.");
+        if (request.RegistrationId == Guid.Empty) throw new ArgumentException(I18n.T("Selecciona una inscripción válida."));
         ValidateReason(request.Reason);
         return apiClient.PostAsync<PointTransactionRequest, ApiResponse<PointTransactionResponse>>("api/PointTransaction", request, cancellationToken);
     }
     public Task<ApiResponse<PointTransactionResponse>?> UpdateAsync(PointTransactionUpdateRequest request, CancellationToken cancellationToken = default)
     {
-        if (request.Id == Guid.Empty || request.RegistrationId == Guid.Empty) throw new ArgumentException("El movimiento o la inscripción no es válido.");
+        if (request.Id == Guid.Empty || request.RegistrationId == Guid.Empty) throw new ArgumentException(I18n.T("El movimiento o la inscripción no es válido."));
         if (request.Reason is not null) ValidateReason(request.Reason);
         return apiClient.PutAsync<PointTransactionUpdateRequest, ApiResponse<PointTransactionResponse>>("api/PointTransaction", request, cancellationToken);
     }
     private static void ValidateReason(string reason)
     {
-        if (string.IsNullOrWhiteSpace(reason) || reason.Length > 255) throw new ArgumentException("El motivo es obligatorio y admite hasta 255 caracteres.");
+        if (string.IsNullOrWhiteSpace(reason) || reason.Length > 255) throw new ArgumentException(I18n.T("El motivo es obligatorio y admite hasta 255 caracteres."));
     }
 }

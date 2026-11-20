@@ -7,7 +7,7 @@
 @inject GrammarErrorDetection.Services.Interfaces.IUserService Users
 
 <article class="settings-card member-settings-card">
-    <div class="settings-tabs profile-tabs" role="tablist" aria-label="Secciones del perfil">
+    <div class="settings-tabs profile-tabs" role="tablist" aria-label="@L["Secciones del perfil"]">
         @for (var index = 0; index < Tabs.Length; index++)
         {
             var item = Tabs[index];
@@ -24,13 +24,13 @@
                 <MemberProfile @key="(UserId, activeTab)" UserId="UserId" Section="information" />
                 @if (IsOwn)
                 {
-                    <a class="data-table-text-button" href="/profile?tab=settings">Configurar la seguridad de mi cuenta</a>
+                    <a class="data-table-text-button" href="/profile?tab=settings">@L["Configurar la seguridad de mi cuenta"]</a>
                 }
                 break;
             case "courses":
-                @if (IsOwn && Session.IsInRole("Teacher"))
+                @if (ProfileIsTeacher && (IsOwn || Session.IsInRole("Coordinator")))
                 {
-                    <TeacherCourseList @key="UserId" />
+                    <TeacherCourseList @key="UserId" TeacherId="UserId" />
                 }
                 else if ((IsOwn && Session.IsInRole("Student")) || (!IsOwn && Session.IsInRole("Coordinator")))
                 {
@@ -53,7 +53,7 @@
                 @if (IsOwn || Session.IsInRole("Teacher") || Session.IsInRole("Coordinator"))
                 {
                     <div class="grammar-live-detail">
-                        <button type="button" class="data-table-button" aria-expanded="@(showGrammarSentences ? "true" : "false")" aria-controls="profile-grammar-sentences" @onclick="() => showGrammarSentences = !showGrammarSentences">@(showGrammarSentences ? "Ocultar oraciones subidas" : "Ver oraciones subidas")</button>
+                        <button type="button" class="data-table-button" aria-expanded="@(showGrammarSentences ? "true" : "false")" aria-controls="profile-grammar-sentences" @onclick="() => showGrammarSentences = !showGrammarSentences">@(showGrammarSentences ? L["Ocultar oraciones subidas"] : L["Ver oraciones subidas"])</button>
                         @if (showGrammarSentences)
                         {
                             <div id="profile-grammar-sentences"><StudentGrammarList @key="UserId" UserId="UserId" /></div>
@@ -62,7 +62,7 @@
                 }
                 break;
             case "settings" when IsOwn:
-                <div class="settings-subtabs" role="tablist" aria-label="Secciones de configuración">
+                <div class="settings-subtabs" role="tablist" aria-label="@L["Secciones de configuración"]">
                     @foreach (var (key, label) in SettingsSections)
                     {
                         <button type="button" role="tab" id="settings-@(key)-tab" aria-selected="@(settingsSection == key ? "true" : "false")"
@@ -82,15 +82,19 @@
 @code {
     [Parameter] public Guid UserId { get; set; }
     [Parameter] public string? InitialTab { get; set; }
-    private static readonly (string Key, string Label)[] AllTabs = [("information", "Información"), ("courses", "Cursos"), ("achievements", "Logros"), ("grammar", "Gramática"), ("settings", "Configuración")];
-    // Logros y desafíos son de estudiantes: docentes y coordinadores no tienen esa pestaña.
-    private (string Key, string Label)[] Tabs => (IsOwn ? AllTabs : AllTabs[..4]).Where(tab => tab.Key != "achievements" || ProfileIsStudent).ToArray();
+    private static readonly (string Key, string Label)[] AllTabs = [("information", I18n.T("Información")), ("courses", I18n.T("Cursos")), ("achievements", I18n.T("Logros")), ("grammar", I18n.T("Gramática")), ("settings", I18n.T("Configuración"))];
+    // Logros, desafíos y gramática son de estudiantes: docentes y coordinadores no tienen esas pestañas.
+    // Un coordinador no tiene cursos propios; un docente solo ve los que dicta.
+    private (string Key, string Label)[] Tabs => (IsOwn ? AllTabs : AllTabs[..4])
+        .Where(tab => (tab.Key is not ("achievements" or "grammar") || ProfileIsStudent) && (tab.Key != "courses" || !ProfileIsCoordinator)).ToArray();
     private bool ProfileIsStudent => IsOwn ? Session.IsInRole("Student") : string.Equals(profileRole, "Student", StringComparison.OrdinalIgnoreCase);
+    private bool ProfileIsTeacher => IsOwn ? Session.IsInRole("Teacher") : string.Equals(profileRole, "Teacher", StringComparison.OrdinalIgnoreCase);
+    private bool ProfileIsCoordinator => IsOwn ? Session.IsInRole("Coordinator") && !Session.IsInRole("Teacher") : string.Equals(profileRole, "Coordinator", StringComparison.OrdinalIgnoreCase);
     private string? profileRole;
     private Guid roleLoadedFor;
     private readonly ElementReference[] tabButtons = new ElementReference[AllTabs.Length];
     private string activeTab = "information";
-    private static readonly (string Key, string Label)[] SettingsSections = [("security", "Seguridad"), ("password", "Contraseña"), ("appearance", "Apariencia")];
+    private static readonly (string Key, string Label)[] SettingsSections = [("security", I18n.T("Seguridad")), ("password", I18n.T("Contraseña")), ("appearance", I18n.T("Apariencia"))];
     private string settingsSection = "security";
     private Guid previousUserId;
     private bool showGrammarSentences;

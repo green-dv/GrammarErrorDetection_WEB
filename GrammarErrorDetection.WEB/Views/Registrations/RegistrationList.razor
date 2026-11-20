@@ -6,41 +6,41 @@
 @if (Allowed)
 {
     <section class="users-page registrations-page" aria-labelledby="registrations-title">
-        <header class="users-heading"><div><p class="users-eyebrow">CETI · PORTAL ACADÉMICO</p><h1 id="registrations-title">@Title</h1><p>@(Mine ? "Consulta tus solicitudes y su estado de aprobación." : "Revisa y resuelve las solicitudes de inscripción de los estudiantes.")</p></div>
+        <header class="users-heading"><div><p class="users-eyebrow">@L["CETI · PORTAL ACADÉMICO"]</p><h1 id="registrations-title">@Title</h1><p>@(Mine ? L["Consulta tus solicitudes y su estado de aprobación."] : L["Revisa y resuelve las solicitudes de inscripción de los estudiantes."])</p></div>
             @if (Mine && !CoursesOnly)
             {
-                <button type="button" class="data-table-button data-table-button-primary" disabled="@(loading || deciding)" @onclick="OpenApply" aria-haspopup="dialog">Solicitar / editar inscripción</button>
+                <button type="button" class="data-table-button data-table-button-primary" disabled="@(loading || deciding)" @onclick="OpenApply" aria-haspopup="dialog">@L["Solicitar / editar inscripción"]</button>
             }
         </header>
         <div class="data-table-card">
-            <header class="data-table-heading"><div><h2>@(CoursesOnly ? "Cursos con inscripción activa" : "Solicitudes de inscripción")</h2><p>@(CoursesOnly ? "Las inscripciones rechazadas quedan fuera del curso." : Mine ? "Consulta tu historial de inscripciones y su estado." : "Consulta el historial por fecha, estudiante, módulo y estado.")</p></div></header>
+            <header class="data-table-heading"><div><h2>@(CoursesOnly ? L["Cursos con inscripción activa"] : L["Solicitudes de inscripción"])</h2><p>@(CoursesOnly ? L["Las inscripciones rechazadas quedan fuera del curso."] : Mine ? L["Consulta tu historial de inscripciones y su estado."] : L["Consulta el historial por fecha, estudiante, módulo y estado."])</p></div></header>
             @if (!Mine)
             {
             <EditForm Model="filters" OnValidSubmit="SearchAsync" novalidate>
-                <DataAnnotationsValidator />
+                <LocalizedValidator />
                 <fieldset class="data-filter-panel data-filter-panel-inset" disabled="@(loading || deciding)">
-                <div class="data-filter-heading"><span>Filtrar inscripciones</span><span>Combina los campos que necesites</span></div>
+                <div class="data-filter-heading"><span>@L["Filtrar inscripciones"]</span><span>@L["Combina los campos que necesites"]</span></div>
                     <div class="data-table-toolbar registration-filters">
-                        <label class="data-table-field"><span>Fecha de inscripción</span><InputDate @bind-Value="filters.RegistrationDate" /></label>
+                        <label class="data-table-field"><span>@L["Fecha de inscripción"]</span><InputDate @bind-Value="filters.RegistrationDate" /></label>
                         @if (!Mine) { <RegistrationFilterLookup Students="true" @bind-Value="filters.UserId" Disabled="@(loading || deciding)" /> }
                         <RegistrationFilterLookup @bind-Value="filters.ModuleNameId" Disabled="@(loading || deciding)" />
-                        <label class="data-table-field"><span>Estado</span><InputSelect @bind-Value="filters.Status"><option value="">Todos</option><option value="Pending">Pendiente</option><option value="Approved">Aprobada</option><option value="Rejected">Rechazada</option></InputSelect></label>
+                        <label class="data-table-field"><span>@L["Estado"]</span><InputSelect @bind-Value="filters.Status"><option value="">@L["Todos"]</option><option value="Pending">@L["Pendiente"]</option><option value="Approved">@L["Aprobada"]</option><option value="Rejected">@L["Rechazada"]</option></InputSelect></label>
                     </div>
-                    <div class="data-filter-actions"><button type="submit" class="data-table-button data-table-button-primary">Buscar</button><button type="button" class="data-table-button" @onclick="ClearAsync">Limpiar filtros</button></div>
+                    <div class="data-filter-actions"><button type="submit" class="data-table-button data-table-button-primary">@L["Buscar"]</button><button type="button" class="data-table-button" @onclick="ClearAsync">@L["Limpiar filtros"]</button></div>
                 </fieldset>
                 <div class="data-table-error"><ValidationSummary /></div>
             </EditForm>
             }
-            @if (error is not null) { <div class="data-table-error" role="alert"><span>@error</span><button type="button" class="data-table-text-button" @onclick="RetryAsync" disabled="@loading">Reintentar</button></div> }
+            @if (error is not null) { <div class="data-table-error" role="alert"><span>@error</span><button type="button" class="data-table-text-button" @onclick="RetryAsync" disabled="@loading">@L["Reintentar"]</button></div> }
             @if (message is not null) { <p class="data-table-message" role="status">@message</p> }
-            <p class="data-table-summary" role="status">@(loading ? "Cargando inscripciones…" : $"{total ?? entries.Count} inscripciones {(total is null ? "en esta página" : "en total")}")</p>
-            <ListPager Top="true" Label="Paginación de inscripciones" @bind-PageSize="pageSize" @bind-PageSize:after="ChangeSizeAsync" PageSizes="5,20,50" PageSizeLabel="Filas por página" PageSizeDisabled="@(loading || deciding)" Page="page" PageOf="@PageOf" Info="@PagerInfo" PreviousDisabled="@(loading || deciding || page <= 1)" NextDisabled="@(loading || deciding || !hasNext)" OnPrevious="PreviousAsync" OnNext="NextAsync" />
-            <div class="data-table-scroll registrations-table-region" role="region" aria-label="Listado de inscripciones" aria-busy="@loading.ToString().ToLowerInvariant()" tabindex="0">
+            <p class="data-table-summary" role="status">@(loading ? L["Cargando inscripciones…"] : I18n.T(total is null ? "{0} inscripciones en esta página" : "{0} inscripciones en total", total ?? entries.Count))</p>
+            <ListPager Top="true" Label="@L["Paginación de inscripciones"]" @bind-PageSize="pageSize" @bind-PageSize:after="ChangeSizeAsync" PageSizes="5,20,50" PageSizeLabel="@L["Filas por página"]" PageSizeDisabled="@(loading || deciding)" Page="page" PageOf="@PageOf" Info="@PagerInfo" PreviousDisabled="@(loading || deciding || page <= 1)" NextDisabled="@(loading || deciding || !hasNext)" OnPrevious="PreviousAsync" OnNext="NextAsync" />
+            <div class="data-table-scroll registrations-table-region" role="region" aria-label="@L["Listado de inscripciones"]" aria-busy="@loading.ToString().ToLowerInvariant()" tabindex="0">
                 <table class="data-table registrations-table">
-                    <caption class="data-table-sr-only">Fecha de inscripción, nombre, apellido, CIC y teléfono del estudiante, módulo, estado y actualización.</caption>
-                    <thead><tr><th scope="col">Fecha de inscripción</th><th scope="col">Nombre</th><th scope="col">Apellido</th><th scope="col">CIC</th><th scope="col">Teléfono</th><th scope="col">Módulo</th><th scope="col">Estado</th><th scope="col">Actualización</th></tr></thead>
+                    <caption class="data-table-sr-only">@L["Fecha de inscripción, nombre, apellido, CIC y teléfono del estudiante, módulo, estado y actualización."]</caption>
+                    <thead><tr><th scope="col">@L["Fecha de inscripción"]</th><th scope="col">@L["Nombre"]</th><th scope="col">@L["Apellido"]</th><th scope="col">@L["CIC"]</th><th scope="col">@L["Teléfono"]</th><th scope="col">@L["Módulo"]</th><th scope="col">@L["Estado"]</th><th scope="col">@L["Actualización"]</th></tr></thead>
                     <tbody>
-                        @if (loading) { <tr><td colspan="@Columns" class="data-table-empty">Cargando inscripciones…</td></tr> }
+                        @if (loading) { <tr><td colspan="@Columns" class="data-table-empty">@L["Cargando inscripciones…"]</td></tr> }
                         else
                         {
                             @foreach (var item in entries)
@@ -55,20 +55,20 @@
                                     <td><StatusPill Class="@StatusClass(item)" Text="@Status(item)" />
                                         @if (!Mine && IsPending(item))
                                         {
-                                            <div class="registration-decision-actions"><button type="button" class="data-table-button data-table-button-primary" disabled="@deciding" @onclick="() => Review(item, true)" aria-label="Aprobar inscripción de @item.FirstName @item.LastName" aria-haspopup="dialog">Aprobar</button><button type="button" class="data-table-button data-table-button-danger" disabled="@deciding" @onclick="() => Review(item, false)" aria-label="Rechazar inscripción de @item.FirstName @item.LastName" aria-haspopup="dialog">Rechazar</button></div>
+                                            <div class="registration-decision-actions"><button type="button" class="data-table-button data-table-button-primary" disabled="@deciding" @onclick="() => Review(item, true)" aria-label="@L["Aprobar inscripción de {0} {1}", item.FirstName, item.LastName]" aria-haspopup="dialog">@L["Aprobar"]</button><button type="button" class="data-table-button data-table-button-danger" disabled="@deciding" @onclick="() => Review(item, false)" aria-label="@L["Rechazar inscripción de {0} {1}", item.FirstName, item.LastName]" aria-haspopup="dialog">@L["Rechazar"]</button></div>
                                         }
                                     </td>
                                     <td>@(item.UpdatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "—")</td>
                                 </tr>
                             }
-                            @if (entries.Count == 0 && error is null) { <tr><td colspan="@Columns" class="data-table-empty"><strong>No se encontraron inscripciones</strong><p>@(Mine ? "Puedes enviar una solicitud desde Mis inscripciones." : "Prueba con otros filtros.")</p></td></tr> }
+                            @if (entries.Count == 0 && error is null) { <tr><td colspan="@Columns" class="data-table-empty"><strong>@L["No se encontraron inscripciones"]</strong><p>@(Mine ? L["Puedes enviar una solicitud desde Mis inscripciones."] : L["Prueba con otros filtros."])</p></td></tr> }
                         }
                     </tbody>
                 </table>
             </div>
             @* Celular (≤640px): fichas en lugar de la tabla. En escritorio quedan ocultas por CSS. *@
-            <ul class="lcards" aria-label="Inscripciones" aria-busy="@loading.ToString().ToLowerInvariant()">
-                @if (loading) { <ListCardEmpty Message="Cargando inscripciones…" /> }
+            <ul class="lcards" aria-label="@L["Inscripciones"]" aria-busy="@loading.ToString().ToLowerInvariant()">
+                @if (loading) { <ListCardEmpty Message="@L["Cargando inscripciones…"]" /> }
                 else
                 {
                     @foreach (var item in entries)
@@ -84,38 +84,38 @@
                                 else
                                 {
                                     <span class="lcard-avatar" aria-hidden="true">@($"{item.FirstName?.FirstOrDefault()}{item.LastName?.FirstOrDefault()}")</span>
-                                    <div class="lcard-who"><strong>@fullName</strong><span>CIC @Text(item.Ci) · @Text(item.Phone)</span></div>
+                                    <div class="lcard-who"><strong>@fullName</strong><span>@L["CIC {0} · {1}", Text(item.Ci), Text(item.Phone)]</span></div>
                                 }
                                 <StatusPill Class="@StatusClass(item)" Text="@Status(item)" />
                             </div>
                             @if (!Mine)
                             {
-                                <p class="lcard-module"><span>Módulo</span><strong>@Text(item.ModuleName)</strong></p>
+                                <p class="lcard-module"><span>@L["Módulo"]</span><strong>@Text(item.ModuleName)</strong></p>
                             }
                             <dl class="lcard-grid">
-                                @if (!Mine) { <div><dt>Inscripción</dt><dd>@(item.RegistrationDate?.ToString("dd/MM/yyyy") ?? "—")</dd></div> }
-                                <div><dt>Última actualización</dt><dd>@(item.UpdatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "—")</dd></div>
+                                @if (!Mine) { <div><dt>@L["Inscripción"]</dt><dd>@(item.RegistrationDate?.ToString("dd/MM/yyyy") ?? "—")</dd></div> }
+                                <div><dt>@L["Última actualización"]</dt><dd>@(item.UpdatedAt?.ToString("dd/MM/yyyy HH:mm") ?? "—")</dd></div>
                             </dl>
                             @if (!Mine && pending)
                             {
-                                <div class="lcard-actions"><button type="button" class="data-table-button data-table-button-primary" disabled="@deciding" @onclick="() => Review(item, true)" aria-label="Aprobar inscripción de @item.FirstName @item.LastName" aria-haspopup="dialog">Aprobar</button><button type="button" class="data-table-button data-table-button-danger" disabled="@deciding" @onclick="() => Review(item, false)" aria-label="Rechazar inscripción de @item.FirstName @item.LastName" aria-haspopup="dialog">Rechazar</button></div>
+                                <div class="lcard-actions"><button type="button" class="data-table-button data-table-button-primary" disabled="@deciding" @onclick="() => Review(item, true)" aria-label="@L["Aprobar inscripción de {0} {1}", item.FirstName, item.LastName]" aria-haspopup="dialog">@L["Aprobar"]</button><button type="button" class="data-table-button data-table-button-danger" disabled="@deciding" @onclick="() => Review(item, false)" aria-label="@L["Rechazar inscripción de {0} {1}", item.FirstName, item.LastName]" aria-haspopup="dialog">@L["Rechazar"]</button></div>
                             }
                         </li>
                     }
-                    @if (entries.Count == 0 && error is null) { <ListCardEmpty Title="No se encontraron inscripciones" Hint="@(Mine ? "Puedes enviar una solicitud desde Mis inscripciones." : "Prueba con otros filtros.")" /> }
+                    @if (entries.Count == 0 && error is null) { <ListCardEmpty Title="@L["No se encontraron inscripciones"]" Hint="@(Mine ? L["Puedes enviar una solicitud desde Mis inscripciones."] : L["Prueba con otros filtros."])" /> }
                 }
             </ul>
-            <ListPager Label="Paginación de inscripciones" @bind-PageSize="pageSize" @bind-PageSize:after="ChangeSizeAsync" PageSizes="5,20,50" PageSizeLabel="Filas por página" PageSizeDisabled="@(loading || deciding)" Page="page" PageOf="@PageOf" Info="@PagerInfo" PreviousDisabled="@(loading || deciding || page <= 1)" NextDisabled="@(loading || deciding || !hasNext)" OnPrevious="PreviousAsync" OnNext="NextAsync" />
+            <ListPager Label="@L["Paginación de inscripciones"]" @bind-PageSize="pageSize" @bind-PageSize:after="ChangeSizeAsync" PageSizes="5,20,50" PageSizeLabel="@L["Filas por página"]" PageSizeDisabled="@(loading || deciding)" Page="page" PageOf="@PageOf" Info="@PagerInfo" PreviousDisabled="@(loading || deciding || page <= 1)" NextDisabled="@(loading || deciding || !hasNext)" OnPrevious="PreviousAsync" OnNext="NextAsync" />
         </div>
     </section>
     @if (reviewing is { } entry && !Mine)
     {
-        <ModalDialog Title="@(approving ? "Aprobar inscripción" : "Rechazar inscripción")" Busy="deciding" OnClose="CloseReview">
-            <div class="ceti-modal-body"><p>Estudiante: <strong>@Text(entry.FirstName) @Text(entry.LastName)</strong></p><p>CIC: @Text(entry.Ci) · Teléfono: @Text(entry.Phone)</p><p>Módulo: <strong>@Text(entry.ModuleName)</strong></p>
-                <p>@(approving ? "Se comprobarán nuevamente la elegibilidad y el cupo. La aprobación bloquea nuevas solicitudes para el mismo periodo." : "La inscripción se desactivará. El estudiante dejará de pertenecer al curso y podrá enviar una nueva solicitud.")</p>
+        <ModalDialog Title="@(approving ? L["Aprobar inscripción"] : L["Rechazar inscripción"])" Busy="deciding" OnClose="CloseReview">
+            <div class="ceti-modal-body"><p>@L["Estudiante:"] <strong>@Text(entry.FirstName) @Text(entry.LastName)</strong></p><p>@L["CIC: {0} · Teléfono: {1}", Text(entry.Ci), Text(entry.Phone)]</p><p>@L["Módulo:"] <strong>@Text(entry.ModuleName)</strong></p>
+                <p>@(approving ? L["Se comprobarán nuevamente la elegibilidad y el cupo. La aprobación bloquea nuevas solicitudes para el mismo periodo."] : L["La inscripción se desactivará. El estudiante dejará de pertenecer al curso y podrá enviar una nueva solicitud."])</p>
                 @if (decisionError is not null) { <p class="ceti-modal-errors" role="alert">@decisionError</p> }
             </div>
-            <footer class="ceti-modal-footer"><span>@(deciding ? "Guardando decisión…" : "Confirma la decisión sobre esta solicitud.")</span><div><button type="button" class="data-table-button" disabled="@deciding" @onclick="CloseReview">Cancelar</button><button type="button" class="data-table-button @(approving ? "data-table-button-primary" : "data-table-button-danger")" disabled="@deciding" @onclick="ConfirmAsync">@(approving ? "Confirmar aprobación" : "Rechazar y desactivar")</button></div></footer>
+            <footer class="ceti-modal-footer"><span>@(deciding ? L["Guardando decisión…"] : L["Confirma la decisión sobre esta solicitud."])</span><div><button type="button" class="data-table-button" disabled="@deciding" @onclick="CloseReview">@L["Cancelar"]</button><button type="button" class="data-table-button @(approving ? "data-table-button-primary" : "data-table-button-danger")" disabled="@deciding" @onclick="ConfirmAsync">@(approving ? L["Confirmar aprobación"] : L["Rechazar y desactivar"])</button></div></footer>
         </ModalDialog>
     }
     @if (applying && Mine && !CoursesOnly)

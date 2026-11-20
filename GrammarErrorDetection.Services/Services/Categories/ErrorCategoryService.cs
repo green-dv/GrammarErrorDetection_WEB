@@ -26,7 +26,7 @@ public sealed class ErrorCategoryService(IApiClient apiClient) : IErrorCategoryS
             Validator.ValidateObject(filter, new ValidationContext(filter), validateAllProperties: true);
             if (filter.Name is not null) query.Add($"Filter.Name={Uri.EscapeDataString(filter.Name)}");
             if (filter.Description is not null) query.Add($"Filter.Description={Uri.EscapeDataString(filter.Description)}");
-            if (filter.Active is { } active) query.Add($"Filter.Active={(active ? "true" : "false")}");
+            if (filter.Active is { } active) query.Add(active ? "Filter.Active=true" : "Filter.Active=false");
         }
         return apiClient.GetAsync<ApiResponse<List<ErrorCategory>>>($"{Route}?{string.Join('&', query)}", cancellationToken);
     }

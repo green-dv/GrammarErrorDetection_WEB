@@ -4,7 +4,7 @@
 @if (Text is { } text)
 {
     <span class="sh-trend @(Good ? "is-good" : "is-bad")" title="@Title">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="@(Up ? "M12 19V5m-6 6 6-6 6 6" : "M12 5v14m-6-6 6 6 6-6")" /></svg>@text
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="@(Up ? L["M12 19V5m-6 6 6-6 6 6"] : L["M12 5v14m-6-6 6 6 6-6"])" /></svg>@text
     </span>
 }
 
@@ -14,9 +14,9 @@
     /// <summary>Muestra la diferencia en puntos porcentuales (precisión) en lugar de la variación relativa.</summary>
     [Parameter] public bool Points { get; set; }
     [Parameter] public bool LowerIsBetter { get; set; }
-    [Parameter] public string Title { get; set; } = "Últimos 30 días frente a los 30 anteriores";
+    [Parameter] public string Title { get; set; } = I18n.T("Últimos 30 días frente a los 30 anteriores");
 
-    private static readonly CultureInfo Culture = CultureInfo.GetCultureInfo("es-BO");
+    private static readonly CultureInfo Culture = I18n.BoliviaCulture;
     private decimal Delta => (Now ?? 0) - (Before ?? 0);
     private bool Up => Delta > 0;
     private bool Good => LowerIsBetter ? Delta < 0 : Delta > 0;
@@ -26,8 +26,8 @@
         get
         {
             if (Now is null || Before is null || Delta == 0) return null;
-            if (Points) return $"{(Up ? "+" : "−")}{Math.Abs(Delta).ToString("0.#", Culture)} pts";
-            if (Before == 0) return Up ? "Aumentó" : "Se redujo";
+            if (Points) return I18n.T(Up ? "+{0} pts" : "−{0} pts", Math.Abs(Delta).ToString("0.#", Culture));
+            if (Before == 0) return Up ? I18n.T("Aumentó") : I18n.T("Se redujo");
             return $"{(Up ? "+" : "−")}{Math.Abs(Delta * 100 / Before.Value).ToString("0", Culture)} %";
         }
     }

@@ -100,7 +100,7 @@ public sealed class GamificationService(IApiClient apiClient) : IGamificationSer
     {
         ArgumentNullException.ThrowIfNull(request);
         ValidateId(id);
-        if (request.EndDate < request.StartDate) throw new ArgumentException("La fecha de fin debe ser posterior al inicio.");
+        if (request.EndDate < request.StartDate) throw new ArgumentException(I18n.T("La fecha de fin debe ser posterior al inicio."));
         return apiClient.PostAsync<ChallengeRepeatRequest, ApiResponse<ChallengeResponse>>($"api/Challenge/{id:D}/repeat", request, cancellationToken);
     }
 

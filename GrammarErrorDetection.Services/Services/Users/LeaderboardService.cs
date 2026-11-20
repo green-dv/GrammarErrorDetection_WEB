@@ -15,7 +15,7 @@ public sealed class LeaderboardService(IApiClient apiClient, AuthSessionState se
         if (request.Year is <= 0) throw new ArgumentException("El año debe ser mayor que cero.", nameof(request));
         if (request.ModuleNameId == Guid.Empty) throw new ArgumentException("Selecciona un módulo válido.", nameof(request));
         var userId = session.Current?.User?.Id;
-        if (userId is null || userId == Guid.Empty) throw new InvalidOperationException("Tu sesión expiró. Vuelve a iniciar sesión.");
+        if (userId is null || userId == Guid.Empty) throw new InvalidOperationException(I18n.T("Tu sesión expiró. Vuelve a iniciar sesión."));
         var query = new LeaderboardRequest
         {
             UserId = userId.Value,

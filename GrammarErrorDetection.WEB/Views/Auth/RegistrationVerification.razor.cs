@@ -53,12 +53,12 @@ public partial class RegistrationVerification : IDisposable
             if (lifetime.IsCancellationRequested) return;
             if (response?.Error is { ErrorCode: not 0 })
             {
-                status = "No se pudo confirmar el registro. Revisa el código e inténtalo de nuevo.";
+                status = I18n.T("No se pudo confirmar el registro. Revisa el código e inténtalo de nuevo.");
                 return;
             }
             if (response?.Data?.User is not { } user || user.Id == Guid.Empty || !string.Equals(user.Email, request.Email, StringComparison.OrdinalIgnoreCase))
             {
-                status = "La API no devolvió la confirmación de la cuenta. Intenta iniciar sesión antes de repetir el registro.";
+                status = I18n.T("La API no devolvió la confirmación de la cuenta. Intenta iniciar sesión antes de repetir el registro.");
                 return;
             }
             Session.SignIn(response.Data, request.Email, false);
@@ -69,27 +69,27 @@ public partial class RegistrationVerification : IDisposable
         }
         catch (HttpRequestException ex) when (ex.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.BadRequest)
         {
-            status = "El código es incorrecto o venció. Revísalo e inténtalo de nuevo.";
+            status = I18n.T("El código es incorrecto o venció. Revísalo e inténtalo de nuevo.");
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Conflict)
         {
-            status = "El correo o el CI ya están registrados. Revisa tus datos o inicia sesión.";
+            status = I18n.T("El correo o el CI ya están registrados. Revisa tus datos o inicia sesión.");
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.TooManyRequests)
         {
-            status = "Demasiados intentos. Espera un momento e inténtalo de nuevo.";
+            status = I18n.T("Demasiados intentos. Espera un momento e inténtalo de nuevo.");
         }
         catch (HttpRequestException)
         {
-            status = "No se pudo confirmar el registro con la API. Inténtalo de nuevo.";
+            status = I18n.T("No se pudo confirmar el registro con la API. Inténtalo de nuevo.");
         }
         catch (OperationCanceledException)
         {
-            if (!lifetime.IsCancellationRequested) status = "La solicitud tardó demasiado. Inténtalo de nuevo.";
+            if (!lifetime.IsCancellationRequested) status = I18n.T("La solicitud tardó demasiado. Inténtalo de nuevo.");
         }
         catch (JsonException)
         {
-            status = "No se pudo interpretar la confirmación de la API.";
+            status = I18n.T("No se pudo interpretar la confirmación de la API.");
         }
         catch (InvalidOperationException ex)
         {

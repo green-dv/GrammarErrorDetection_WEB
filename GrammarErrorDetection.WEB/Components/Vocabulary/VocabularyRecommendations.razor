@@ -4,34 +4,34 @@
 @using GrammarErrorDetection.WEB.Components.Analysis
 
 <div class="an-vocab" aria-busy="@(Loading ? "true" : "false")">
-    <h3 class="an-panel-title">Recomendaciones en vocabulary</h3>
+    <h3 class="an-panel-title">@L["Recomendaciones en vocabulary"]</h3>
     @if (Loading)
     {
-        <AnalysisSkeleton Message="Verificando el vocabulario…" />
+        <AnalysisSkeleton Message="@L["Verificando el vocabulario…"]" />
     }
     else if (Error is not null)
     {
         <div class="an-alert is-err" role="alert">
             <AnalysisIcon Name="alert" />
-            <div><p>@Error</p><button type="button" class="data-table-button" @onclick="OnRetry"><AnalysisIcon Name="retry" />Reintentar</button></div>
+            <div><p>@Error</p><button type="button" class="data-table-button" @onclick="OnRetry"><AnalysisIcon Name="retry" />@L["Reintentar"]</button></div>
         </div>
     }
     else if (Analysis is { } analysis)
     {
-        <p class="an-scope">Detecta palabras mal escritas o que no existen; no revisa si una palabra válida está bien usada.</p>
+        <p class="an-scope">@L["Detecta palabras mal escritas o que no existen; no revisa si una palabra válida está bien usada."]</p>
         @if (analysis.UncheckedCount > 0)
         {
             <div class="an-alert" role="status">
                 <AnalysisIcon Name="info" />
                 <div>
-                    <p>@(analysis.UncheckedCount == 1 ? "No se pudo verificar 1 palabra" : $"No se pudieron verificar {analysis.UncheckedCount} palabras"): el servicio de vocabulario no respondió o alcanzó su límite. Las demás sí se verificaron.</p>
-                    <button type="button" class="data-table-button" @onclick="OnRetry"><AnalysisIcon Name="retry" />Completar la verificación</button>
+                    <p>@(analysis.UncheckedCount == 1 ? L["No se pudo verificar 1 palabra"] : I18n.T("No se pudieron verificar {0} palabras", analysis.UncheckedCount)): el servicio de vocabulario no respondió o alcanzó su límite. Las demás sí se verificaron.</p>
+                    <button type="button" class="data-table-button" @onclick="OnRetry"><AnalysisIcon Name="retry" />@L["Completar la verificación"]</button>
                 </div>
             </div>
         }
         @if (analysis.IssueCount == 0 && analysis.UncheckedCount == 0)
         {
-            <p class="an-summary is-ok"><AnalysisIcon Name="check" /><span>No encontramos errores de vocabulario en este párrafo.</span></p>
+            <p class="an-summary is-ok"><AnalysisIcon Name="check" /><span>@L["No encontramos errores de vocabulario en este párrafo."]</span></p>
         }
         else if (analysis.IssueCount > 0)
         {
@@ -49,42 +49,42 @@
                         @if (sentence.Issues.Count > 0)
                         {
                             <button type="button" class="an-flag an-flag--toggle is-warn" aria-expanded="@(open ? "true" : "false")" aria-controls="an-body-@sentence.SentenceId" @onclick="() => OnToggle.InvokeAsync(sentence.SentenceId)">
-                                <AnalysisIcon Name="alert" /><span>@sentence.Issues.Count @AnalysisFormat.Plural(sentence.Issues.Count, "palabra", "palabras")@(open ? "" : " · Ver alternativas")</span><AnalysisIcon Name="chevron" Class="an-chev" />
-                                <span class="ceti-sr-only"> de la oración @sentence.SentenceIndex</span>
+                                <AnalysisIcon Name="alert" /><span>@sentence.Issues.Count @AnalysisFormat.Plural(sentence.Issues.Count, "palabra", "palabras")@(open ? "" : L[" · Ver alternativas"])</span><AnalysisIcon Name="chevron" Class="an-chev" />
+                                <span class="ceti-sr-only"> @L["de la oración {0}", sentence.SentenceIndex]</span>
                             </button>
                         }
                         else if (sentence.UncheckedCount > 0)
                         {
-                            <span class="an-flag is-wide"><AnalysisIcon Name="info" /><span>No se pudo verificar todo el vocabulario de esta oración.</span></span>
+                            <span class="an-flag is-wide"><AnalysisIcon Name="info" /><span>@L["No se pudo verificar todo el vocabulario de esta oración."]</span></span>
                         }
                         else
                         {
-                            <span class="an-flag is-ok is-wide"><AnalysisIcon Name="check" /><span>Sin errores de vocabulario</span></span>
+                            <span class="an-flag is-ok is-wide"><AnalysisIcon Name="check" /><span>@L["Sin errores de vocabulario"]</span></span>
                         }
                     </div>
                     @if (sentence.Issues.Count > 0)
                     {
                         <div id="an-body-@sentence.SentenceId" class="an-body" hidden="@(!open)">
-                            <ul class="an-issues" aria-label="Palabras con error de la oración @sentence.SentenceIndex">
+                            <ul class="an-issues" aria-label="@L["Palabras con error de la oración {0}", sentence.SentenceIndex]">
                                 @foreach (var issue in sentence.Issues)
                                 {
                                     <li class="an-issue" @key="@($"{issue.StartIndex}-{issue.EndIndex}")">
                                         @if (issue.Alternatives.Count == 0)
                                         {
-                                            <p class="an-change"><del class="an-wrong"><span class="ceti-sr-only">Palabra con error: </span>@issue.Token</del></p>
-                                            <p class="an-note">No encontramos una alternativa para esta palabra. Revisa cómo está escrita.</p>
+                                            <p class="an-change"><del class="an-wrong"><span class="ceti-sr-only">@L["Palabra con error:"] </span>@issue.Token</del></p>
+                                            <p class="an-note">@L["No encontramos una alternativa para esta palabra. Revisa cómo está escrita."]</p>
                                         }
                                         else
                                         {
                                             <p class="an-change">
-                                                <del class="an-wrong"><span class="ceti-sr-only">Palabra con error: </span>@issue.Token</del>
+                                                <del class="an-wrong"><span class="ceti-sr-only">@L["Palabra con error:"] </span>@issue.Token</del>
                                                 <AnalysisIcon Name="arrow" />
-                                                <ins class="an-right"><span class="ceti-sr-only">Se escribe: </span>@issue.Alternatives[0].Word</ins>
+                                                <ins class="an-right"><span class="ceti-sr-only">@L["Se escribe:"] </span>@issue.Alternatives[0].Word</ins>
                                             </p>
                                             @Meaning(issue.Alternatives[0])
                                             @if (issue.Alternatives.Count > 1)
                                             {
-                                                <p class="an-ask">También podría ser</p>
+                                                <p class="an-ask">@L["También podría ser"]</p>
                                                 <ul class="an-alts">
                                                     @foreach (var other in issue.Alternatives.Skip(1))
                                                     {
@@ -104,7 +104,7 @@
                 </li>
             }
         </ol>
-        <p class="an-source">Alternativas y definiciones en inglés, con datos de <a href="https://www.datamuse.com/api/" target="_blank" rel="noopener noreferrer">Datamuse</a>.</p>
+        <p class="an-source">@L["Alternativas y definiciones en inglés, con datos de"] <a href="https://www.datamuse.com/api/" target="_blank" rel="noopener noreferrer">@L["Datamuse"]</a>.</p>
     }
 </div>
 

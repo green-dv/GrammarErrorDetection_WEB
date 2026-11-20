@@ -46,8 +46,8 @@ public partial class CourseList : IDisposable
         validationErrors.Clear();
         await LoadAsync(1);
         if (!disposed) status = error is null
-            ? $"Generación completada. {response.CreatedClassIds?.Count ?? 0} cursos creados y {response.CreatedRegistrationIds?.Count ?? 0} inscripciones creadas."
-            : "La generación se completó. No se pudo actualizar el listado; pulsa Reintentar para consultarlo.";
+            ? I18n.T("Generación completada. {0} cursos creados y {1} inscripciones creadas.", response.CreatedClassIds?.Count ?? 0, response.CreatedRegistrationIds?.Count ?? 0)
+            : I18n.T("La generación se completó. No se pudo actualizar el listado; pulsa Reintentar para consultarlo.");
     }
     private CourseSearchResponse? editingCourse;
     private void OpenCreate() { if (CanCreate && CheckSession()) { editingCourse = null; showCreate = true; } }
@@ -59,19 +59,19 @@ public partial class CourseList : IDisposable
         await LoadAsync(page);
         if (!disposed && error is null && courses.Count == 0 && page > 1) await LoadAsync(page - 1);
         if (!disposed) status = error is null
-            ? $"Curso actualizado. {response.Students.Count} estudiantes en la lista final · {response.RemovedRegistrationIds.Count} inscripciones desactivadas."
-            : "El curso se actualizó. No se pudo refrescar el listado; pulsa Reintentar para consultarlo.";
+            ? I18n.T("Curso actualizado. {0} estudiantes en la lista final · {1} inscripciones desactivadas.", response.Students.Count, response.RemovedRegistrationIds.Count)
+            : I18n.T("El curso se actualizó. No se pudo refrescar el listado; pulsa Reintentar para consultarlo.");
     }
     private async Task CourseCreatedAsync(CourseCreateResponse response)
     {
         showCreate = false;
         await LoadAsync(1);
-        if (!disposed) status = error is null ? "Curso e inscripciones creados correctamente." : "El curso y sus inscripciones se crearon. No se pudo actualizar el listado; pulsa Reintentar para consultarlo.";
+        if (!disposed) status = error is null ? I18n.T("Curso e inscripciones creados correctamente.") : I18n.T("El curso y sus inscripciones se crearon. No se pudo actualizar el listado; pulsa Reintentar para consultarlo.");
     }
     private CourseSearchFilter DefaultFilters() => new() { TeacherId = IsTeacher ? Session.Current?.User?.Id.ToString("D") : null };
     private long? total;
-    private string ResultRange => courses.Count == 0 ? "0 resultados" : $"Mostrando {(page - 1) * loadedPageSize + 1}–{(page - 1) * loadedPageSize + courses.Count}{(total is { } all ? $" de {all}" : "")}";
-    private string PageOf => total is { } all ? $" de {Math.Max(1, (all + loadedPageSize - 1) / loadedPageSize)}" : "";
+    private string ResultRange => courses.Count == 0 ? "0 resultados" : I18n.T("Mostrando {0}–{1}", (page - 1) * loadedPageSize + 1, (page - 1) * loadedPageSize + courses.Count) + (total is { } all ? I18n.T(" de {0}", all) : "");
+    private string PageOf => total is { } all ? I18n.T(" de {0}", Math.Max(1, (all + loadedPageSize - 1) / loadedPageSize)) : "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -89,7 +89,7 @@ public partial class CourseList : IDisposable
         }
         if (!Session.IsInRole("Coordinator") && !IsTeacher)
         {
-            error = "El listado de cursos está disponible para coordinadores y profesores.";
+            error = I18n.T("El listado de cursos está disponible para coordinadores y profesores.");
             return false;
         }
         return true;
@@ -134,18 +134,18 @@ public partial class CourseList : IDisposable
             if (IsTeacher)
             {
                 var teacherId = Session.Current?.User?.Id;
-                if (teacherId is null || teacherId == Guid.Empty) throw new InvalidOperationException("No se pudo identificar al profesor de la sesión.");
+                if (teacherId is null || teacherId == Guid.Empty) throw new InvalidOperationException(I18n.T("No se pudo identificar al profesor de la sesión."));
                 requestFilter = (requestFilter ?? new CourseSearchFilter()) with { TeacherId = teacherId.Value.ToString("D") };
             }
             var response = await CourseService.SearchAsync(new CourseSearchRequest { PageNumber = requestedPage, PageSize = requestedSize, Filter = requestFilter }, cancellation.Token);
             if (disposed || version != requestVersion) return;
             if (response?.Data is null || response.Error is { ErrorCode: not 0 })
-                throw new InvalidOperationException("No se pudo obtener el listado de cursos. Inténtalo de nuevo.");
+                throw new InvalidOperationException(I18n.T("No se pudo obtener el listado de cursos. Inténtalo de nuevo."));
             // ClassController devuelve data.Count: filas de esta página, no el total.
             if (requestedPage > page && response.Data.Count == 0)
             {
                 hasNext = false;
-                status = "Has llegado al final del listado.";
+                status = I18n.T("Has llegado al final del listado.");
                 return;
             }
             courses = response.Data;
@@ -156,7 +156,7 @@ public partial class CourseList : IDisposable
         }
         catch (OperationCanceledException)
         {
-            if (!disposed && version == requestVersion && !cancellation.IsCancellationRequested) error = "La consulta tardó demasiado. Inténtalo de nuevo.";
+            if (!disposed && version == requestVersion && !cancellation.IsCancellationRequested) error = I18n.T("La consulta tardó demasiado. Inténtalo de nuevo.");
         }
         catch (HttpRequestException ex)
         {
@@ -164,7 +164,7 @@ public partial class CourseList : IDisposable
         }
         catch (JsonException)
         {
-            if (!disposed && version == requestVersion) error = "No se pudo interpretar el listado recibido.";
+            if (!disposed && version == requestVersion) error = I18n.T("No se pudo interpretar el listado recibido.");
         }
         catch (InvalidOperationException ex)
         {
@@ -196,7 +196,7 @@ public partial class CourseList : IDisposable
         try
         {
             var messages = await Task.WhenAll(
-                LoadCatalogAsync("módulos", async () => modules = await ReadCatalogAsync(UserService.GetModulesAsync, item => item.Id, item => item.Name)),
+                LoadCatalogAsync(I18n.T("módulos"), async () => modules = await ReadCatalogAsync(UserService.GetModulesAsync, item => item.Id, item => item.Name)),
                 IsTeacher ? Task.FromResult<string?>(null) : LoadCatalogAsync("profesores", async () => teachers = await ReadCatalogAsync<UserSearchResponse>((number, token) => UserService.SearchAsync(new UserSearchRequest
                 {
                     PageNumber = number, PageSize = 100, Filter = new UserSearchFilter { RoleId = TeacherRoleId }
@@ -215,10 +215,10 @@ public partial class CourseList : IDisposable
     {
         try { await load(); return null; }
         catch (HttpRequestException ex) { return disposed ? null : $"{name}: {HttpError(ex)}"; }
-        catch (OperationCanceledException) { return disposed ? null : $"La carga de {name} tardó demasiado."; }
+        catch (OperationCanceledException) { return disposed ? null : I18n.T("La carga de {0} tardó demasiado.", name); }
         catch (Exception ex) when (ex is JsonException or InvalidOperationException)
         {
-            return disposed ? null : $"No se pudo cargar el catálogo de {name}.";
+            return disposed ? null : I18n.T("No se pudo cargar el catálogo de {0}.", name);
         }
     }
     private async Task<List<T>> ReadCatalogAsync<T>(Func<int, CancellationToken, Task<ApiResponse<List<T>>?>> fetch, Func<T, Guid> id, Func<T, string> name)
@@ -229,12 +229,12 @@ public partial class CourseList : IDisposable
         {
             var response = await fetch(catalogPage, cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
-            if (response?.Data is null || response.Error is { ErrorCode: not 0 }) throw new InvalidOperationException("Catálogo no disponible.");
+            if (response?.Data is null || response.Error is { ErrorCode: not 0 }) throw new InvalidOperationException(I18n.T("Catálogo no disponible."));
             var added = 0;
             foreach (var item in response.Data.Where(item => id(item) != Guid.Empty))
                 if (result.TryAdd(id(item), item)) added++;
             if (response.Data.Count < 100) break;
-            if (added == 0) throw new InvalidOperationException("El catálogo no avanzó a la siguiente página.");
+            if (added == 0) throw new InvalidOperationException(I18n.T("El catálogo no avanzó a la siguiente página."));
         }
         return result.Values.OrderBy(name, StringComparer.CurrentCultureIgnoreCase).ToList();
     }
@@ -245,14 +245,14 @@ public partial class CourseList : IDisposable
         {
             Session.Clear();
             CheckSession();
-            return "Tu sesión venció. Vuelve a iniciar sesión.";
+            return I18n.T("Tu sesión venció. Vuelve a iniciar sesión.");
         }
         return exception.StatusCode switch
         {
-            HttpStatusCode.Forbidden => "No tienes permiso para consultar estos datos.",
-            HttpStatusCode.BadRequest => "Revisa los filtros e inténtalo de nuevo.",
-            HttpStatusCode.TooManyRequests => "Se realizaron demasiadas consultas. Espera un momento e inténtalo de nuevo.",
-            _ => "No se pudo conectar con el servicio de cursos. Inténtalo de nuevo."
+            HttpStatusCode.Forbidden => I18n.T("No tienes permiso para consultar estos datos."),
+            HttpStatusCode.BadRequest => I18n.T("Revisa los filtros e inténtalo de nuevo."),
+            HttpStatusCode.TooManyRequests => I18n.T("Se realizaron demasiadas consultas. Espera un momento e inténtalo de nuevo."),
+            _ => I18n.T("No se pudo conectar con el servicio de cursos. Inténtalo de nuevo.")
         };
     }
 

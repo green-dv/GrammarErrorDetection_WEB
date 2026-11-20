@@ -6,20 +6,20 @@
 
 <div class="an">
     <header class="an-head">
-        <h2 id="nlp-analysis-title">Análisis</h2>
+        <h2 id="nlp-analysis-title">@L["Análisis"]</h2>
         <span class="an-status">@Analysis.Status</span>
     </header>
 
     <ParagraphOverview Analysis="Analysis" Vocabulary="Vocabulary" Loading="VocabularyLoading" Error="@VocabularyError" OnRetry="OnRetryVocabulary" QuietStatus="@(View == AnalysisView.Vocabulary)" />
 
-    <div class="an-tabs" role="tablist" aria-label="Tipo de análisis">
+    <div class="an-tabs" role="tablist" aria-label="@L["Tipo de análisis"]">
         <button type="button" role="tab" id="an-tab-grammar" class="an-tab" aria-selected="@Selected(AnalysisView.Grammar)" aria-controls="an-panel"
                 tabindex="@(View == AnalysisView.Grammar ? 0 : -1)" @ref="grammarTab" @onclick="() => SelectAsync(AnalysisView.Grammar)" @onkeydown="KeyDownAsync">
-            <span>Errores gramaticales</span><span class="an-count @(GrammarCount == 0 ? "is-zero" : "")">@GrammarCount</span>
+            <span>@L["Errores gramaticales"]</span><span class="an-count @(GrammarCount == 0 ? "is-zero" : "")">@GrammarCount</span>
         </button>
         <button type="button" role="tab" id="an-tab-vocabulary" class="an-tab" aria-selected="@Selected(AnalysisView.Vocabulary)" aria-controls="an-panel"
                 tabindex="@(View == AnalysisView.Vocabulary ? 0 : -1)" @ref="vocabularyTab" @onclick="() => SelectAsync(AnalysisView.Vocabulary)" @onkeydown="KeyDownAsync">
-            <span>Vocabulary</span>
+            <span>@L["Vocabulary"]</span>
             @if (Vocabulary is not null) { <span class="an-count @(Vocabulary.IssueCount == 0 && Vocabulary.UncheckedCount == 0 ? "is-zero" : "is-vocab")">@Vocabulary.IssueCount</span> }
         </button>
     </div>
@@ -92,22 +92,22 @@
         <div class="an-toolbar">
             @if (ShowFilter)
             {
-                <div class="an-filter" role="group" aria-label="Filtrar oraciones">
+                <div class="an-filter" role="group" aria-label="@L["Filtrar oraciones"]">
                     <button type="button" class="an-chip" aria-pressed="@(onlyIssues ? "false" : "true")" @onclick="() => onlyIssues = false">Todas <span>@Analysis.Sentences.Count</span></button>
                     <button type="button" class="an-chip" aria-pressed="@(onlyIssues ? "true" : "false")" @onclick="() => onlyIssues = true">Con errores <span>@IssueSentences</span></button>
                 </div>
             }
             @if (BodyIds.Count > 0)
             {
-                <button type="button" class="an-collapse-all" @onclick="ToggleAll"><AnalysisIcon Name="chevron" Class="@(AllCollapsed ? "" : "an-up")" />@(AllCollapsed ? "Mostrar detalles" : "Ocultar detalles")</button>
+                <button type="button" class="an-collapse-all" @onclick="ToggleAll"><AnalysisIcon Name="chevron" Class="@(AllCollapsed ? "" : "an-up")" />@(AllCollapsed ? I18n.T("Mostrar detalles") : I18n.T("Ocultar detalles"))</button>
             }
         </div>
     };
 
     // Anuncio para lectores de pantalla cuando el filtro cambia la lista.
     private string LiveMessage => !ShowFilter ? "" : FilterActive
-        ? $"Mostrando {IssueSentences} {AnalysisFormat.Plural(IssueSentences, "oración", "oraciones")} con errores de {Analysis.Sentences.Count}."
-        : $"Mostrando todas las oraciones ({Analysis.Sentences.Count}).";
+        ? I18n.T("Mostrando {0} {1} con errores de {2}.", IssueSentences, AnalysisFormat.Plural(IssueSentences, "oración", "oraciones"), Analysis.Sentences.Count)
+        : I18n.T("Mostrando todas las oraciones ({0}).", Analysis.Sentences.Count);
 
     private string Selected(AnalysisView view) => View == view ? "true" : "false";
     private Task SelectAsync(AnalysisView view) => View == view ? Task.CompletedTask : ViewChanged.InvokeAsync(view);

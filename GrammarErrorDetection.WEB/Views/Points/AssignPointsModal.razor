@@ -8,21 +8,21 @@
 @inject AuthSessionState Session
 @inject NavigationManager Navigation
 
-<ModalDialog Title="Asignar puntos" Busy="saving" OnClose="OnClose">
-    <p class="ceti-modal-description">Estudiante: <strong>@Name</strong><br />Inscripción: @CourseName</p>
+<ModalDialog Title="@L["Asignar puntos"]" Busy="saving" OnClose="OnClose">
+    <p class="ceti-modal-description">@L["Estudiante:"] <strong>@Name</strong><br />@L["Inscripción: {0}", CourseName]</p>
     <EditForm Model="model" OnValidSubmit="SaveAsync" novalidate>
-        <DataAnnotationsValidator />
+        <LocalizedValidator />
         <div class="ceti-modal-body points-form">
             @if (error is not null) { <div class="ceti-modal-errors" role="alert">@error</div> }
             <fieldset disabled="@saving" class="users-edit-fields">
-                <label class="data-table-field" for="points-amount"><span>Cantidad de puntos</span><InputNumber id="points-amount" @bind-Value="model.Amount" max="99" step="1" placeholder="Ej. 25" aria-describedby="points-amount-help" /></label>
-                <span id="points-amount-help" class="points-field-help">Número entero menor que 100. Admite cero y valores negativos para ajustes.</span>
+                <label class="data-table-field" for="points-amount"><span>@L["Cantidad de puntos"]</span><InputNumber id="points-amount" @bind-Value="model.Amount" max="99" step="1" placeholder="@L["Ej. 25"]" aria-describedby="points-amount-help" /></label>
+                <span id="points-amount-help" class="points-field-help">@L["Número entero menor que 100. Admite cero y valores negativos para ajustes."]</span>
                 <ValidationMessage For="() => model.Amount" />
-                <label class="data-table-field" for="points-reason"><span>Motivo</span><InputTextArea id="points-reason" @bind-Value="model.Reason" rows="3" maxlength="255" placeholder="Ej. Participación destacada en clase" /></label>
+                <label class="data-table-field" for="points-reason"><span>@L["Motivo"]</span><InputTextArea id="points-reason" @bind-Value="model.Reason" rows="3" maxlength="255" placeholder="@L["Ej. Participación destacada en clase"]" /></label>
                 <ValidationMessage For="() => model.Reason" />
             </fieldset>
         </div>
-        <footer class="ceti-modal-footer"><span role="status">@(saving ? "Guardando puntos…" : "El movimiento quedará registrado en esta inscripción.")</span><div><button type="button" disabled="@saving" class="data-table-button" @onclick="() => OnClose.InvokeAsync()">Cancelar</button><button type="submit" disabled="@(saving || RegistrationId == Guid.Empty)" class="data-table-button data-table-button-primary">Asignar puntos</button></div></footer>
+        <footer class="ceti-modal-footer"><span role="status">@(saving ? L["Guardando puntos…"] : L["El movimiento quedará registrado en esta inscripción."])</span><div><button type="button" disabled="@saving" class="data-table-button" @onclick="() => OnClose.InvokeAsync()">@L["Cancelar"]</button><button type="submit" disabled="@(saving || RegistrationId == Guid.Empty)" class="data-table-button data-table-button-primary">@L["Asignar puntos"]</button></div></footer>
     </EditForm>
 </ModalDialog>
 @code {
@@ -46,9 +46,9 @@
             var response = await Points.CreateAsync(new() { RegistrationId = RegistrationId, Amount = model.Amount!.Value, Reason = model.Reason.Trim() }, lifetime.Token);
             if (disposed) return;
             if (response?.Data is not { } data || response.Error is { ErrorCode: not 0 })
-                throw new InvalidOperationException("No se pudo confirmar la asignación. Consulta los movimientos antes de volver a enviarla.");
+                throw new InvalidOperationException(I18n.T("No se pudo confirmar la asignación. Consulta los movimientos antes de volver a enviarla."));
             if (data.Id == Guid.Empty || data.RegistrationId != RegistrationId || data.Amount != model.Amount.Value || !data.Active)
-                throw new InvalidOperationException("La respuesta no confirma el movimiento solicitado. Verifica la asignación antes de repetirla.");
+                throw new InvalidOperationException(I18n.T("La respuesta no confirma el movimiento solicitado. Verifica la asignación antes de repetirla."));
             saved = data;
         }
         catch (HttpRequestException ex)
@@ -56,15 +56,15 @@
             if (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized) { Session.Clear(); Navigation.NavigateTo("/auth/login", replace: true); }
             error = ex.StatusCode switch
             {
-                System.Net.HttpStatusCode.Forbidden => "No tienes permiso para asignar puntos a esta inscripción.",
-                System.Net.HttpStatusCode.BadRequest or System.Net.HttpStatusCode.UnprocessableEntity => "Revisa la cantidad, el motivo y la inscripción.",
-                System.Net.HttpStatusCode.NotFound => "La inscripción no está disponible.",
-                System.Net.HttpStatusCode.TooManyRequests => "Demasiadas solicitudes. Espera un momento.",
-                _ => "No se pudo confirmar la asignación. Verifica los movimientos antes de volver a enviarla."
+                System.Net.HttpStatusCode.Forbidden => I18n.T("No tienes permiso para asignar puntos a esta inscripción."),
+                System.Net.HttpStatusCode.BadRequest or System.Net.HttpStatusCode.UnprocessableEntity => I18n.T("Revisa la cantidad, el motivo y la inscripción."),
+                System.Net.HttpStatusCode.NotFound => I18n.T("La inscripción no está disponible."),
+                System.Net.HttpStatusCode.TooManyRequests => I18n.T("Demasiadas solicitudes. Espera un momento."),
+                _ => I18n.T("No se pudo confirmar la asignación. Verifica los movimientos antes de volver a enviarla.")
             };
         }
-        catch (OperationCanceledException) { if (!disposed) error = "No se recibió confirmación a tiempo. Verifica los movimientos antes de repetir la asignación."; }
-        catch (System.Text.Json.JsonException) { error = "La respuesta no se pudo interpretar. Verifica los movimientos antes de repetir la asignación."; }
+        catch (OperationCanceledException) { if (!disposed) error = I18n.T("No se recibió confirmación a tiempo. Verifica los movimientos antes de repetir la asignación."); }
+        catch (System.Text.Json.JsonException) { error = I18n.T("La respuesta no se pudo interpretar. Verifica los movimientos antes de repetir la asignación."); }
         catch (Exception ex) when (ex is InvalidOperationException or ArgumentException) { error = ex.Message; }
         finally { saving = false; }
         if (!disposed && saved is not null) await OnSaved.InvokeAsync(saved);

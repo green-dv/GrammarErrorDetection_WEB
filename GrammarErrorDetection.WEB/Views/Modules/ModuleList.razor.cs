@@ -30,7 +30,7 @@ public partial class ModuleList : IDisposable
     private int TotalPages => (int)Math.Max(1, (total + loadedPageSize - 1) / loadedPageSize);
     private string ResultRange => modules.Count == 0
         ? "0 resultados"
-        : $"Mostrando {(page - 1) * loadedPageSize + 1}–{(page - 1) * loadedPageSize + modules.Count} de {total}";
+        : I18n.T("Mostrando {0}–{1} de {2}", (page - 1) * loadedPageSize + 1, (page - 1) * loadedPageSize + modules.Count, total);
 
     protected override async Task OnInitializedAsync()
     {
@@ -46,7 +46,7 @@ public partial class ModuleList : IDisposable
         }
         if (!Session.IsInRole("Coordinator"))
         {
-            error = "La gestión de módulos está disponible para coordinadores.";
+            error = I18n.T("La gestión de módulos está disponible para coordinadores.");
             return false;
         }
         return true;
@@ -91,7 +91,7 @@ public partial class ModuleList : IDisposable
                 new ModuleSearchRequest { PageNumber = requestedPage, PageSize = requestedSize, Filter = appliedFilter }, cancellation.Token);
             if (disposed || version != requestVersion) return;
             if (response?.Data is null || response.TotalCount is null || response.Error is { ErrorCode: not 0 })
-                throw new InvalidOperationException("No se pudo obtener el listado de módulos. Inténtalo de nuevo.");
+                throw new InvalidOperationException(I18n.T("No se pudo obtener el listado de módulos. Inténtalo de nuevo."));
             modules = response.Data;
             total = response.TotalCount.Value;
             page = requestedPage;
@@ -105,10 +105,10 @@ public partial class ModuleList : IDisposable
         }
         catch (OperationCanceledException)
         {
-            if (!disposed && version == requestVersion && !cancellation.IsCancellationRequested) error = "La consulta tardó demasiado. Inténtalo de nuevo.";
+            if (!disposed && version == requestVersion && !cancellation.IsCancellationRequested) error = I18n.T("La consulta tardó demasiado. Inténtalo de nuevo.");
         }
         catch (HttpRequestException ex) { if (!disposed && version == requestVersion) error = HttpError(ex); }
-        catch (JsonException) { if (!disposed && version == requestVersion) error = "No se pudo interpretar el listado recibido."; }
+        catch (JsonException) { if (!disposed && version == requestVersion) error = I18n.T("No se pudo interpretar el listado recibido."); }
         catch (InvalidOperationException ex) { if (!disposed && version == requestVersion) error = ex.Message; }
         catch (System.ComponentModel.DataAnnotations.ValidationException ex) { if (!disposed && version == requestVersion) error = ex.Message; }
         finally
@@ -134,21 +134,21 @@ public partial class ModuleList : IDisposable
         {
             Session.Clear();
             CheckSession();
-            return "Tu sesión venció. Vuelve a iniciar sesión.";
+            return I18n.T("Tu sesión venció. Vuelve a iniciar sesión.");
         }
         return exception.StatusCode switch
         {
-            HttpStatusCode.Forbidden => "No tienes permiso para consultar los módulos.",
-            HttpStatusCode.BadRequest => "Revisa los filtros e inténtalo de nuevo.",
-            HttpStatusCode.TooManyRequests => "Se realizaron demasiadas consultas. Espera un momento e inténtalo de nuevo.",
-            _ => "No se pudo conectar con el servicio de módulos. Inténtalo de nuevo."
+            HttpStatusCode.Forbidden => I18n.T("No tienes permiso para consultar los módulos."),
+            HttpStatusCode.BadRequest => I18n.T("Revisa los filtros e inténtalo de nuevo."),
+            HttpStatusCode.TooManyRequests => I18n.T("Se realizaron demasiadas consultas. Espera un momento e inténtalo de nuevo."),
+            _ => I18n.T("No se pudo conectar con el servicio de módulos. Inténtalo de nuevo.")
         };
     }
 
     private async Task CreatedAsync(ModuleItem module)
     {
         creating = false;
-        status = $"Módulo «{module.Name}» creado.";
+        status = I18n.T("Módulo «{0}» creado.", module.Name);
         // El listado se ordena por nombre: se recarga desde la primera página para ubicar el nuevo registro.
         await LoadAsync(1);
     }
@@ -156,7 +156,7 @@ public partial class ModuleList : IDisposable
     private async Task EditedAsync(ModuleItem module)
     {
         editing = null;
-        status = $"Módulo «{module.Name}» actualizado.";
+        status = I18n.T("Módulo «{0}» actualizado.", module.Name);
         await LoadAsync(page);
     }
 
@@ -179,11 +179,11 @@ public partial class ModuleList : IDisposable
             if (disposed) return;
             if (response?.Data is not { } updated || updated.Id != module.Id || response.Error is { ErrorCode: not 0 })
             {
-                statusError = "No se pudo confirmar el cambio de estado. Inténtalo de nuevo.";
+                statusError = I18n.T("No se pudo confirmar el cambio de estado. Inténtalo de nuevo.");
                 return;
             }
             statusModule = null;
-            status = disable ? $"Módulo «{updated.Name}» deshabilitado." : $"Módulo «{updated.Name}» reactivado.";
+            status = disable ? I18n.T("Módulo «{0}» deshabilitado.", updated.Name) : I18n.T("Módulo «{0}» reactivado.", updated.Name);
             await LoadAsync(page);
         }
         catch (HttpRequestException ex)
@@ -191,15 +191,15 @@ public partial class ModuleList : IDisposable
             if (disposed) return;
             statusError = ex.StatusCode switch
             {
-                HttpStatusCode.Unauthorized => "Tu sesión venció. Vuelve a iniciar sesión.",
-                HttpStatusCode.Forbidden => "Solo un coordinador puede cambiar el estado de un módulo.",
-                HttpStatusCode.NotFound => "El módulo ya no existe. Actualiza el listado.",
-                _ => "No se pudo cambiar el estado. Inténtalo de nuevo."
+                HttpStatusCode.Unauthorized => I18n.T("Tu sesión venció. Vuelve a iniciar sesión."),
+                HttpStatusCode.Forbidden => I18n.T("Solo un coordinador puede cambiar el estado de un módulo."),
+                HttpStatusCode.NotFound => I18n.T("El módulo ya no existe. Actualiza el listado."),
+                _ => I18n.T("No se pudo cambiar el estado. Inténtalo de nuevo.")
             };
             if (ex.StatusCode == HttpStatusCode.Unauthorized) { Session.Clear(); CheckSession(); }
         }
-        catch (OperationCanceledException) { if (!disposed) statusError = "El cambio de estado tardó demasiado. Inténtalo de nuevo."; }
-        catch (JsonException) { if (!disposed) statusError = "No se pudo interpretar la respuesta del servidor."; }
+        catch (OperationCanceledException) { if (!disposed) statusError = I18n.T("El cambio de estado tardó demasiado. Inténtalo de nuevo."); }
+        catch (JsonException) { if (!disposed) statusError = I18n.T("No se pudo interpretar la respuesta del servidor."); }
         finally { updatingStatus = false; }
     }
 

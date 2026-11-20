@@ -30,7 +30,7 @@ public partial class ClassroomList : IDisposable
     private int TotalPages => (int)Math.Max(1, (total + loadedPageSize - 1) / loadedPageSize);
     private string ResultRange => classrooms.Count == 0
         ? "0 resultados"
-        : $"Mostrando {(page - 1) * loadedPageSize + 1}–{(page - 1) * loadedPageSize + classrooms.Count} de {total}";
+        : I18n.T("Mostrando {0}–{1} de {2}", (page - 1) * loadedPageSize + 1, (page - 1) * loadedPageSize + classrooms.Count, total);
 
     protected override async Task OnInitializedAsync()
     {
@@ -46,7 +46,7 @@ public partial class ClassroomList : IDisposable
         }
         if (!Session.IsInRole("Coordinator"))
         {
-            error = "La gestión de aulas está disponible para coordinadores.";
+            error = I18n.T("La gestión de aulas está disponible para coordinadores.");
             return false;
         }
         return true;
@@ -91,7 +91,7 @@ public partial class ClassroomList : IDisposable
                 new ClassroomSearchRequest { PageNumber = requestedPage, PageSize = requestedSize, Filter = appliedFilter }, cancellation.Token);
             if (disposed || version != requestVersion) return;
             if (response?.Data is null || response.TotalCount is null || response.Error is { ErrorCode: not 0 })
-                throw new InvalidOperationException("No se pudo obtener el listado de aulas. Inténtalo de nuevo.");
+                throw new InvalidOperationException(I18n.T("No se pudo obtener el listado de aulas. Inténtalo de nuevo."));
             classrooms = response.Data;
             total = response.TotalCount.Value;
             page = requestedPage;
@@ -105,10 +105,10 @@ public partial class ClassroomList : IDisposable
         }
         catch (OperationCanceledException)
         {
-            if (!disposed && version == requestVersion && !cancellation.IsCancellationRequested) error = "La consulta tardó demasiado. Inténtalo de nuevo.";
+            if (!disposed && version == requestVersion && !cancellation.IsCancellationRequested) error = I18n.T("La consulta tardó demasiado. Inténtalo de nuevo.");
         }
         catch (HttpRequestException ex) { if (!disposed && version == requestVersion) error = HttpError(ex); }
-        catch (JsonException) { if (!disposed && version == requestVersion) error = "No se pudo interpretar el listado recibido."; }
+        catch (JsonException) { if (!disposed && version == requestVersion) error = I18n.T("No se pudo interpretar el listado recibido."); }
         catch (InvalidOperationException ex) { if (!disposed && version == requestVersion) error = ex.Message; }
         catch (System.ComponentModel.DataAnnotations.ValidationException ex) { if (!disposed && version == requestVersion) error = ex.Message; }
         finally
@@ -134,21 +134,21 @@ public partial class ClassroomList : IDisposable
         {
             Session.Clear();
             CheckSession();
-            return "Tu sesión venció. Vuelve a iniciar sesión.";
+            return I18n.T("Tu sesión venció. Vuelve a iniciar sesión.");
         }
         return exception.StatusCode switch
         {
-            HttpStatusCode.Forbidden => "No tienes permiso para consultar las aulas.",
-            HttpStatusCode.BadRequest => "Revisa los filtros e inténtalo de nuevo.",
-            HttpStatusCode.TooManyRequests => "Se realizaron demasiadas consultas. Espera un momento e inténtalo de nuevo.",
-            _ => "No se pudo conectar con el servicio de aulas. Inténtalo de nuevo."
+            HttpStatusCode.Forbidden => I18n.T("No tienes permiso para consultar las aulas."),
+            HttpStatusCode.BadRequest => I18n.T("Revisa los filtros e inténtalo de nuevo."),
+            HttpStatusCode.TooManyRequests => I18n.T("Se realizaron demasiadas consultas. Espera un momento e inténtalo de nuevo."),
+            _ => I18n.T("No se pudo conectar con el servicio de aulas. Inténtalo de nuevo.")
         };
     }
 
     private async Task CreatedAsync(ClassroomItem room)
     {
         creating = false;
-        status = $"Aula «{room.Name}» creada.";
+        status = I18n.T("Aula «{0}» creada.", room.Name);
         // Lo más reciente aparece primero: se vuelve a la primera página.
         await LoadAsync(1);
     }
@@ -156,7 +156,7 @@ public partial class ClassroomList : IDisposable
     private async Task EditedAsync(ClassroomItem room)
     {
         editing = null;
-        status = $"Aula «{room.Name}» actualizada.";
+        status = I18n.T("Aula «{0}» actualizada.", room.Name);
         await LoadAsync(page);
     }
 
@@ -179,11 +179,11 @@ public partial class ClassroomList : IDisposable
             if (disposed) return;
             if (response?.Data is not { } updated || updated.Id != room.Id || response.Error is { ErrorCode: not 0 })
             {
-                statusError = "No se pudo confirmar el cambio de estado. Inténtalo de nuevo.";
+                statusError = I18n.T("No se pudo confirmar el cambio de estado. Inténtalo de nuevo.");
                 return;
             }
             statusClassroom = null;
-            status = disable ? $"Aula «{updated.Name}» deshabilitada." : $"Aula «{updated.Name}» reactivada.";
+            status = disable ? I18n.T("Aula «{0}» deshabilitada.", updated.Name) : I18n.T("Aula «{0}» reactivada.", updated.Name);
             await LoadAsync(page);
         }
         catch (HttpRequestException ex)
@@ -191,15 +191,15 @@ public partial class ClassroomList : IDisposable
             if (disposed) return;
             statusError = ex.StatusCode switch
             {
-                HttpStatusCode.Unauthorized => "Tu sesión venció. Vuelve a iniciar sesión.",
-                HttpStatusCode.Forbidden => "Solo un coordinador puede cambiar el estado de un aula.",
-                HttpStatusCode.NotFound => "El aula ya no existe. Actualiza el listado.",
-                _ => "No se pudo cambiar el estado. Inténtalo de nuevo."
+                HttpStatusCode.Unauthorized => I18n.T("Tu sesión venció. Vuelve a iniciar sesión."),
+                HttpStatusCode.Forbidden => I18n.T("Solo un coordinador puede cambiar el estado de un aula."),
+                HttpStatusCode.NotFound => I18n.T("El aula ya no existe. Actualiza el listado."),
+                _ => I18n.T("No se pudo cambiar el estado. Inténtalo de nuevo.")
             };
             if (ex.StatusCode == HttpStatusCode.Unauthorized) { Session.Clear(); CheckSession(); }
         }
-        catch (OperationCanceledException) { if (!disposed) statusError = "El cambio de estado tardó demasiado. Inténtalo de nuevo."; }
-        catch (JsonException) { if (!disposed) statusError = "No se pudo interpretar la respuesta del servidor."; }
+        catch (OperationCanceledException) { if (!disposed) statusError = I18n.T("El cambio de estado tardó demasiado. Inténtalo de nuevo."); }
+        catch (JsonException) { if (!disposed) statusError = I18n.T("No se pudo interpretar la respuesta del servidor."); }
         finally { updatingStatus = false; }
     }
 

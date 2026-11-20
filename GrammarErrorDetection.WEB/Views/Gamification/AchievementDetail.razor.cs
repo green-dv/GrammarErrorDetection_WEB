@@ -30,17 +30,17 @@ public partial class AchievementDetail : IDisposable
         {
             var rows = GamificationAdmin.Require(await Service.SearchAchievementsAsync(new() { Id = AchievementId, PageSize = 1 }, lifetime.Token));
             if (disposed) return;
-            if (rows.Count != 1 || rows[0].Id != AchievementId) throw new InvalidOperationException("No se encontró el logro solicitado.");
+            if (rows.Count != 1 || rows[0].Id != AchievementId) throw new InvalidOperationException(I18n.T("No se encontró el logro solicitado."));
             achievement = rows[0];
         }
-        catch (OperationCanceledException) { if (!disposed) error = "La consulta tardó demasiado."; }
+        catch (OperationCanceledException) { if (!disposed) error = I18n.T("La consulta tardó demasiado."); }
         catch (HttpRequestException ex)
         {
             if (ex.StatusCode == HttpStatusCode.Unauthorized) { Session.Clear(); Navigation.NavigateTo("/auth/login", replace: true); }
-            if (!disposed) error = ex.StatusCode == HttpStatusCode.Forbidden ? "No tienes permiso para consultar este logro." : "No se pudo consultar el servidor.";
+            if (!disposed) error = ex.StatusCode == HttpStatusCode.Forbidden ? I18n.T("No tienes permiso para consultar este logro.") : I18n.T("No se pudo consultar el servidor.");
         }
         catch (Exception ex) when (ex is InvalidOperationException or JsonException or ArgumentException)
-        { if (!disposed) error = ex is InvalidOperationException ? ex.Message : "No se pudo interpretar el logro."; }
+        { if (!disposed) error = ex is InvalidOperationException ? ex.Message : I18n.T("No se pudo interpretar el logro."); }
         finally { loading = false; if (error is not null) achievement = null; }
     }
     private void OpenEdit() { if (!loading && CanManage) showEdit = true; }
@@ -49,7 +49,7 @@ public partial class AchievementDetail : IDisposable
     private async Task SavedAsync()
     {
         await CloseDialogsAsync();
-        if (!disposed) message = error is null ? "Cambios guardados correctamente." : "Los cambios se guardaron. No se pudo actualizar la vista; pulsa Reintentar.";
+        if (!disposed) message = error is null ? I18n.T("Cambios guardados correctamente.") : I18n.T("Los cambios se guardaron. No se pudo actualizar la vista; pulsa Reintentar.");
     }
     public void Dispose() { disposed = true; lifetime.Cancel(); lifetime.Dispose(); }
 }

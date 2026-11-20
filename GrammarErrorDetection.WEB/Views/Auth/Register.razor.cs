@@ -48,18 +48,18 @@ public partial class Register : IDisposable
             if (lifetime.IsCancellationRequested) return;
             if (response?.Error is { ErrorCode: not 0 })
             {
-                status = "No se pudo iniciar el registro. Revisa tus datos e inténtalo de nuevo.";
+                status = I18n.T("No se pudo iniciar el registro. Revisa tus datos e inténtalo de nuevo.");
                 return;
             }
             var challenge = response?.Data;
             if (challenge is null || challenge.ChallengeId == Guid.Empty || string.IsNullOrWhiteSpace(challenge.Email) || !string.Equals(challenge.Email.Trim(), request.Email, StringComparison.OrdinalIgnoreCase))
             {
-                status = "La API devolvió una respuesta de registro incompleta.";
+                status = I18n.T("La API devolvió una respuesta de registro incompleta.");
                 return;
             }
             if (challenge.ExpiresAt <= DateTimeOffset.UtcNow)
             {
-                status = "El código recibido ya venció. Solicita uno nuevo.";
+                status = I18n.T("El código recibido ya venció. Solicita uno nuevo.");
                 return;
             }
             Flow.BeginVerification(challenge, new SignupRequest { FirstName = model.FirstName.Trim(), LastName = model.LastName.Trim(), CI = model.CI.Trim(), Email = request.Email, Password = model.Password, Phone = string.IsNullOrWhiteSpace(model.Phone) ? null : model.Phone.Trim(), BirthDate = model.BirthDate });
@@ -67,27 +67,27 @@ public partial class Register : IDisposable
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Conflict)
         {
-            status = "El correo ya está registrado. Inicia sesión o usa otro correo.";
+            status = I18n.T("El correo ya está registrado. Inicia sesión o usa otro correo.");
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
         {
-            status = "Revisa el correo y los datos enviados.";
+            status = I18n.T("Revisa el correo y los datos enviados.");
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.TooManyRequests)
         {
-            status = "Demasiados intentos. Espera un momento e inténtalo de nuevo.";
+            status = I18n.T("Demasiados intentos. Espera un momento e inténtalo de nuevo.");
         }
         catch (HttpRequestException)
         {
-            status = "No se pudo conectar con la API. Inténtalo de nuevo.";
+            status = I18n.T("No se pudo conectar con la API. Inténtalo de nuevo.");
         }
         catch (OperationCanceledException)
         {
-            if (!lifetime.IsCancellationRequested) status = "La solicitud tardó demasiado. Inténtalo de nuevo.";
+            if (!lifetime.IsCancellationRequested) status = I18n.T("La solicitud tardó demasiado. Inténtalo de nuevo.");
         }
         catch (JsonException)
         {
-            status = "No se pudo interpretar la respuesta de la API.";
+            status = I18n.T("No se pudo interpretar la respuesta de la API.");
         }
         finally
         {

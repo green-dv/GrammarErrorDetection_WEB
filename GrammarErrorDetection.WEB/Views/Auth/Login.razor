@@ -14,16 +14,16 @@
 @inject NavigationManager Navigation
 @implements IDisposable
 
-<PageTitle>Iniciar sesión | CETI La Paz</PageTitle>
-<AuthHeader Title="Bienvenido de nuevo" Subtitle="Ingresa tus datos para continuar." />
+<PageTitle>@L["Iniciar sesión | CETI La Paz"]</PageTitle>
+<AuthHeader Title="@L["Bienvenido de nuevo"]" Subtitle="@L["Ingresa tus datos para continuar."]" />
 <SessionRolePreview />
 
 <EditForm EditContext="editContext" OnValidSubmit="SubmitLoginAsync" OnInvalidSubmit="ShowValidationErrors" novalidate class="auth-login-form space-y-6" aria-describedby="login-errors">
-    <DataAnnotationsValidator />
+    <LocalizedValidator />
     @if (!string.IsNullOrEmpty(status) || validationErrors.Count > 0)
     {
         <div id="login-errors" class="auth-errors" role="alert" aria-live="assertive">
-            <p class="auth-errors-title">No pudimos iniciar sesión</p>
+            <p class="auth-errors-title">@L["No pudimos iniciar sesión"]</p>
             <ul>
                 @if (!string.IsNullOrEmpty(status))
                 {
@@ -38,22 +38,22 @@
     }
     <fieldset disabled="@busy" class="space-y-6">
         <div>
-            <label for="email" class="auth-label">Correo electrónico</label>
+            <label for="email" class="auth-label">@L["Correo electrónico"]</label>
             <div class="relative">
                 <svg class="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2Z"/></svg>
-                <InputText id="email" type="email" @bind-Value="model.Email" autocomplete="username" placeholder="Ingresa tu email" class="auth-control pl-12 pr-4" />
+                <InputText id="email" type="email" @bind-Value="model.Email" autocomplete="username" placeholder="@L["Ingresa tu email"]" class="auth-control pl-12 pr-4" />
             </div>
         </div>
         <div>
-            <AuthPasswordField Id="password" @bind-Value="model.Password" Label="Contraseña" Required="false" />
+            <AuthPasswordField Id="password" @bind-Value="model.Password" Label="@L["Contraseña"]" Required="false" />
         </div>
         <button type="submit" class="auth-submit" aria-busy="@(busy ? "true" : "false")">
-            @(busy ? "Validando…" : "Iniciar sesión")
+            @(busy ? L["Validando…"] : L["Iniciar sesión"])
             <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 12h15m-6-6 6 6-6 6"/></svg>
         </button>
     </fieldset>
 </EditForm>
-<p class="auth-account-switch">¿No tienes una cuenta? <a href="/auth/register" class="auth-link">Regístrate</a></p>
+<p class="auth-account-switch">@L["¿No tienes una cuenta?"] <a href="/auth/register" class="auth-link">@L["Regístrate"]</a></p>
 
 @code {
     private readonly LoginRequest model = new();
@@ -89,12 +89,12 @@
             if (lifetime.IsCancellationRequested) return;
             if (response?.Error is { ErrorCode: not 0 })
             {
-                status = "No se pudo iniciar sesión. Revisa tus credenciales e inténtalo de nuevo.";
+                status = I18n.T("No se pudo iniciar sesión. Revisa tus credenciales e inténtalo de nuevo.");
                 return;
             }
             if (string.IsNullOrWhiteSpace(response?.Data?.Email))
             {
-                status = "La API devolvió una respuesta de inicio de sesión incompleta.";
+                status = I18n.T("La API devolvió una respuesta de inicio de sesión incompleta.");
                 return;
             }
             Flow.BeginVerification(response.Data.Email, response.Data.IsTotpEnabled, model.Password);
@@ -110,23 +110,23 @@
         }
         catch (HttpRequestException ex) when (ex.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
         {
-            status = "Correo o contraseña incorrectos.";
+            status = I18n.T("Correo o contraseña incorrectos.");
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.TooManyRequests)
         {
-            status = "Demasiados intentos. Espera un momento antes de volver a intentarlo.";
+            status = I18n.T("Demasiados intentos. Espera un momento antes de volver a intentarlo.");
         }
         catch (HttpRequestException)
         {
-            status = "No se pudo conectar con la API. Comprueba que esté disponible y vuelve a intentarlo.";
+            status = I18n.T("No se pudo conectar con la API. Comprueba que esté disponible y vuelve a intentarlo.");
         }
         catch (OperationCanceledException)
         {
-            if (!lifetime.IsCancellationRequested) status = "La solicitud tardó demasiado. Inténtalo de nuevo.";
+            if (!lifetime.IsCancellationRequested) status = I18n.T("La solicitud tardó demasiado. Inténtalo de nuevo.");
         }
         catch (JsonException)
         {
-            status = "La API devolvió una respuesta que no se pudo interpretar.";
+            status = I18n.T("La API devolvió una respuesta que no se pudo interpretar.");
         }
         catch (InvalidOperationException ex)
         {

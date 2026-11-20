@@ -10,9 +10,9 @@
 @inject NavigationManager Navigation
 
 @* Alta y edición de un tipo de condición. Con Type = null crea; con un tipo, edita nombre y descripción (el código no cambia). *@
-<ModalDialog Title="@(IsEdit ? "Editar tipo de condición" : "Nuevo tipo de condición")" Subtitle="@(IsEdit ? Type!.Code : "Solo para códigos que el motor ya calcula")" Busy="@saving" OnClose="OnClose">
+<ModalDialog Title="@(IsEdit ? L["Editar tipo de condición"] : L["Nuevo tipo de condición"])" Subtitle="@(IsEdit ? Type!.Code : L["Solo para códigos que el motor ya calcula"])" Busy="@saving" OnClose="OnClose">
     <EditForm EditContext="editContext" OnSubmit="SaveAsync" novalidate>
-        <DataAnnotationsValidator />
+        <LocalizedValidator />
         <div class="ceti-modal-body">
             @if (error is not null || validationErrors.Count > 0)
             {
@@ -23,16 +23,16 @@
             }
             <fieldset disabled="@saving" class="users-edit-fields">
                 <div class="users-edit-grid">
-                    <label class="data-table-field"><span>Código *</span><input @bind="model.Code" @bind:event="oninput" maxlength="50" disabled="@IsEdit" placeholder="TEXTS_ANALYZED" autofocus="@(!IsEdit)" /></label>
-                    <label class="data-table-field"><span>Nombre *</span><input @bind="model.Name" @bind:event="oninput" maxlength="100" autofocus="@IsEdit" /></label>
-                    <label class="data-table-field"><span>Descripción <small>(opcional)</small></span><textarea @bind="model.Description" @bind:event="oninput" rows="3"></textarea></label>
+                    <label class="data-table-field"><span>@L["Código *"]</span><input @bind="model.Code" @bind:event="oninput" maxlength="50" disabled="@IsEdit" placeholder="TEXTS_ANALYZED" autofocus="@(!IsEdit)" /></label>
+                    <label class="data-table-field"><span>@L["Nombre *"]</span><input @bind="model.Name" @bind:event="oninput" maxlength="100" autofocus="@IsEdit" /></label>
+                    <label class="data-table-field"><span>@L["Descripción"] <small>@L["(opcional)"]</small></span><textarea @bind="model.Description" @bind:event="oninput" rows="3"></textarea></label>
                 </div>
                 <p class="gamification-help">@(IsEdit
-                    ? "El código lo calcula el motor de gamificación y no se puede cambiar. Aquí se edita cómo se muestra el tipo."
-                    : "Un tipo nuevo solo se acepta si el motor de gamificación ya sabe calcular su código; si no, el servidor lo rechaza.")</p>
+                    ? L["El código lo calcula el motor de gamificación y no se puede cambiar. Aquí se edita cómo se muestra el tipo."]
+                    : L["Un tipo nuevo solo se acepta si el motor de gamificación ya sabe calcular su código; si no, el servidor lo rechaza."])</p>
             </fieldset>
         </div>
-        <footer class="ceti-modal-footer"><span role="status">@(saving ? "Guardando…" : IsEdit && !HasChanges ? "No hay cambios para guardar." : "")</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">Cancelar</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@(saving || (IsEdit && !HasChanges))">@(IsEdit ? "Guardar cambios" : "Crear tipo")</button></div></footer>
+        <footer class="ceti-modal-footer"><span role="status">@(saving ? L["Guardando…"] : IsEdit && !HasChanges ? L["No hay cambios para guardar."] : "")</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">@L["Cancelar"]</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@(saving || (IsEdit && !HasChanges))">@(IsEdit ? L["Guardar cambios"] : L["Crear tipo"])</button></div></footer>
     </EditForm>
 </ModalDialog>
 
@@ -80,7 +80,7 @@
             return;
         }
         if (Session.Current is null) { Navigation.NavigateTo("/auth/login", replace: true); return; }
-        if (!Session.Roles.Contains("Coordinator", StringComparer.Ordinal)) { error = "Solo un coordinador puede gestionar tipos de condición."; return; }
+        if (!Session.Roles.Contains("Coordinator", StringComparer.Ordinal)) { error = I18n.T("Solo un coordinador puede gestionar tipos de condición."); return; }
         saving = true;
         try
         {
@@ -95,7 +95,7 @@
             if (disposed) return;
             if (response?.Data is not { } saved || response.Error is { ErrorCode: not 0 })
             {
-                error = response?.Error?.ErrorMessage ?? "No se pudo confirmar el guardado. Inténtalo de nuevo.";
+                error = response?.Error?.ErrorMessage ?? I18n.T("No se pudo confirmar el guardado. Inténtalo de nuevo.");
                 return;
             }
             await OnSaved.InvokeAsync(saved);
@@ -110,17 +110,17 @@
             }
             error = ex.StatusCode switch
             {
-                HttpStatusCode.Conflict => "Ya existe un tipo de condición con ese código.",
-                HttpStatusCode.NotFound => "El tipo de condición ya no existe. Actualiza el listado.",
-                HttpStatusCode.Forbidden => "Solo un coordinador puede gestionar tipos de condición.",
+                HttpStatusCode.Conflict => I18n.T("Ya existe un tipo de condición con ese código."),
+                HttpStatusCode.NotFound => I18n.T("El tipo de condición ya no existe. Actualiza el listado."),
+                HttpStatusCode.Forbidden => I18n.T("Solo un coordinador puede gestionar tipos de condición."),
                 HttpStatusCode.BadRequest => IsEdit
-                    ? "Revisa los datos: el nombre no puede estar vacío y el código no se puede cambiar."
-                    : "Revisa los datos: el código va en MAYÚSCULAS y el motor de gamificación debe saber calcularlo.",
-                _ => "No se pudo guardar el tipo de condición. Inténtalo de nuevo."
+                    ? I18n.T("Revisa los datos: el nombre no puede estar vacío y el código no se puede cambiar.")
+                    : I18n.T("Revisa los datos: el código va en MAYÚSCULAS y el motor de gamificación debe saber calcularlo."),
+                _ => I18n.T("No se pudo guardar el tipo de condición. Inténtalo de nuevo.")
             };
         }
-        catch (OperationCanceledException) { if (!disposed) error = "El guardado tardó demasiado. Inténtalo de nuevo."; }
-        catch (JsonException) { if (!disposed) error = "No se pudo interpretar la respuesta del servidor."; }
+        catch (OperationCanceledException) { if (!disposed) error = I18n.T("El guardado tardó demasiado. Inténtalo de nuevo."); }
+        catch (JsonException) { if (!disposed) error = I18n.T("No se pudo interpretar la respuesta del servidor."); }
         catch (System.ComponentModel.DataAnnotations.ValidationException ex) { if (!disposed) error = ex.Message; }
         finally { saving = false; }
     }

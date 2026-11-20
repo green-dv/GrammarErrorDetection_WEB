@@ -33,11 +33,11 @@ public partial class SelectVerificationMethod : IDisposable
         }
         catch (HttpRequestException)
         {
-            status = "No se pudo enviar el código. Espera un momento e inténtalo de nuevo.";
+            status = I18n.T("No se pudo enviar el código. Espera un momento e inténtalo de nuevo.");
         }
         catch (JsonException)
         {
-            status = "La API no devolvió una respuesta válida para el envío del código.";
+            status = I18n.T("La API no devolvió una respuesta válida para el envío del código.");
         }
         catch (InvalidOperationException ex)
         {
@@ -45,7 +45,7 @@ public partial class SelectVerificationMethod : IDisposable
         }
         catch (OperationCanceledException)
         {
-            if (!lifetime.IsCancellationRequested) status = "La solicitud tardó demasiado. Inténtalo de nuevo.";
+            if (!lifetime.IsCancellationRequested) status = I18n.T("La solicitud tardó demasiado. Inténtalo de nuevo.");
         }
         finally
         {

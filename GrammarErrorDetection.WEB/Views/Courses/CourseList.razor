@@ -1,71 +1,71 @@
 <section class="users-page courses-page" aria-labelledby="courses-title">
     <header class="users-heading courses-heading">
-        <div><p class="users-eyebrow">CETI · GESTIÓN ACADÉMICA</p><h1 id="courses-title">Cursos</h1><p>Módulos, docentes y resultados de cada bimestre.</p></div>
+        <div><p class="users-eyebrow">@L["CETI · GESTIÓN ACADÉMICA"]</p><h1 id="courses-title">@L["Cursos"]</h1><p>@L["Módulos, docentes y resultados de cada bimestre."]</p></div>
         <div class="courses-header-actions">
             @if (CanCreate)
             {
-                <button type="button" class="data-table-button data-table-button-primary" @onclick="OpenCreate" disabled="@(busy || loadingCatalogs || modules.Count == 0 || teachers.Count == 0 || classrooms.Count == 0)" aria-haspopup="dialog">+ Crear curso</button>
+                <button type="button" class="data-table-button data-table-button-primary" @onclick="OpenCreate" disabled="@(busy || loadingCatalogs || modules.Count == 0 || teachers.Count == 0 || classrooms.Count == 0)" aria-haspopup="dialog">@L["+ Crear curso"]</button>
             }
             @if (CanCreate)
             {
-                <button type="button" class="data-table-button courses-generate" disabled="@busy" @onclick="OpenGenerate" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8ZM20 16v6m-3-3h6"/></svg>Generar cursos automáticamente</button>
+                <button type="button" class="data-table-button courses-generate" disabled="@busy" @onclick="OpenGenerate" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8ZM20 16v6m-3-3h6"/></svg>@L["Generar cursos automáticamente"]</button>
             }
         </div>
     </header>
     <div class="courses-stats" aria-busy="@busy.ToString().ToLowerInvariant()">
-        <article><span class="courses-stat-symbol" aria-hidden="true">◎</span><div><p>Estudiantes inscritos</p><strong>@(busy || error is not null ? "—" : PageStudents?.ToString() ?? "—")</strong><span>Suma de inscripciones · página actual</span></div></article>
-        <article><span class="courses-stat-symbol" aria-hidden="true">↗</span><div><p>Promedio de notas</p><strong>@(busy || error is not null ? "—" : PageAverage?.ToString("0.##") ?? "—")<small> / 100</small></strong><span>Ponderado por estudiantes · página actual</span></div></article>
-        <article><span class="courses-stat-symbol" aria-hidden="true">▤</span><div><p>Profesor con más cursos</p><strong class="courses-teacher-name">@(busy || error is not null ? "—" : Display(TopTeacher?.First().TeacherName, "Sin datos"))</strong><span>@(busy || error is not null ? "Página actual" : $"{TopTeacher?.Count() ?? 0} cursos · página actual")</span></div></article>
+        <article><span class="courses-stat-symbol" aria-hidden="true">◎</span><div><p>@L["Estudiantes inscritos"]</p><strong>@(busy || error is not null ? "—" : PageStudents?.ToString() ?? "—")</strong><span>@L["Suma de inscripciones · página actual"]</span></div></article>
+        <article><span class="courses-stat-symbol" aria-hidden="true">↗</span><div><p>@L["Promedio de notas"]</p><strong>@(busy || error is not null ? "—" : PageAverage?.ToString("0.##") ?? "—")<small> / 100</small></strong><span>@L["Ponderado por estudiantes · página actual"]</span></div></article>
+        <article><span class="courses-stat-symbol" aria-hidden="true">▤</span><div><p>@L["Profesor con más cursos"]</p><strong class="courses-teacher-name">@(busy || error is not null ? "—" : Display(TopTeacher?.First().TeacherName, "Sin datos"))</strong><span>@(busy || error is not null ? L["Página actual"] : I18n.T("{0} cursos · página actual", TopTeacher?.Count() ?? 0))</span></div></article>
     </div>
     <div class="data-table-card">
-        <header class="data-table-heading"><div><h2>Listado de cursos</h2><p>Consulta la oferta académica y el rendimiento de cada grupo.</p></div></header>
+        <header class="data-table-heading"><div><h2>@L["Listado de cursos"]</h2><p>@L["Consulta la oferta académica y el rendimiento de cada grupo."]</p></div></header>
         <EditForm Model="filters" OnValidSubmit="SearchAsync" OnInvalidSubmit="ShowValidationErrors" novalidate>
-            <DataAnnotationsValidator />
+            <LocalizedValidator />
             <fieldset class="data-filter-panel data-filter-panel-inset" disabled="@busy">
-                <div class="data-filter-heading"><span>Filtrar cursos</span><span>Combina los campos que necesites</span></div>
+                <div class="data-filter-heading"><span>@L["Filtrar cursos"]</span><span>@L["Combina los campos que necesites"]</span></div>
                 <div class="data-table-toolbar courses-filters">
-                    <label class="data-table-field"><span>Módulo</span><InputSelect @bind-Value="filters.ModuleNameId" disabled="@(loadingCatalogs || modules.Count == 0)"><option value="">Todos los módulos</option>@foreach (var module in modules) { <option value="@module.Id">@module.Name</option> }</InputSelect></label>
+                    <label class="data-table-field"><span>@L["Módulo"]</span><InputSelect @bind-Value="filters.ModuleNameId" disabled="@(loadingCatalogs || modules.Count == 0)"><option value="">@L["Todos los módulos"]</option>@foreach (var module in modules) { <option value="@module.Id">@module.Name</option> }</InputSelect></label>
                     @if (IsTeacher)
                     {
-                        <label class="data-table-field"><span>Profesor (tu usuario)</span><input type="text" value="@Session.Current?.User?.Id" readonly aria-describedby="teacher-filter-description" /><small id="teacher-filter-description">Solo tus cursos. Este filtro es fijo.</small></label>
+                        <label class="data-table-field"><span>@L["Profesor (tu usuario)"]</span><input type="text" value="@Session.Current?.User?.Id" readonly aria-describedby="teacher-filter-description" /><small id="teacher-filter-description">@L["Solo tus cursos. Este filtro es fijo."]</small></label>
                     }
                     else
                     {
-                        <label class="data-table-field"><span>Profesor</span><InputSelect @bind-Value="filters.TeacherId" disabled="@(loadingCatalogs || teachers.Count == 0)"><option value="">Todos los profesores</option>@foreach (var teacher in teachers) { <option value="@teacher.Id">@TeacherName(teacher)</option> }</InputSelect></label>
+                        <label class="data-table-field"><span>@L["Profesor"]</span><InputSelect @bind-Value="filters.TeacherId" disabled="@(loadingCatalogs || teachers.Count == 0)"><option value="">@L["Todos los profesores"]</option>@foreach (var teacher in teachers) { <option value="@teacher.Id">@TeacherName(teacher)</option> }</InputSelect></label>
                     }
-                    <label class="data-table-field"><span>Bimestre</span><InputSelect @bind-Value="filters.Bimester"><option value="">Todos los bimestres</option>@for (var number = 1; number <= 6; number++) { <option value="@number">@Bimester(number)</option> }</InputSelect></label>
-                    <label class="data-table-field"><span>Aula</span><InputSelect @bind-Value="filters.ClassroomId" disabled="@(loadingCatalogs || classrooms.Count == 0)"><option value="">Todas las aulas</option>@foreach (var classroom in classrooms) { <option value="@classroom.Id">@classroom.Name · @classroom.Capacity plazas</option> }</InputSelect></label>
-                    <label class="data-table-field"><span>Año</span><InputNumber @bind-Value="filters.Year" placeholder="Todos los años" /></label>
-                    <label class="data-table-field"><span>Paralelo</span><InputText @bind-Value="filters.Parallel" placeholder="Todos los paralelos" maxlength="10" /></label>
-                    <label class="data-table-field"><span>Estado</span><InputSelect @bind-Value="filters.Active"><option value="">Todos</option><option value="true">Activo</option><option value="false">Inactivo</option></InputSelect></label>
+                    <label class="data-table-field"><span>@L["Bimestre"]</span><InputSelect @bind-Value="filters.Bimester"><option value="">@L["Todos los bimestres"]</option>@for (var number = 1; number <= 6; number++) { <option value="@number">@Bimester(number)</option> }</InputSelect></label>
+                    <label class="data-table-field"><span>@L["Aula"]</span><InputSelect @bind-Value="filters.ClassroomId" disabled="@(loadingCatalogs || classrooms.Count == 0)"><option value="">@L["Todas las aulas"]</option>@foreach (var classroom in classrooms) { <option value="@classroom.Id">@classroom.Name · @classroom.Capacity plazas</option> }</InputSelect></label>
+                    <label class="data-table-field"><span>@L["Año"]</span><InputNumber @bind-Value="filters.Year" placeholder="@L["Todos los años"]" /></label>
+                    <label class="data-table-field"><span>@L["Paralelo"]</span><InputText @bind-Value="filters.Parallel" placeholder="@L["Todos los paralelos"]" maxlength="10" /></label>
+                    <label class="data-table-field"><span>@L["Estado"]</span><InputSelect @bind-Value="filters.Active"><option value="">@L["Todos"]</option><option value="true">@L["Activo"]</option><option value="false">@L["Inactivo"]</option></InputSelect></label>
                 </div>
                 <details class="courses-advanced-filters">
-                    <summary>Filtros adicionales</summary>
+                    <summary>@L["Filtros adicionales"]</summary>
                     <div class="data-table-toolbar courses-filters">
-                        <label class="data-table-field"><span>Curso (ID)</span><InputText @bind-Value="filters.Id" placeholder="UUID del curso" maxlength="36" /></label>
+                        <label class="data-table-field"><span>@L["Curso (ID)"]</span><InputText @bind-Value="filters.Id" placeholder="@L["UUID del curso"]" maxlength="36" /></label>
                         
-                        <label class="data-table-field"><span>Fecha de inicio</span><InputDate @bind-Value="filters.StartDate" /></label>
-                        <label class="data-table-field"><span>Fecha de fin</span><InputDate @bind-Value="filters.EndDate" /></label>
-                        <label class="data-table-field"><span>Hora de inicio</span><InputDate @bind-Value="filters.StartTime" Type="InputDateType.Time" /></label>
-                        <label class="data-table-field"><span>Hora de fin</span><InputDate @bind-Value="filters.EndTime" Type="InputDateType.Time" /></label>
-                        <label class="data-table-field"><span>Fecha de creación</span><InputDate @bind-Value="filters.CreatedAt" /></label>
+                        <label class="data-table-field"><span>@L["Fecha de inicio"]</span><InputDate @bind-Value="filters.StartDate" /></label>
+                        <label class="data-table-field"><span>@L["Fecha de fin"]</span><InputDate @bind-Value="filters.EndDate" /></label>
+                        <label class="data-table-field"><span>@L["Hora de inicio"]</span><InputDate @bind-Value="filters.StartTime" Type="InputDateType.Time" /></label>
+                        <label class="data-table-field"><span>@L["Hora de fin"]</span><InputDate @bind-Value="filters.EndTime" Type="InputDateType.Time" /></label>
+                        <label class="data-table-field"><span>@L["Fecha de creación"]</span><InputDate @bind-Value="filters.CreatedAt" /></label>
                     </div>
                 </details>
-                <div class="data-filter-actions"><button type="submit" class="data-table-button data-table-button-primary">Buscar</button><button type="button" class="data-table-button" @onclick="ClearFiltersAsync">Limpiar filtros</button></div>
+                <div class="data-filter-actions"><button type="submit" class="data-table-button data-table-button-primary">@L["Buscar"]</button><button type="button" class="data-table-button" @onclick="ClearFiltersAsync">@L["Limpiar filtros"]</button></div>
             </fieldset>
         </EditForm>
         @if (validationErrors.Count > 0) { <div class="data-table-error" role="alert">@foreach (var message in validationErrors) { <p>@message</p> }</div> }
-        @if (catalogError is not null) { <div class="data-table-error" role="alert"><span>@catalogError</span><button type="button" class="data-table-text-button" @onclick="LoadCatalogsAsync" disabled="@loadingCatalogs">Reintentar catálogos</button></div> }
-        @if (error is not null) { <div class="data-table-error" role="alert"><span>@error</span><button type="button" class="data-table-text-button" @onclick="RetryAsync" disabled="@busy">Reintentar</button></div> }
+        @if (catalogError is not null) { <div class="data-table-error" role="alert"><span>@catalogError</span><button type="button" class="data-table-text-button" @onclick="LoadCatalogsAsync" disabled="@loadingCatalogs">@L["Reintentar catálogos"]</button></div> }
+        @if (error is not null) { <div class="data-table-error" role="alert"><span>@error</span><button type="button" class="data-table-text-button" @onclick="RetryAsync" disabled="@busy">@L["Reintentar"]</button></div> }
         @if (status is not null) { <p class="data-table-message" role="status">@status</p> }
-        <p class="data-table-summary" role="status" aria-live="polite">@(busy ? "Cargando cursos…" : error is not null ? "Consulta no disponible" : $"{total ?? courses.Count} cursos {(total is null ? "en esta página" : "en total")}")</p>
-        <ListPager Top="true" Label="Paginación de cursos" @bind-PageSize="pageSize" @bind-PageSize:after="ChangePageSizeAsync" PageSizes="5,10,20" PageSizeLabel="Filas por página" PageSizeDisabled="@busy" Page="page" PageOf="@PageOf" Info="@(busy ? "Consultando…" : error is null ? ResultRange : "")" PreviousDisabled="@(busy || page <= 1)" NextDisabled="@(busy || !hasNext)" OnPrevious="PreviousPageAsync" OnNext="NextPageAsync" />
-        <div class="data-table-scroll courses-table-region" role="region" aria-label="Listado de cursos" aria-busy="@busy.ToString().ToLowerInvariant()" tabindex="0">
+        <p class="data-table-summary" role="status" aria-live="polite">@(busy ? L["Cargando cursos…"] : error is not null ? L["Consulta no disponible"] : I18n.T(total is null ? "{0} cursos en esta página" : "{0} cursos en total", total ?? courses.Count))</p>
+        <ListPager Top="true" Label="@L["Paginación de cursos"]" @bind-PageSize="pageSize" @bind-PageSize:after="ChangePageSizeAsync" PageSizes="5,10,20" PageSizeLabel="@L["Filas por página"]" PageSizeDisabled="@busy" Page="page" PageOf="@PageOf" Info="@(busy ? L["Consultando…"] : error is null ? ResultRange : "")" PreviousDisabled="@(busy || page <= 1)" NextDisabled="@(busy || !hasNext)" OnPrevious="PreviousPageAsync" OnNext="NextPageAsync" />
+        <div class="data-table-scroll courses-table-region" role="region" aria-label="@L["Listado de cursos"]" aria-busy="@busy.ToString().ToLowerInvariant()" tabindex="0">
             <table class="data-table courses-table">
-                <caption class="data-table-sr-only">Módulo, profesor, bimestre, horario, aula, estudiantes y promedios de exámenes por curso.</caption>
-                <thead><tr><th scope="col">Módulo / paralelo</th><th scope="col">Profesor</th><th scope="col">Bimestre / horario</th><th scope="col">Aula</th><th scope="col">Estudiantes</th><th scope="col">Promedio examen 1</th><th scope="col">Promedio examen 2</th><th scope="col" class="data-table-actions-heading">Acciones</th></tr></thead>
+                <caption class="data-table-sr-only">@L["Módulo, profesor, bimestre, horario, aula, estudiantes y promedios de exámenes por curso."]</caption>
+                <thead><tr><th scope="col">@L["Módulo / paralelo"]</th><th scope="col">@L["Profesor"]</th><th scope="col">@L["Bimestre / horario"]</th><th scope="col">@L["Aula"]</th><th scope="col">@L["Estudiantes"]</th><th scope="col">@L["Promedio examen 1"]</th><th scope="col">@L["Promedio examen 2"]</th><th scope="col" class="data-table-actions-heading">@L["Acciones"]</th></tr></thead>
                 <tbody>
-                    @if (busy) { <tr><td colspan="8" class="data-table-empty">Cargando cursos…</td></tr> }
+                    @if (busy) { <tr><td colspan="8" class="data-table-empty">@L["Cargando cursos…"]</td></tr> }
                     else
                     {
                         @foreach (var course in courses)
@@ -73,29 +73,29 @@
                             <tr @key="course.Id">
                                 <th scope="row"><span class="data-table-primary">@Display(course.ModuleName, "Sin módulo informado") <StatusPill Active="course.Active" On="Activo" Off="Inactivo" /></span><span class="data-table-secondary">Nivel @(course.ModuleLevel?.ToString() ?? "—") · Paralelo @Display(course.Parallel, "—")</span></th>
                                 <td>@Display(course.TeacherName, "Sin profesor asignado")</td>
-                                <td><span class="data-table-primary">Bimestre @Bimester(course.Bimester) · @course.Year</span><span class="data-table-secondary">@Hour(course.StartTime) – @Hour(course.EndTime)</span><span class="data-table-secondary">@(course.StartDate?.ToString("dd/MM/yyyy") ?? "—") – @(course.EndDate?.ToString("dd/MM/yyyy") ?? "—")</span></td>
+                                <td><span class="data-table-primary">@L["Bimestre {0} · {1}", Bimester(course.Bimester), course.Year]</span><span class="data-table-secondary">@Hour(course.StartTime) – @Hour(course.EndTime)</span><span class="data-table-secondary">@(course.StartDate?.ToString("dd/MM/yyyy") ?? "—") – @(course.EndDate?.ToString("dd/MM/yyyy") ?? "—")</span></td>
                                 <td><span class="data-table-primary">@Display(course.ClassroomName, "Sin aula asignada")</span><span class="data-table-secondary">Capacidad: @(course.ClassroomCapacity?.ToString() ?? "—")</span></td>
                                 <td><span class="data-table-chip">@(course.StudentCount?.ToString() ?? "—") estudiantes</span></td>
-                                <td>@if (course.Exam1Average is null) { <span class="data-table-secondary">Pendiente</span> } else { <span class="data-table-grade">@course.Exam1Average?.ToString("0.##")</span><span class="data-table-grade-scale"> / 100</span> }</td>
-                                <td>@if (course.Exam2Average is null) { <span class="data-table-secondary">Pendiente</span> } else { <span class="data-table-grade">@course.Exam2Average?.ToString("0.##")</span><span class="data-table-grade-scale"> / 100</span> }</td>
+                                <td>@if (course.Exam1Average is null) { <span class="data-table-secondary">@L["Pendiente"]</span> } else { <span class="data-table-grade">@course.Exam1Average?.ToString("0.##")</span><span class="data-table-grade-scale"> / 100</span> }</td>
+                                <td>@if (course.Exam2Average is null) { <span class="data-table-secondary">@L["Pendiente"]</span> } else { <span class="data-table-grade">@course.Exam2Average?.ToString("0.##")</span><span class="data-table-grade-scale"> / 100</span> }</td>
                                 <td><div class="data-table-actions">
-                                    <a class="data-table-icon-button" href="@($"/courses/{course.Id:D}")" title="Ver estudiantes del curso" aria-label="Ver estudiantes de @course.ModuleName paralelo @course.Parallel"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></a>
+                                    <a class="data-table-icon-button" href="@($"/courses/{course.Id:D}")" title="@L["Ver estudiantes del curso"]" aria-label="@L["Ver estudiantes de {0} paralelo {1}", course.ModuleName, course.Parallel]"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></a>
                                     @if (CanCreate)
                                     {
-                                        <button type="button" class="data-table-icon-button" disabled="@loadingCatalogs" @onclick="() => OpenEdit(course)" title="Editar curso" aria-label="Editar curso @course.ModuleName paralelo @course.Parallel" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15l-1 6Z"/></svg></button>
+                                        <button type="button" class="data-table-icon-button" disabled="@loadingCatalogs" @onclick="() => OpenEdit(course)" title="@L["Editar curso"]" aria-label="@L["Editar curso {0} paralelo {1}", course.ModuleName, course.Parallel]" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15l-1 6Z"/></svg></button>
                                     }
-                                    <button type="button" class="data-table-icon-button data-table-icon-danger" disabled title="Enviar a papelera · Próximamente" aria-label="Enviar curso @course.Id a papelera · Próximamente"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/></svg></button>
+                                    <button type="button" class="data-table-icon-button data-table-icon-danger" disabled title="@L["Enviar a papelera · Próximamente"]" aria-label="@L["Enviar curso {0} a papelera · Próximamente", course.Id]"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/></svg></button>
                                 </div></td>
                             </tr>
                         }
-                        @if (courses.Count == 0 && error is null) { <tr><td colspan="8" class="data-table-empty"><strong>No se encontraron cursos</strong><p>Prueba con otros filtros.</p><button type="button" class="data-table-button" @onclick="ClearFiltersAsync">Limpiar filtros</button></td></tr> }
+                        @if (courses.Count == 0 && error is null) { <tr><td colspan="8" class="data-table-empty"><strong>@L["No se encontraron cursos"]</strong><p>@L["Prueba con otros filtros."]</p><button type="button" class="data-table-button" @onclick="ClearFiltersAsync">@L["Limpiar filtros"]</button></td></tr> }
                     }
                 </tbody>
             </table>
         </div>
         @* Prueba para celular (≤640px): tarjetas en lugar de la tabla. En escritorio quedan ocultas por CSS. *@
-        <ul class="course-cards" aria-label="Cursos" aria-busy="@busy.ToString().ToLowerInvariant()">
-            @if (busy) { <li class="course-card-empty">Cargando cursos…</li> }
+        <ul class="course-cards" aria-label="@L["Cursos"]" aria-busy="@busy.ToString().ToLowerInvariant()">
+            @if (busy) { <li class="course-card-empty">@L["Cargando cursos…"]</li> }
             else
             {
                 @foreach (var course in courses)
@@ -106,30 +106,30 @@
                             <StatusPill Active="course.Active" On="Activo" Off="Inactivo" />
                         </div>
                         <dl class="course-card-info">
-                            <div><dt>Profesor</dt><dd>@Display(course.TeacherName, "Sin profesor asignado")</dd></div>
-                            <div><dt>Bimestre</dt><dd>Bimestre @Bimester(course.Bimester) · @course.Year</dd></div>
-                            <div><dt>Horario</dt><dd>@Hour(course.StartTime) – @Hour(course.EndTime)</dd></div>
-                            <div><dt>Fechas</dt><dd>@(course.StartDate?.ToString("dd/MM/yyyy") ?? "—") – @(course.EndDate?.ToString("dd/MM/yyyy") ?? "—")</dd></div>
-                            <div><dt>Aula</dt><dd>@Display(course.ClassroomName, "Sin aula asignada") · Cap. @(course.ClassroomCapacity?.ToString() ?? "—")</dd></div>
-                            <div><dt>Estudiantes</dt><dd>@(course.StudentCount?.ToString() ?? "—")</dd></div>
+                            <div><dt>@L["Profesor"]</dt><dd>@Display(course.TeacherName, "Sin profesor asignado")</dd></div>
+                            <div><dt>@L["Bimestre"]</dt><dd>@L["Bimestre {0} · {1}", Bimester(course.Bimester), course.Year]</dd></div>
+                            <div><dt>@L["Horario"]</dt><dd>@Hour(course.StartTime) – @Hour(course.EndTime)</dd></div>
+                            <div><dt>@L["Fechas"]</dt><dd>@(course.StartDate?.ToString("dd/MM/yyyy") ?? "—") – @(course.EndDate?.ToString("dd/MM/yyyy") ?? "—")</dd></div>
+                            <div><dt>@L["Aula"]</dt><dd>@Display(course.ClassroomName, "Sin aula asignada") · Cap. @(course.ClassroomCapacity?.ToString() ?? "—")</dd></div>
+                            <div><dt>@L["Estudiantes"]</dt><dd>@(course.StudentCount?.ToString() ?? "—")</dd></div>
                         </dl>
                         <div class="course-card-grades">
-                            <div><span>Examen 1</span>@if (course.Exam1Average is { } first) { <strong>@first.ToString("0.##")<small> / 100</small></strong> } else { <em>Pendiente</em> }</div>
-                            <div><span>Examen 2</span>@if (course.Exam2Average is { } second) { <strong>@second.ToString("0.##")<small> / 100</small></strong> } else { <em>Pendiente</em> }</div>
+                            <div><span>@L["Examen 1"]</span>@if (course.Exam1Average is { } first) { <strong>@first.ToString("0.##")<small> / 100</small></strong> } else { <em>@L["Pendiente"]</em> }</div>
+                            <div><span>@L["Examen 2"]</span>@if (course.Exam2Average is { } second) { <strong>@second.ToString("0.##")<small> / 100</small></strong> } else { <em>@L["Pendiente"]</em> }</div>
                         </div>
                         <div class="data-table-actions course-card-actions">
-                            <a class="data-table-button" href="@($"/courses/{course.Id:D}")" aria-label="Ver estudiantes de @course.ModuleName paralelo @course.Parallel">Ver estudiantes</a>
+                            <a class="data-table-button" href="@($"/courses/{course.Id:D}")" aria-label="@L["Ver estudiantes de {0} paralelo {1}", course.ModuleName, course.Parallel]">@L["Ver estudiantes"]</a>
                             @if (CanCreate)
                             {
-                                <button type="button" class="data-table-button" disabled="@loadingCatalogs" @onclick="() => OpenEdit(course)" aria-label="Editar curso @course.ModuleName paralelo @course.Parallel" aria-haspopup="dialog">Editar</button>
+                                <button type="button" class="data-table-button" disabled="@loadingCatalogs" @onclick="() => OpenEdit(course)" aria-label="@L["Editar curso {0} paralelo {1}", course.ModuleName, course.Parallel]" aria-haspopup="dialog">@L["Editar"]</button>
                             }
                         </div>
                     </li>
                 }
-                @if (courses.Count == 0 && error is null) { <li class="course-card-empty"><strong>No se encontraron cursos</strong><p>Prueba con otros filtros.</p></li> }
+                @if (courses.Count == 0 && error is null) { <li class="course-card-empty"><strong>@L["No se encontraron cursos"]</strong><p>@L["Prueba con otros filtros."]</p></li> }
             }
         </ul>
-        <ListPager Label="Paginación de cursos" @bind-PageSize="pageSize" @bind-PageSize:after="ChangePageSizeAsync" PageSizes="5,10,20" PageSizeLabel="Filas por página" PageSizeDisabled="@busy" Page="page" PageOf="@PageOf" Info="@(busy ? "Consultando…" : error is null ? ResultRange : "")" PreviousDisabled="@(busy || page <= 1)" NextDisabled="@(busy || !hasNext)" OnPrevious="PreviousPageAsync" OnNext="NextPageAsync" />
+        <ListPager Label="@L["Paginación de cursos"]" @bind-PageSize="pageSize" @bind-PageSize:after="ChangePageSizeAsync" PageSizes="5,10,20" PageSizeLabel="@L["Filas por página"]" PageSizeDisabled="@busy" Page="page" PageOf="@PageOf" Info="@(busy ? L["Consultando…"] : error is null ? ResultRange : "")" PreviousDisabled="@(busy || page <= 1)" NextDisabled="@(busy || !hasNext)" OnPrevious="PreviousPageAsync" OnNext="NextPageAsync" />
     </div>
 </section>
 

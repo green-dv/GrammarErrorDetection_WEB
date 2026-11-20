@@ -37,6 +37,6 @@ public sealed class StudentGradeDraft
     };
     private static decimal? GrammarAndVocabulary(EvaluationResponse value)
         => value.GrammarScore is null ? null : value.GrammarScore + (value.VocabularyScore ?? 0);
-    public static string Result(decimal? score) => score is null ? "Pendiente" : score >= 70 ? "Aprobado" : "Reprobado";
+    public static string Result(decimal? score) => score is null ? I18n.T("Pendiente") : score >= 70 ? I18n.T("Aprobado") : I18n.T("Reprobado");
     public static string Color(decimal? score) => score is null ? "" : score < 70m ? "grade-below" : "grade-passed";
 }

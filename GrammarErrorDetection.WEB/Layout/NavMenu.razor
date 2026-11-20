@@ -6,37 +6,37 @@
 @using System.Text
 
 @* Celular: el menú queda oculto y solo se muestra este botón; al abrirlo, el menú completo se desliza encima del contenido. *@
-<button type="button" class="ceti-mobile-toggle" @onclick="Toggle" aria-label="@(expanded ? "Cerrar menú" : "Abrir menú")"
+<button type="button" class="ceti-mobile-toggle" @onclick="Toggle" aria-label="@(expanded ? L["Cerrar menú"] : L["Abrir menú"])"
         aria-expanded="@(expanded ? "true" : "false")" aria-controls="ceti-navigation">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="@(expanded ? "M6 6l12 12M18 6 6 18" : "M4 6h16M4 12h16M4 18h16")" /></svg>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="@(expanded ? L["M6 6l12 12M18 6 6 18"] : L["M4 6h16M4 12h16M4 18h16"])" /></svg>
 </button>
 @if (expanded)
 {
-    <button type="button" class="ceti-nav-backdrop" @onclick="Collapse" aria-label="Cerrar navegación"></button>
+    <button type="button" class="ceti-nav-backdrop" @onclick="Collapse" aria-label="@L["Cerrar navegación"]"></button>
 }
-<aside class="ceti-sidebar @(expanded ? "is-expanded" : "")" aria-label="Menú CETI" @onkeydown="HandleKey">
-    <a class="ceti-brand" href="home" aria-label="CETI · Inicio">
+<aside class="ceti-sidebar @(expanded ? "is-expanded" : "")" aria-label="@L["Menú CETI"]" @onkeydown="HandleKey">
+    <a class="ceti-brand" href="home" aria-label="@L["CETI · Inicio"]">
         <img src="images/ceti-logo.png" width="34" height="34" alt="" />
-        <span>CETI<span class="ceti-brand-dot">.</span></span>
+        <span>@L["CETI"]<span class="ceti-brand-dot">.</span></span>
     </a>
     <div class="ceti-nav-main" id="ceti-navigation">
         @if (expanded)
         {
             <div class="ceti-search">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4 4" /></svg>
-                <label class="ceti-sr-only" for="ceti-menu-search">Buscar opciones</label>
-                <input id="ceti-menu-search" type="search" placeholder="Buscar opciones…" autocomplete="off" @bind="search" @bind:event="oninput" />
+                <label class="ceti-sr-only" for="ceti-menu-search">@L["Buscar opciones"]</label>
+                <input id="ceti-menu-search" type="search" placeholder="@L["Buscar opciones…"]" autocomplete="off" @bind="search" @bind:event="oninput" />
             </div>
         }
         else
         {
-            <button type="button" class="ceti-rail-button" @onclick="Expand" aria-label="Buscar opciones" title="Buscar opciones">
+            <button type="button" class="ceti-rail-button" @onclick="Expand" aria-label="@L["Buscar opciones"]" title="@L["Buscar opciones"]">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4 4" /></svg>
             </button>
         }
         @if (Session.Current is not null)
         {
-                <nav aria-label="Navegación principal">
+                <nav aria-label="@L["Navegación principal"]">
                     @foreach (var group in VisibleSections())
                     {
                         <section class="ceti-menu-section" aria-labelledby="@($"nav-section-{group.Section.Id}")" @key="group.Section.Id">
@@ -56,14 +56,14 @@
                 </nav>
                 @if (expanded && !VisibleSections().Any())
                 {
-                    <p class="ceti-menu-empty" role="status">No se encontraron opciones.</p>
+                    <p class="ceti-menu-empty" role="status">@L["No se encontraron opciones."]</p>
                 }
         }
     </div>
-    <button type="button" class="ceti-nav-toggle" @onclick="Toggle" aria-label="@(expanded ? "Contraer navegación" : "Expandir navegación")"
-            aria-expanded="@(expanded ? "true" : "false")" aria-controls="ceti-navigation" title="@(expanded ? "Contraer menú" : "Expandir menú")">
+    <button type="button" class="ceti-nav-toggle" @onclick="Toggle" aria-label="@(expanded ? L["Contraer navegación"] : L["Expandir navegación"])"
+            aria-expanded="@(expanded ? "true" : "false")" aria-controls="ceti-navigation" title="@(expanded ? L["Contraer menú"] : L["Expandir menú"])">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
-        <span class="ceti-option-title">Contraer menú</span>
+        <span class="ceti-option-title">@L["Contraer menú"]</span>
     </button>
     <AccountMenu Expanded="expanded" />
 </aside>

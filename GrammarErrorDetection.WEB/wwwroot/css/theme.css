@@ -266,3 +266,8 @@
 /* Procesar: aviso para docentes y coordinadores. Perfil: edad. */
 .nlp-staff-note { margin: 0; color: var(--t-muted); font-size: calc(12px * var(--ui-scale, 1)); line-height: 1.5; }
 .member-age { color: var(--t-muted); font-weight: 400; }
+
+/* Mensajes de error legibles sobre fondo oscuro. */
+:root[data-theme="dark"] .sp-notice.is-error,
+:root[data-theme="dark"] .data-table-error,
+:root[data-theme="dark"] .sh-dashboard .data-table-error { color: #ff9b98; }

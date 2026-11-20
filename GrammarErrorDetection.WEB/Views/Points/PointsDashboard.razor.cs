@@ -23,8 +23,8 @@ public partial class PointsDashboard : IDisposable
     private bool historyLoading, hasNext;
     private string? historyError, historyStatus;
     private long? historyTotal;
-    private string HistoryRange => history.Count == 0 ? "0 movimientos" : $"Mostrando {(page - 1) * pageSize + 1}–{(page - 1) * pageSize + history.Count}{(historyTotal is { } all ? $" de {all}" : "")}";
-    private string PageOf => historyTotal is { } all ? $" de {Math.Max(1, (all + pageSize - 1) / pageSize)}" : "";
+    private string HistoryRange => history.Count == 0 ? "0 movimientos" : I18n.T("Mostrando {0}–{1}", (page - 1) * pageSize + 1, (page - 1) * pageSize + history.Count) + (historyTotal is { } all ? I18n.T(" de {0}", all) : "");
+    private string PageOf => historyTotal is { } all ? I18n.T(" de {0}", Math.Max(1, (all + pageSize - 1) / pageSize)) : "";
     private Task ChangeHistorySizeAsync() => LoadHistoryAsync(1);
     private Task PreviousHistoryAsync() => page <= 1 ? Task.CompletedTask : LoadHistoryAsync(page - 1);
     private Task NextHistoryAsync() => !hasNext ? Task.CompletedTask : LoadHistoryAsync(page + 1);
@@ -40,7 +40,7 @@ public partial class PointsDashboard : IDisposable
             if (requestedPage > page && entries.Count == 0)
             {
                 hasNext = false;
-                historyStatus = "Has llegado al final del historial.";
+                historyStatus = I18n.T("Has llegado al final del historial.");
                 return;
             }
             history = entries;
@@ -52,10 +52,10 @@ public partial class PointsDashboard : IDisposable
         {
             if (disposed) return;
             if (ex.StatusCode == HttpStatusCode.Unauthorized) { Session.Clear(); Navigation.NavigateTo("/auth/login", replace: true); }
-            historyError = ex.StatusCode == HttpStatusCode.Forbidden ? "No tienes permiso para consultar este historial." : "No se pudo consultar el historial. Inténtalo de nuevo.";
+            historyError = ex.StatusCode == HttpStatusCode.Forbidden ? I18n.T("No tienes permiso para consultar este historial.") : I18n.T("No se pudo consultar el historial. Inténtalo de nuevo.");
         }
-        catch (OperationCanceledException) { if (!disposed) historyError = "La consulta del historial tardó demasiado. Inténtalo de nuevo."; }
-        catch (JsonException) { if (!disposed) historyError = "No se pudo interpretar el historial de puntos."; }
+        catch (OperationCanceledException) { if (!disposed) historyError = I18n.T("La consulta del historial tardó demasiado. Inténtalo de nuevo."); }
+        catch (JsonException) { if (!disposed) historyError = I18n.T("No se pudo interpretar el historial de puntos."); }
         catch (InvalidOperationException ex) { if (!disposed) historyError = ex.Message; }
         finally
         {
@@ -73,17 +73,17 @@ public partial class PointsDashboard : IDisposable
             if (disposed) return;
             var levels = await Points.GetLevelsAsync(lifetime.Token);
             if (disposed) return;
-            if (levels.Count == 0) throw new InvalidOperationException("Aún no hay niveles activos configurados.");
+            if (levels.Count == 0) throw new InvalidOperationException(I18n.T("Aún no hay niveles activos configurados."));
             progress = LevelProgress.From(total.TotalPoints, levels);
         }
         catch (HttpRequestException ex)
         {
             if (disposed) return;
             if (ex.StatusCode == HttpStatusCode.Unauthorized) { Session.Clear(); Navigation.NavigateTo("/auth/login", replace: true); }
-            error = ex.StatusCode == HttpStatusCode.Forbidden ? "No tienes permiso para consultar tu progreso." : "No se pudo consultar tu progreso. Inténtalo de nuevo.";
+            error = ex.StatusCode == HttpStatusCode.Forbidden ? I18n.T("No tienes permiso para consultar tu progreso.") : I18n.T("No se pudo consultar tu progreso. Inténtalo de nuevo.");
         }
-        catch (OperationCanceledException) { if (!disposed) error = "La consulta tardó demasiado. Inténtalo de nuevo."; }
-        catch (JsonException) { if (!disposed) error = "No se pudo interpretar tu progreso."; }
+        catch (OperationCanceledException) { if (!disposed) error = I18n.T("La consulta tardó demasiado. Inténtalo de nuevo."); }
+        catch (JsonException) { if (!disposed) error = I18n.T("No se pudo interpretar tu progreso."); }
         catch (InvalidOperationException ex) { if (!disposed) error = ex.Message; }
         finally { loading = false; }
     }

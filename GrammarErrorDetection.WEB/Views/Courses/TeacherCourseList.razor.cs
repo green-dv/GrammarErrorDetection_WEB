@@ -12,15 +12,20 @@ public partial class TeacherCourseList : IDisposable
     [Inject] private ICourseService Courses { get; set; } = default!;
     [Inject] private AuthSessionState Session { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
+    /// <summary>Docente cuyos cursos se muestran; sin valor, el de la sesión.</summary>
+    [Parameter] public Guid? TeacherId { get; set; }
     private readonly CancellationTokenSource lifetime = new();
     private List<CourseSearchResponse> courses = [];
     private Guid owner;
     private int page = 1, pageSize = 20;
     private bool loading, hasNext, disposed;
     private long? total;
-    private string PageOf => total is { } all ? $" de {Math.Max(1, (all + pageSize - 1) / pageSize)}" : "";
+    private string PageOf => total is { } all ? I18n.T(" de {0}", Math.Max(1, (all + pageSize - 1) / pageSize)) : "";
     private string? error;
-    private bool Allowed => owner != Guid.Empty && Session.Current?.User?.Id == owner && Session.IsInRole("Teacher");
+    private Guid Target => TeacherId is { } id && id != Guid.Empty ? id : owner;
+    private bool IsOwn => Target == owner;
+    private bool Allowed => owner != Guid.Empty && Session.Current?.User?.Id == owner
+        && ((IsOwn && Session.IsInRole("Teacher")) || (!IsOwn && Session.IsInRole("Coordinator")));
 
     protected override async Task OnInitializedAsync()
     {
@@ -46,18 +51,18 @@ public partial class TeacherCourseList : IDisposable
         var token = lifetime.Token;
         try
         {
-            // Keep the session teacher fixed on every page, size change and retry.
+            // Keep the target teacher fixed on every page, size change and retry.
             var response = await Courses.SearchAsync(new()
             {
                 PageNumber = requestedPage, PageSize = pageSize,
-                Filter = new() { TeacherId = owner.ToString("D") }
+                Filter = new() { TeacherId = Target.ToString("D") }
             }, token);
             token.ThrowIfCancellationRequested();
             if (disposed || !Allowed) return;
             if (response?.Data is null || response.Error is { ErrorCode: not 0 })
-                throw new InvalidOperationException(response?.Error?.ErrorMessage ?? "No se pudo consultar tus cursos.");
-            if (response.Data.Any(course => course.TeacherId != owner))
-                throw new InvalidOperationException("El servicio devolvió cursos que no corresponden al docente de la sesión.");
+                throw new InvalidOperationException(response?.Error?.ErrorMessage ?? I18n.T("No se pudo consultar tus cursos."));
+            if (response.Data.Any(course => course.TeacherId != Target))
+                throw new InvalidOperationException(I18n.T("El servicio devolvió cursos que no corresponden al docente de la sesión."));
             courses = response.Data;
             total = response.TotalCount;
             hasNext = total is { } all ? (long)requestedPage * pageSize < all : courses.Count == pageSize;
@@ -69,10 +74,10 @@ public partial class TeacherCourseList : IDisposable
             {
                 Session.Clear(); Navigation.NavigateTo("/auth/login", replace: true);
             }
-            else error = ex.StatusCode == HttpStatusCode.Forbidden ? "No tienes permiso para consultar estos cursos." : "No se pudo conectar con el servicio de cursos. Inténtalo de nuevo.";
+            else error = ex.StatusCode == HttpStatusCode.Forbidden ? I18n.T("No tienes permiso para consultar estos cursos.") : I18n.T("No se pudo conectar con el servicio de cursos. Inténtalo de nuevo.");
         }
-        catch (OperationCanceledException) { if (!disposed && Allowed && !token.IsCancellationRequested) error = "La consulta tardó demasiado. Inténtalo de nuevo."; }
-        catch (JsonException) { if (!disposed && Allowed) error = "No se pudo interpretar el listado de cursos."; }
+        catch (OperationCanceledException) { if (!disposed && Allowed && !token.IsCancellationRequested) error = I18n.T("La consulta tardó demasiado. Inténtalo de nuevo."); }
+        catch (JsonException) { if (!disposed && Allowed) error = I18n.T("No se pudo interpretar el listado de cursos."); }
         catch (InvalidOperationException ex) { if (!disposed && Allowed) error = ex.Message; }
         finally { loading = false; }
     }

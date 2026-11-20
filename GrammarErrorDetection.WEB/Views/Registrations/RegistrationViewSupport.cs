@@ -11,8 +11,8 @@ internal static class RegistrationViewSupport
     public static T Data<T>(ApiResponse<T>? response) where T : class
     {
         if (response?.Error is { ErrorCode: not 0 } error)
-            throw new InvalidOperationException(error.ErrorMessage ?? "La operación no pudo completarse.");
-        return response?.Data ?? throw new InvalidOperationException("El servicio no devolvió una respuesta válida.");
+            throw new InvalidOperationException(error.ErrorMessage ?? I18n.T("La operación no pudo completarse."));
+        return response?.Data ?? throw new InvalidOperationException(I18n.T("El servicio no devolvió una respuesta válida."));
     }
     public static bool IsPending(RegistrationResponse item) => item.Active && string.Equals(item.Status, "Pending", StringComparison.OrdinalIgnoreCase);
     public static bool IsPending(RegistrationListItem item) => item.RegistrationId is { } id && id != Guid.Empty && item.Active != false && string.Equals(item.Status, "Pending", StringComparison.OrdinalIgnoreCase);
@@ -20,7 +20,7 @@ internal static class RegistrationViewSupport
     public static string StatusClass(RegistrationListItem item) => StatusClass(new RegistrationResponse { Status = item.Status });
     public static string Status(RegistrationResponse item) => item.Status?.ToLowerInvariant() switch
     {
-        "pending" => "Pendiente", "approved" => "Aprobada", "rejected" => "Rechazada", _ => item.Status ?? "Sin estado informado"
+        "pending" => I18n.T("Pendiente"), "approved" => I18n.T("Aprobada"), "rejected" => I18n.T("Rechazada"), _ => item.Status ?? I18n.T("Sin estado informado")
     };
     public static string StatusClass(RegistrationResponse item) => item.Status?.ToLowerInvariant() switch
     {
@@ -30,13 +30,13 @@ internal static class RegistrationViewSupport
     public static string Hour(string? value) => TimeOnly.TryParse(value?.TrimEnd('Z', 'z'), CultureInfo.InvariantCulture, DateTimeStyles.None, out var time) ? time.ToString("HH:mm") : "—";
     public static string Error(Exception ex) => ex switch
     {
-        HttpRequestException { StatusCode: HttpStatusCode.Unauthorized } => "Tu sesión venció. Vuelve a iniciar sesión.",
-        HttpRequestException { StatusCode: HttpStatusCode.Forbidden } => "No tienes permiso para realizar esta operación.",
-        HttpRequestException { StatusCode: HttpStatusCode.NotFound } => "La inscripción o el curso ya no está disponible. Actualiza el listado.",
-        HttpRequestException { StatusCode: HttpStatusCode.BadRequest or HttpStatusCode.Conflict or HttpStatusCode.UnprocessableEntity } => "No se pudo completar la operación. Revisa la solicitud y actualiza los datos: el estado, la elegibilidad o el cupo pueden haber cambiado.",
-        HttpRequestException => "No se pudo conectar con el servicio. Inténtalo de nuevo.",
-        OperationCanceledException => "La operación tardó demasiado. Actualiza el listado antes de volver a intentarlo.",
-        System.Text.Json.JsonException => "No se pudo interpretar la respuesta del servicio.",
+        HttpRequestException { StatusCode: HttpStatusCode.Unauthorized } => I18n.T("Tu sesión venció. Vuelve a iniciar sesión."),
+        HttpRequestException { StatusCode: HttpStatusCode.Forbidden } => I18n.T("No tienes permiso para realizar esta operación."),
+        HttpRequestException { StatusCode: HttpStatusCode.NotFound } => I18n.T("La inscripción o el curso ya no está disponible. Actualiza el listado."),
+        HttpRequestException { StatusCode: HttpStatusCode.BadRequest or HttpStatusCode.Conflict or HttpStatusCode.UnprocessableEntity } => I18n.T("No se pudo completar la operación. Revisa la solicitud y actualiza los datos: el estado, la elegibilidad o el cupo pueden haber cambiado."),
+        HttpRequestException => I18n.T("No se pudo conectar con el servicio. Inténtalo de nuevo."),
+        OperationCanceledException => I18n.T("La operación tardó demasiado. Actualiza el listado antes de volver a intentarlo."),
+        System.Text.Json.JsonException => I18n.T("No se pudo interpretar la respuesta del servicio."),
         _ => ex.Message
     };
 }

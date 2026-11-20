@@ -23,19 +23,19 @@ public partial class UserList
                 var response = await GradeCourseService.GetRegistrationsAsync(Course.Id, registrationPage, cancellationToken);
                 if (disposed || version != requestVersion) return;
                 if (response?.Data is null || response.Error is { ErrorCode: not 0 })
-                    throw new InvalidOperationException("No se pudieron consultar las inscripciones de este curso.");
+                    throw new InvalidOperationException(I18n.T("No se pudieron consultar las inscripciones de este curso."));
                 var added = 0;
                 foreach (var item in response.Data)
                 {
                     if (item.ClassId != Course.Id || item.Id == Guid.Empty || item.UserId == Guid.Empty)
-                        throw new InvalidOperationException("La API devolvió una inscripción que no corresponde al curso seleccionado.");
+                        throw new InvalidOperationException(I18n.T("La API devolvió una inscripción que no corresponde al curso seleccionado."));
                     if (!seen.Add(item.Id)) continue;
                     added++;
                     if (item.Active && !registrations.TryAdd(item.UserId, item.Id))
-                        throw new InvalidOperationException("Hay más de una inscripción activa del estudiante en este curso.");
+                        throw new InvalidOperationException(I18n.T("Hay más de una inscripción activa del estudiante en este curso."));
                 }
                 if (response.Data.Count < 100) break;
-                if (added == 0) throw new InvalidOperationException("La consulta de inscripciones no avanzó de página.");
+                if (added == 0) throw new InvalidOperationException(I18n.T("La consulta de inscripciones no avanzó de página."));
             }
             foreach (var user in users.ToArray())
             {
@@ -46,7 +46,7 @@ public partial class UserList
                 var draft = new StudentGradeDraft();
                 foreach (var group in evaluations.Where(item => item.Period is 1 or 2).GroupBy(item => item.Period))
                 {
-                    if (group.Count() > 1) throw new InvalidOperationException("Hay evaluaciones duplicadas para un mismo examen. Revisa los registros antes de editar.");
+                    if (group.Count() > 1) throw new InvalidOperationException(I18n.T("Hay evaluaciones duplicadas para un mismo examen. Revisa los registros antes de editar."));
                     draft.Set(group.Single());
                 }
                 gradeRegistrations[user.Id] = registrationId;
@@ -56,13 +56,13 @@ public partial class UserList
         catch (HttpRequestException ex)
         {
             if (!disposed && version == requestVersion) gradesError = ex.StatusCode == System.Net.HttpStatusCode.Forbidden
-                ? "La API rechazó la consulta de inscripciones o evaluaciones de este curso (403). Verifica que seas su docente asignado."
+                ? I18n.T("La API rechazó la consulta de inscripciones o evaluaciones de este curso (403). Verifica que seas su docente asignado.")
                 : HttpError(ex);
         }
-        catch (OperationCanceledException) { if (!disposed && version == requestVersion) gradesError = "La consulta de notas se canceló. Inténtalo de nuevo."; }
+        catch (OperationCanceledException) { if (!disposed && version == requestVersion) gradesError = I18n.T("La consulta de notas se canceló. Inténtalo de nuevo."); }
         catch (Exception ex) when (ex is InvalidOperationException or JsonException)
         {
-            if (!disposed && version == requestVersion) gradesError = ex is JsonException ? "No se pudieron interpretar las evaluaciones." : ex.Message;
+            if (!disposed && version == requestVersion) gradesError = ex is JsonException ? I18n.T("No se pudieron interpretar las evaluaciones.") : ex.Message;
         }
         finally { if (version == requestVersion) loadingGrades = false; }
     }

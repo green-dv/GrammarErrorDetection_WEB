@@ -78,11 +78,11 @@ public partial class Nlp : IDisposable
             var response = await VocabularyLookup.GetAsync(id, cancellation.Token);
             if (disposed || version != vocabularyVersion) return;
             if (response?.Data is not { } data || response.Error is { ErrorCode: not 0 } || data.TextId != id)
-                throw new InvalidOperationException("No se pudo cargar el vocabulario de este párrafo.");
+                throw new InvalidOperationException(I18n.T("No se pudo cargar el vocabulario de este párrafo."));
             vocabulary = data;
         }
         catch (OperationCanceledException)
-        { if (!disposed && version == vocabularyVersion && !cancellation.IsCancellationRequested) vocabularyError = "La verificación del vocabulario tardó demasiado. Inténtalo de nuevo."; }
+        { if (!disposed && version == vocabularyVersion && !cancellation.IsCancellationRequested) vocabularyError = I18n.T("La verificación del vocabulario tardó demasiado. Inténtalo de nuevo."); }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or InvalidOperationException)
         { if (!disposed && version == vocabularyVersion) vocabularyError = VocabularyErrorMessage(ex); }
         finally
@@ -101,16 +101,16 @@ public partial class Nlp : IDisposable
         if (ex is HttpRequestException http)
         {
             if (http.StatusCode == HttpStatusCode.Unauthorized)
-            { Session.Clear(); CheckSession(); return "Tu sesión venció. Vuelve a iniciar sesión."; }
+            { Session.Clear(); CheckSession(); return I18n.T("Tu sesión venció. Vuelve a iniciar sesión."); }
             return http.StatusCode switch
             {
-                HttpStatusCode.Forbidden => "No tienes permiso para consultar el vocabulario de este párrafo.",
-                HttpStatusCode.NotFound => "No se encontró el párrafo seleccionado.",
-                HttpStatusCode.TooManyRequests => "Hay demasiadas consultas de vocabulario. Espera un momento antes de reintentar.",
-                _ => "No se pudo verificar el vocabulario. Inténtalo de nuevo."
+                HttpStatusCode.Forbidden => I18n.T("No tienes permiso para consultar el vocabulario de este párrafo."),
+                HttpStatusCode.NotFound => I18n.T("No se encontró el párrafo seleccionado."),
+                HttpStatusCode.TooManyRequests => I18n.T("Hay demasiadas consultas de vocabulario. Espera un momento antes de reintentar."),
+                _ => I18n.T("No se pudo verificar el vocabulario. Inténtalo de nuevo.")
             };
         }
-        return ex is InvalidOperationException ? ex.Message : "La respuesta del vocabulario no tiene el formato esperado.";
+        return ex is InvalidOperationException ? ex.Message : I18n.T("La respuesta del vocabulario no tiene el formato esperado.");
     }
 
     private async Task LoadUploadCoursesAsync()
@@ -124,12 +124,12 @@ public partial class Nlp : IDisposable
             {
                 var response = await Registrations.GetMyCoursesAsync(number, 100, lifetime.Token);
                 if (disposed || Session.Current?.User?.Id != viewer.Id) return;
-                if (response?.Data is null || response.Error is { ErrorCode: not 0 }) throw new InvalidOperationException("No se pudieron consultar tus cursos para asociar el párrafo.");
+                if (response?.Data is null || response.Error is { ErrorCode: not 0 }) throw new InvalidOperationException(I18n.T("No se pudieron consultar tus cursos para asociar el párrafo."));
                 var added = 0;
                 foreach (var course in response.Data)
                     if (course.RegistrationId != Guid.Empty && courses.TryAdd(course.RegistrationId, course)) added++;
                 if (response.Data.Count < 100) break;
-                if (added == 0) throw new InvalidOperationException("El listado de cursos no avanzó. Inténtalo de nuevo.");
+                if (added == 0) throw new InvalidOperationException(I18n.T("El listado de cursos no avanzó. Inténtalo de nuevo."));
             }
             uploadCourses = courses.Values.Where(course => course.ClassId != Guid.Empty && string.Equals(course.Status, "Approved", StringComparison.OrdinalIgnoreCase))
                 .OrderByDescending(course => course.Year).ThenByDescending(course => course.Bimester).ToList();
@@ -179,9 +179,9 @@ public partial class Nlp : IDisposable
             }, cancellation.Token);
             if (disposed || version != requestVersion) return;
             if (response?.Data is null || response.Error is { ErrorCode: not 0 })
-                throw new InvalidOperationException("No se pudo consultar el historial de párrafos.");
+                throw new InvalidOperationException(I18n.T("No se pudo consultar el historial de párrafos."));
             if (scopeUser is { } owner && response.Data.Any(item => item.UserId != owner))
-                throw new InvalidOperationException("La respuesta del historial no corresponde al usuario solicitado.");
+                throw new InvalidOperationException(I18n.T("La respuesta del historial no corresponde al usuario solicitado."));
             // Count indica las filas recibidas, no el total de páginas.
             if (requestedPage > currentPage && response.Data.Count == 0) { hasNext = false; return; }
             paragraphs = response.Data;
@@ -189,7 +189,7 @@ public partial class Nlp : IDisposable
             hasNext = paragraphs.Count == requestedSize;
         }
         catch (OperationCanceledException)
-        { if (!disposed && version == requestVersion && !cancellation.IsCancellationRequested) historyError = "La consulta tardó demasiado. Inténtalo de nuevo."; }
+        { if (!disposed && version == requestVersion && !cancellation.IsCancellationRequested) historyError = I18n.T("La consulta tardó demasiado. Inténtalo de nuevo."); }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or InvalidOperationException)
         { if (!disposed && version == requestVersion) historyError = ErrorMessage(ex, false); }
         finally
@@ -223,13 +223,13 @@ public partial class Nlp : IDisposable
     {
         if (disposed || EditorBusy || loading || !CheckSession()) return;
         var content = text.Trim();
-        if (content.Length == 0 || content.Length > 5000) { uploadError = "Escribe un párrafo de entre 1 y 5000 caracteres."; return; }
+        if (content.Length == 0 || content.Length > 5000) { uploadError = I18n.T("Escribe un párrafo de entre 1 y 5000 caracteres."); return; }
         var owner = Session.Current!.User!.Id;
         // Docentes y coordinadores no están inscritos: sus párrafos van siempre sin curso.
         var registration = Session.IsInRole("Student") ? registrationId : null;
-        if (registration.HasValue && loadingCourses) { uploadError = "Espera a que termine la consulta de tus cursos."; return; }
+        if (registration.HasValue && loadingCourses) { uploadError = I18n.T("Espera a que termine la consulta de tus cursos."); return; }
         if (registration.HasValue && !uploadCourses.Any(course => course.RegistrationId == registration))
-        { uploadError = "Selecciona una inscripción válida para asociar el párrafo."; return; }
+        { uploadError = I18n.T("Selecciona una inscripción válida para asociar el párrafo."); return; }
         uploading = true; uploadError = status = photoError = null;
         photoMenuOpen = false;
         try
@@ -238,14 +238,14 @@ public partial class Nlp : IDisposable
             if (disposed) return;
             if (response?.Data is not { } result || response.Error is { ErrorCode: not 0 }
                 || result.Id == Guid.Empty || result.UserId != owner || result.RegistrationId != registration)
-                throw new InvalidOperationException("No se pudo confirmar el análisis. Consulta el historial antes de volver a subir el párrafo.");
+                throw new InvalidOperationException(I18n.T("No se pudo confirmar el análisis. Consulta el historial antes de volver a subir el párrafo."));
             selected = result; text = result.OriginalContent;
-            status = IsProcessed(result) ? "Párrafo guardado y analizado." : $"Párrafo guardado. Estado: {result.Status}.";
+            status = IsProcessed(result) ? I18n.T("Párrafo guardado y analizado.") : I18n.T("Párrafo guardado. Estado: {0}.", result.Status);
             search = appliedSearch = "";
             await LoadHistoryAsync(1);
         }
         catch (OperationCanceledException)
-        { if (!disposed) uploadError = "El análisis tardó demasiado. Consulta el historial antes de reintentar: el párrafo podría haberse guardado."; }
+        { if (!disposed) uploadError = I18n.T("El análisis tardó demasiado. Consulta el historial antes de reintentar: el párrafo podría haberse guardado."); }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or InvalidOperationException)
         { if (!disposed) uploadError = ErrorMessage(ex, true); }
         finally { uploading = false; }
@@ -263,12 +263,12 @@ public partial class Nlp : IDisposable
             var response = await Texts.SearchAsync(new() { Id = id, PageSize = 1, UserId = CanReadAll && allTexts ? null : Session.Current!.User!.Id }, lifetime.Token);
             if (disposed || selected?.Id != id || text != original) return;
             if (response?.Error is { ErrorCode: not 0 } || response?.Data is not { Count: 1 } data || data[0].Id != id)
-                throw new InvalidOperationException("No se pudo actualizar el análisis seleccionado.");
+                throw new InvalidOperationException(I18n.T("No se pudo actualizar el análisis seleccionado."));
             if (!CanReadAll && data[0].UserId != Session.Current!.User!.Id)
-                throw new InvalidOperationException("El análisis no corresponde a tu usuario.");
+                throw new InvalidOperationException(I18n.T("El análisis no corresponde a tu usuario."));
             selected = data[0]; text = selected.OriginalContent;
         }
-        catch (OperationCanceledException) { if (!disposed) uploadError = "La consulta del análisis tardó demasiado."; }
+        catch (OperationCanceledException) { if (!disposed) uploadError = I18n.T("La consulta del análisis tardó demasiado."); }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or InvalidOperationException)
         { if (!disposed) uploadError = ErrorMessage(ex, false); }
         finally { loading = false; }
@@ -279,23 +279,23 @@ public partial class Nlp : IDisposable
         if (ex is HttpRequestException http)
         {
             if (http.StatusCode == HttpStatusCode.Unauthorized)
-            { Session.Clear(); CheckSession(); return "Tu sesión venció. Vuelve a iniciar sesión."; }
+            { Session.Clear(); CheckSession(); return I18n.T("Tu sesión venció. Vuelve a iniciar sesión."); }
             return http.StatusCode switch
             {
-                HttpStatusCode.Forbidden => "No tienes permiso para consultar o analizar estos párrafos.",
-                HttpStatusCode.BadRequest => "La API rechazó el párrafo o los filtros. Revisa el contenido e inténtalo de nuevo.",
-                HttpStatusCode.TooManyRequests => "Hay demasiadas solicitudes. Espera un momento antes de reintentar.",
-                _ => upload ? "No se pudo confirmar el análisis. Revisa el historial antes de reintentar para evitar duplicados." : "No se pudo consultar el historial. Inténtalo de nuevo."
+                HttpStatusCode.Forbidden => I18n.T("No tienes permiso para consultar o analizar estos párrafos."),
+                HttpStatusCode.BadRequest => I18n.T("La API rechazó el párrafo o los filtros. Revisa el contenido e inténtalo de nuevo."),
+                HttpStatusCode.TooManyRequests => I18n.T("Hay demasiadas solicitudes. Espera un momento antes de reintentar."),
+                _ => upload ? I18n.T("No se pudo confirmar el análisis. Revisa el historial antes de reintentar para evitar duplicados.") : I18n.T("No se pudo consultar el historial. Inténtalo de nuevo.")
             };
         }
-        return ex is InvalidOperationException ? ex.Message : "La respuesta del análisis no tiene el formato esperado.";
+        return ex is InvalidOperationException ? ex.Message : I18n.T("La respuesta del análisis no tiene el formato esperado.");
     }
 
     private static bool IsProcessed(TextResponse item) => string.Equals(item.Status, "Procesado", StringComparison.OrdinalIgnoreCase);
     private static string Title(TextResponse item)
     {
         var title = string.Join(" ", item.OriginalContent.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Take(6));
-        return title.Length > 65 ? title[..65] + "…" : title.Length == 0 ? "Sin contenido" : title;
+        return title.Length > 65 ? title[..65] + "…" : title.Length == 0 ? I18n.T("Sin contenido") : title;
     }
     private void TogglePhotoMenu()
     {
@@ -313,18 +313,18 @@ public partial class Nlp : IDisposable
         var photo = args.File;
         if (photo.Size == 0)
         {
-            photoError = "La imagen seleccionada está vacía.";
+            photoError = I18n.T("La imagen seleccionada está vacía.");
             return;
         }
         if (photo.Size > MaxPhotoSize)
         {
-            photoError = "Selecciona una imagen de hasta 5 MB.";
+            photoError = I18n.T("Selecciona una imagen de hasta 5 MB.");
             return;
         }
         if (string.IsNullOrWhiteSpace(photo.ContentType)
             || !photo.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
         {
-            photoError = "El archivo seleccionado debe ser una imagen.";
+            photoError = I18n.T("El archivo seleccionado debe ser una imagen.");
             return;
         }
 
@@ -336,19 +336,19 @@ public partial class Nlp : IDisposable
             var result = await Ocr.RecognizeAsync(image, photo.Name, photo.ContentType, lifetime.Token);
             if (disposed) return;
             if (string.IsNullOrWhiteSpace(result?.Paragraph))
-                throw new InvalidOperationException("El OCR no encontró texto en la imagen.");
+                throw new InvalidOperationException(I18n.T("El OCR no encontró texto en la imagen."));
 
             text = result.Paragraph.Trim();
             selected = null;
             photoMessage = text.Length > 5000
-                ? "Texto extraído. Supera los 5000 caracteres; recórtalo antes de subir el párrafo."
+                ? I18n.T("Texto extraído. Supera los 5000 caracteres; recórtalo antes de subir el párrafo.")
                 : result.LineCount > 0
-                    ? $"Texto extraído de {result.LineCount} líneas. Revísalo antes de subir el párrafo."
-                    : "Texto extraído. Revísalo antes de subir el párrafo.";
+                    ? I18n.T("Texto extraído de {0} líneas. Revísalo antes de subir el párrafo.", result.LineCount)
+                    : I18n.T("Texto extraído. Revísalo antes de subir el párrafo.");
         }
         catch (OperationCanceledException)
         {
-            if (!disposed) photoError = "La extracción de texto tardó demasiado. Inténtalo de nuevo.";
+            if (!disposed) photoError = I18n.T("La extracción de texto tardó demasiado. Inténtalo de nuevo.");
         }
         catch (HttpRequestException ex)
         {
@@ -358,7 +358,7 @@ public partial class Nlp : IDisposable
         {
             if (!disposed) photoError = ex is InvalidOperationException
                 ? ex.Message
-                : "No se pudo leer la respuesta del servicio OCR. Inténtalo de nuevo.";
+                : I18n.T("No se pudo leer la respuesta del servicio OCR. Inténtalo de nuevo.");
         }
         finally
         {
@@ -370,9 +370,9 @@ public partial class Nlp : IDisposable
 
     private static string OcrErrorMessage(HttpRequestException exception) => exception.StatusCode switch
     {
-        HttpStatusCode.RequestEntityTooLarge => "La imagen es demasiado grande para el servicio OCR.",
-        HttpStatusCode.UnsupportedMediaType => "El servicio OCR no admite el formato de esta imagen.",
-        HttpStatusCode.BadRequest => "El servicio OCR no pudo procesar esta imagen.",
+        HttpStatusCode.RequestEntityTooLarge => I18n.T("La imagen es demasiado grande para el servicio OCR."),
+        HttpStatusCode.UnsupportedMediaType => I18n.T("El servicio OCR no admite el formato de esta imagen."),
+        HttpStatusCode.BadRequest => I18n.T("El servicio OCR no pudo procesar esta imagen."),
         _ => "No se pudo conectar con el servicio OCR en https://localhost:8443. Verifica que esté disponible e inténtalo de nuevo."
     };
 

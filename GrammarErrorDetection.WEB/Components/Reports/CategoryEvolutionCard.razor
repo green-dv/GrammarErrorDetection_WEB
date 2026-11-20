@@ -10,22 +10,22 @@
         <span class="grammar-trend @TrendClass(Row.Trend)">@TrendLabel(Row.Trend)</span>
     </div>
     <p class="gcard-delta @TrendClass(Row.Trend)">
-        @if (Row.ErrorCountChange is null) { <strong class="gcard-delta-empty">Sin comparación</strong> }
+        @if (Row.ErrorCountChange is null) { <strong class="gcard-delta-empty">@L["Sin comparación"]</strong> }
         else { <strong>@Signed(Row.ErrorCountChange)</strong> <span>errores</span><small>@RelativeChange(Row.ErrorCountChangePercentage)</small> }
     </p>
     <div class="gcard-versus">
-        <div><span>Antes</span><span class="gcard-track"><span class="gcard-fill is-before" style="width:@Percent(Row.PreviousErrorCount, top)%"></span></span><strong>@Row.PreviousErrorCount</strong></div>
-        <div><span>Ahora</span><span class="gcard-track"><span class="gcard-fill" style="width:@Percent(Row.CurrentErrorCount, top)%"></span></span><strong>@Row.CurrentErrorCount</strong></div>
+        <div><span>@L["Antes"]</span><span class="gcard-track"><span class="gcard-fill is-before" style="width:@Percent(Row.PreviousErrorCount, top)%"></span></span><strong>@Row.PreviousErrorCount</strong></div>
+        <div><span>@L["Ahora"]</span><span class="gcard-track"><span class="gcard-fill" style="width:@Percent(Row.CurrentErrorCount, top)%"></span></span><strong>@Row.CurrentErrorCount</strong></div>
     </div>
     <dl class="gcard-stats">
-        <div><dt>Errores por párrafo</dt><dd>@Number(Row.PreviousErrorsPerAnalyzedText) <span>→</span> @Number(Row.CurrentErrorsPerAnalyzedText)</dd></div>
+        <div><dt>@L["Errores por párrafo"]</dt><dd>@Number(Row.PreviousErrorsPerAnalyzedText) <span>→</span> @Number(Row.CurrentErrorsPerAnalyzedText)</dd></div>
         @if (!Personal)
         {
-            <div><dt>Estudiantes afectados</dt><dd>@Row.PreviousAffectedStudentCount <span>→</span> @Row.CurrentAffectedStudentCount</dd><dd class="gcard-sub">@ChangeWithUnit(Row.AffectedStudentPercentagePointChange, "pp de inscritos", true)</dd></div>
+            <div><dt>@L["Estudiantes afectados"]</dt><dd>@Row.PreviousAffectedStudentCount <span>→</span> @Row.CurrentAffectedStudentCount</dd><dd class="gcard-sub">@ChangeWithUnit(Row.AffectedStudentPercentagePointChange, "pp de inscritos", true)</dd></div>
         }
     </dl>
-    @if (Row.ComparisonStatus == "Comparable" && Row.PreviousErrorCount == 0 && Row.CurrentErrorCount > 0) { <p class="gcard-note">No se detectaba antes</p> }
-    @if (Row.ComparisonStatus == "Comparable" && Row.PreviousErrorCount > 0 && Row.CurrentErrorCount == 0) { <p class="gcard-note">Sin errores actuales</p> }
+    @if (Row.ComparisonStatus == "Comparable" && Row.PreviousErrorCount == 0 && Row.CurrentErrorCount > 0) { <p class="gcard-note">@L["No se detectaba antes"]</p> }
+    @if (Row.ComparisonStatus == "Comparable" && Row.PreviousErrorCount > 0 && Row.CurrentErrorCount == 0) { <p class="gcard-note">@L["Sin errores actuales"]</p> }
 </li>
 
 @code {
