@@ -8,23 +8,23 @@
    ordenada con la menor cobertura primero para detectar cursos que no usan el analizador. *@
 <section class="sh-card cd-coverage" id="@AnchorId" aria-labelledby="cd-coverage-title" aria-busy="@(loading ? "true" : "false")">
     <header class="sh-card-head">
-        <h3 id="cd-coverage-title">Cobertura de clases</h3>
-        <a class="sh-link" href="courses">Ver todas</a>
+        <h3 id="cd-coverage-title">@L["Cobertura de clases"]</h3>
+        <a class="sh-link" href="courses">@L["Ver todas"]</a>
     </header>
     <div class="cd-coverage-head">
-        <div class="cd-ring" style="--value:@StudentDashboard.Number(ActivityPercent)" role="img" aria-label="@($"{ActivityText} de las clases con actividad")">
-            <div><strong>@ActivityText</strong><span>con actividad</span></div>
+        <div class="cd-ring" style="--value:@StudentDashboard.Number(ActivityPercent)" role="img" aria-label="@(I18n.T("{0} de las clases con actividad", ActivityText))">
+            <div><strong>@ActivityText</strong><span>@L["con actividad"]</span></div>
         </div>
         <ul class="cd-coverage-legend">
-            <li class="is-all"><span>Clases del periodo</span><b>@CourseCount</b></li>
-            <li class="is-active"><span>Con textos analizados</span><b>@ClassesWithActivity</b></li>
-            <li class="is-idle"><span>Sin actividad</span><b>@Math.Max(CourseCount - ClassesWithActivity, 0)</b></li>
+            <li class="is-all"><span>@L["Clases del periodo"]</span><b>@CourseCount</b></li>
+            <li class="is-active"><span>@L["Con textos analizados"]</span><b>@ClassesWithActivity</b></li>
+            <li class="is-idle"><span>@L["Sin actividad"]</span><b>@Math.Max(CourseCount - ClassesWithActivity, 0)</b></li>
         </ul>
     </div>
     <p class="sh-note">@PeriodLabel. Primero las clases con menor uso del analizador.</p>
 
-    @if (error is not null) { <div class="data-table-error" role="alert">@error <button type="button" class="data-table-text-button" @onclick="() => LoadAsync(pageNumber)">Reintentar</button></div> }
-    else if (results is null) { <p class="data-table-message" role="status">Cargando clases…</p> }
+    @if (error is not null) { <div class="data-table-error" role="alert">@error <button type="button" class="data-table-text-button" @onclick="() => LoadAsync(pageNumber)">@L["Reintentar"]</button></div> }
+    else if (results is null) { <p class="data-table-message" role="status">@L["Cargando clases…"]</p> }
     else if (results.Items.Count > 0)
     {
         <ul class="cd-classes">
@@ -33,7 +33,7 @@
                 <li @key="course.ClassId">
                     <div>
                         <a href="@($"courses/{course.ClassId:D}/grammar-report")"><strong>@course.ModuleName</strong></a>
-                        <small>@(course.Parallel is { Length: > 0 } p ? $"Paralelo {p} · " : "")B@(course.Bimester) @course.Year · @course.TeacherName</small>
+                        <small>@(course.Parallel is { Length: > 0 } p ? I18n.T("Paralelo {0} · ", p) : "")B@(course.Bimester) @course.Year · @course.TeacherName</small>
                     </div>
                     <div class="cd-class-meter">
                         <span class="sh-meter"><span style="width:@StudentDashboard.Width(course.CoveragePercentage)"></span></span>
@@ -42,17 +42,17 @@
                 </li>
             }
         </ul>
-        <nav class="sh-pager" aria-label="Páginas de clases">
-            <span>Mostrando @((pageNumber - 1) * PageSize + 1)–@((pageNumber - 1) * PageSize + results.Items.Count) de @results.TotalCount</span>
+        <nav class="sh-pager" aria-label="@L["Páginas de clases"]">
+            <span>@L["Mostrando {0}–{1} de {2}", (pageNumber - 1) * PageSize + 1, (pageNumber - 1) * PageSize + results.Items.Count, results.TotalCount]</span>
             @if (Pages > 1)
             {
                 <div>
-                    <button type="button" aria-label="Página anterior" disabled="@(loading || pageNumber == 1)" @onclick="() => LoadAsync(pageNumber - 1)">‹</button>
+                    <button type="button" aria-label="@L["Página anterior"]" disabled="@(loading || pageNumber == 1)" @onclick="() => LoadAsync(pageNumber - 1)">‹</button>
                     @foreach (var number in PageWindow())
                     {
                         <button type="button" aria-current="@(number == pageNumber ? "page" : null)" disabled="@loading" @onclick="() => LoadAsync(number)">@number</button>
                     }
-                    <button type="button" aria-label="Página siguiente" disabled="@(loading || pageNumber >= Pages)" @onclick="() => LoadAsync(pageNumber + 1)">›</button>
+                    <button type="button" aria-label="@L["Página siguiente"]" disabled="@(loading || pageNumber >= Pages)" @onclick="() => LoadAsync(pageNumber + 1)">›</button>
                 </div>
             }
         </nav>
@@ -105,7 +105,7 @@
             pageNumber = number;
         }
         catch (OperationCanceledException) { }
-        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException or ArgumentException) { error = "No se pudo cargar la cobertura por clase."; }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException or ArgumentException) { error = I18n.T("No se pudo cargar la cobertura por clase."); }
         finally { loading = false; }
     }
 

@@ -11,7 +11,7 @@ public sealed class SupportMaterialService(IApiClient apiClient) : ISupportMater
     public async Task<ApiResponse<MaterialFileUploadResponse>?> UploadFileAsync(Stream file, string fileName, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(file);
-        if (string.IsNullOrWhiteSpace(fileName)) throw new ArgumentException("Selecciona un archivo.");
+        if (string.IsNullOrWhiteSpace(fileName)) throw new ArgumentException(I18n.T("Selecciona un archivo."));
         using var form = new MultipartFormDataContent();
         var content = new StreamContent(file);
         content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
@@ -60,7 +60,7 @@ public sealed class SupportMaterialService(IApiClient apiClient) : ISupportMater
         {
             ValidateGuid(filter.Id); ValidateGuid(filter.ErrorClassificationId);
             ValidateGuid(filter.FileTypeId); ValidateGuid(filter.UploadedBy);
-            if (filter.FileSize < 0) throw new ArgumentException("El tamaño no puede ser negativo.");
+            if (filter.FileSize < 0) throw new ArgumentException(I18n.T("El tamaño no puede ser negativo."));
             Add("Id", filter.Id?.ToString("D"));
             Add("Name", filter.Name);
             Add("ErrorClassificationId", filter.ErrorClassificationId?.ToString("D"));
@@ -87,8 +87,8 @@ public sealed class SupportMaterialService(IApiClient apiClient) : ISupportMater
         ArgumentNullException.ThrowIfNull(request);
         ValidateGuid(request.ErrorClassificationId); ValidateGuid(request.FileTypeId); ValidateGuid(request.UploadedBy);
         ValidateName(request.Name); ValidateLink(request.FileLink);
-        if (request.UploadDate == default) throw new ArgumentException("Indica la fecha de subida.");
-        if (request.FileSize < 0) throw new ArgumentException("El tamaño no puede ser negativo.");
+        if (request.UploadDate == default) throw new ArgumentException(I18n.T("Indica la fecha de subida."));
+        if (request.FileSize < 0) throw new ArgumentException(I18n.T("El tamaño no puede ser negativo."));
         return apiClient.PostAsync<SupportMaterialCreateRequest, ApiResponse<SupportMaterialResponse>>("api/SupportMaterial", request, cancellationToken);
     }
 
@@ -97,11 +97,11 @@ public sealed class SupportMaterialService(IApiClient apiClient) : ISupportMater
         ArgumentNullException.ThrowIfNull(request);
         ValidateGuid(request.Id); ValidateGuid(request.ErrorClassificationId);
         ValidateGuid(request.FileTypeId); ValidateGuid(request.UploadedBy);
-        if (!request.HasChanges) throw new ArgumentException("No hay cambios para guardar.");
+        if (!request.HasChanges) throw new ArgumentException(I18n.T("No hay cambios para guardar."));
         if (request.Name is not null) ValidateName(request.Name);
         if (request.FileLink is not null) ValidateLink(request.FileLink);
-        if (request.FileSize < 0) throw new ArgumentException("El tamaño no puede ser negativo.");
-        if (request.UploadDate == default(DateTime)) throw new ArgumentException("Indica una fecha válida.");
+        if (request.FileSize < 0) throw new ArgumentException(I18n.T("El tamaño no puede ser negativo."));
+        if (request.UploadDate == default(DateTime)) throw new ArgumentException(I18n.T("Indica una fecha válida."));
         return apiClient.PutAsync<SupportMaterialUpdateRequest, ApiResponse<SupportMaterialResponse>>("api/SupportMaterial", request, cancellationToken);
     }
 
@@ -137,7 +137,7 @@ public sealed class SupportMaterialService(IApiClient apiClient) : ISupportMater
     {
         ValidateGuid(materialId);
         var text = helpful || string.IsNullOrWhiteSpace(comment) ? null : comment.Trim();
-        if (text?.Length > 500) throw new ArgumentException("El comentario admite hasta 500 caracteres.");
+        if (text?.Length > 500) throw new ArgumentException(I18n.T("El comentario admite hasta 500 caracteres."));
         return apiClient.PutAsync<SupportMaterialFeedbackRequest, ApiResponse<SupportMaterialInteractionResponse>>(
             $"api/SupportMaterial/{materialId:D}/feedback", new SupportMaterialFeedbackRequest { Helpful = helpful, Comment = text },
             cancellationToken);
@@ -145,14 +145,14 @@ public sealed class SupportMaterialService(IApiClient apiClient) : ISupportMater
 
     private static void ValidateGuid(Guid? value)
     {
-        if (value == Guid.Empty) throw new ArgumentException("Selecciona un identificador válido.");
+        if (value == Guid.Empty) throw new ArgumentException(I18n.T("Selecciona un identificador válido."));
     }
     private static void ValidateName(string name)
     {
-        if (string.IsNullOrWhiteSpace(name) || name.Trim().Length > 255) throw new ArgumentException("El nombre debe tener entre 1 y 255 caracteres.");
+        if (string.IsNullOrWhiteSpace(name) || name.Trim().Length > 255) throw new ArgumentException(I18n.T("El nombre debe tener entre 1 y 255 caracteres."));
     }
     private static void ValidateLink(string link)
     {
-        if (string.IsNullOrWhiteSpace(link)) throw new ArgumentException("Ingresa el enlace del material.");
+        if (string.IsNullOrWhiteSpace(link)) throw new ArgumentException(I18n.T("Ingresa el enlace del material."));
     }
 }

@@ -1,7 +1,7 @@
 @inject NavigationManager Navigation
 
 @* Solo en celular (CSS): accesos fijos a las secciones del dashboard para no recorrer una columna muy larga. *@
-<nav class="sh-section-nav" aria-label="Secciones del panel">
+<nav class="sh-section-nav" aria-label="@L["Secciones del panel"]">
     @foreach (var (id, label) in Items)
     {
         <a href="@($"{CurrentPage}#{id}")">@label</a>

@@ -3,28 +3,28 @@
 @if (Allowed)
 {
     <section class="users-page gamification-page">
-        <a class="data-table-text-button collection-back" href="@(achievement?.AchievementCollectionId is { } collectionId ? $"/gamification/collections/{collectionId:D}" : "/gamification")">← @(achievement?.AchievementCollectionId is not null ? "Volver a la colección" : "Volver a logros")</a>
-        <header class="users-heading"><div><p class="users-eyebrow">CETI · GAMIFICACIÓN</p><h1>Detalle del logro</h1><p>Información, recompensa y condición de obtención.</p></div>
-            @if (CanManage && achievement is not null) { <GamificationActions Label="@($"logro {achievement.Name}")" Active="achievement.Active" Disabled="loading" OnEdit="OpenEdit" OnToggleActive="OpenStatus" /> }
+        <a class="data-table-text-button collection-back" href="@(achievement?.AchievementCollectionId is { } collectionId ? $"/gamification/collections/{collectionId:D}" : "/gamification")">← @(achievement?.AchievementCollectionId is not null ? L["Volver a la colección"] : L["Volver a logros"])</a>
+        <header class="users-heading"><div><p class="users-eyebrow">@L["CETI · GAMIFICACIÓN"]</p><h1>@L["Detalle del logro"]</h1><p>@L["Información, recompensa y condición de obtención."]</p></div>
+            @if (CanManage && achievement is not null) { <GamificationActions Label="@(I18n.T("logro {0}", achievement.Name))" Active="achievement.Active" Disabled="loading" OnEdit="OpenEdit" OnToggleActive="OpenStatus" /> }
         </header>
-        @if (error is not null) { <div class="data-table-error" role="alert">@error <button type="button" class="data-table-text-button" disabled="@loading" @onclick="LoadAsync">Reintentar</button></div> }
+        @if (error is not null) { <div class="data-table-error" role="alert">@error <button type="button" class="data-table-text-button" disabled="@loading" @onclick="LoadAsync">@L["Reintentar"]</button></div> }
         @if (message is not null) { <p class="data-table-message" role="status">@message</p> }
-        @if (loading) { <p class="data-table-empty" role="status">Cargando logro…</p> }
+        @if (loading) { <p class="data-table-empty" role="status">@L["Cargando logro…"]</p> }
         else if (achievement is not null && error is null)
         {
             <article class="gamification-detail">
-                <div class="gamification-detail-image">@if (GamificationAdmin.SafeIcon(achievement.IconLink) is { } icon) { <img src="@icon" alt="Imagen del logro @achievement.Name" /> } else { <span role="img" aria-label="Logro sin imagen">✦</span> }</div>
+                <div class="gamification-detail-image">@if (GamificationAdmin.SafeIcon(achievement.IconLink) is { } icon) { <img src="@icon" alt="@L["Imagen del logro {0}", achievement.Name]" /> } else { <span role="img" aria-label="@L["Logro sin imagen"]"><svg class="achievement-default-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8m-4-4v4M7 4h10v5a5 5 0 0 1-10 0ZM7 6H4v2a3 3 0 0 0 3 3m10-5h3v2a3 3 0 0 1-3 3"/></svg></span> }</div>
                 <div class="gamification-detail-content">
-                    <div class="collection-achievement-state"><span class="data-table-chip">@(achievement.Active ? "Activo" : "Inactivo")</span>@if (achievement.IsSecret) { <span class="data-table-chip">Secreto</span> }@if (achievement.TierOrder is { } tier) { <span class="data-table-chip">Nivel @tier</span> }</div>
+                    <div class="collection-achievement-state"><span class="data-table-chip">@(achievement.Active ? L["Activo"] : L["Inactivo"])</span>@if (achievement.IsSecret) { <span class="data-table-chip">@L["Secreto"]</span> }@if (achievement.TierOrder is { } tier) { <span class="data-table-chip">@L["Nivel {0}", tier]</span> }</div>
                     <h2>@achievement.Name</h2><p class="gamification-detail-description">@achievement.Description</p>
                     <strong class="gamification-points">@achievement.Points puntos</strong>
                     <dl class="gamification-detail-data">
-                        <div><dt>Categoría</dt><dd>@(achievement.AchievementCategoryName ?? "No informada")</dd></div>
-                        <div><dt>Colección</dt><dd>@if (achievement.AchievementCollectionId is { } id) { <a href="@($"/gamification/collections/{id:D}")">@(achievement.AchievementCollectionName ?? "Visualizar colección")</a> } else { <span>Sin colección</span> }</dd></div>
-                        <div><dt>Actividad</dt><dd>@(achievement.ConditionName ?? achievement.ConditionCode ?? "No informada")</dd></div>
-                        <div><dt>@(achievement.Conditions.Count > 1 ? "Condiciones (se cumplen todas)" : "Condición")</dt><dd>@ConditionConfiguration.Summary(achievement.Conditions)</dd></div>
-                        <div><dt>Fecha de registro</dt><dd>@achievement.CreatedAt.ToString("dd/MM/yyyy HH:mm")</dd></div>
-                        <div><dt>Última actualización</dt><dd>@achievement.UpdatedAt.ToString("dd/MM/yyyy HH:mm")</dd></div>
+                        <div><dt>@L["Categoría"]</dt><dd>@(achievement.AchievementCategoryName ?? L["No informada"])</dd></div>
+                        <div><dt>@L["Colección"]</dt><dd>@if (achievement.AchievementCollectionId is { } id) { <a href="@($"/gamification/collections/{id:D}")">@(achievement.AchievementCollectionName ?? L["Visualizar colección"])</a> } else { <span>@L["Sin colección"]</span> }</dd></div>
+                        <div><dt>@L["Actividad"]</dt><dd>@(achievement.ConditionName ?? achievement.ConditionCode ?? L["No informada"])</dd></div>
+                        <div><dt>@(achievement.Conditions.Count > 1 ? L["Condiciones (se cumplen todas)"] : L["Condición"])</dt><dd>@ConditionConfiguration.Summary(achievement.Conditions)</dd></div>
+                        <div><dt>@L["Fecha de registro"]</dt><dd>@achievement.CreatedAt.ToString("dd/MM/yyyy HH:mm")</dd></div>
+                        <div><dt>@L["Última actualización"]</dt><dd>@achievement.UpdatedAt.ToString("dd/MM/yyyy HH:mm")</dd></div>
                     </dl>
                     <p class="gamification-detail-note">@ConditionConfiguration.Description(achievement.ConditionCode)</p>
                 </div>

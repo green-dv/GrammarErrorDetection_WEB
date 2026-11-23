@@ -53,3 +53,4 @@
 .member-empty h3 { color: var(--member-ink); font-size: calc(17px * var(--ui-scale, 1)); margin: 12px 0 8px; }
 @media(max-width: 760px) { .member-overview { grid-template-columns: minmax(0, 1fr); } .member-panel-heading { align-items: flex-start; flex-direction: column; } }
 @media(max-width: 520px) { .member-profile-content { padding: 12px; } .member-medals { grid-template-columns: minmax(0, 1fr); padding: 0 16px 16px; } .member-person { padding: 20px; } .member-person dl { grid-template-columns: minmax(0, 1fr); } .member-course { align-items: flex-start; flex-direction: column; } }
+.member-medal-symbol .achievement-default-icon { width: 100%; height: 100%; }

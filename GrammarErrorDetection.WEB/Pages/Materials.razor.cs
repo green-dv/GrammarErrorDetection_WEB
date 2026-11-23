@@ -35,7 +35,7 @@ public partial class Materials : IDisposable
     private string DialogClass => dialogMode switch
     {
         "preview" => "material-viewer-dialog",
-        "create" or "edit" when !useLink => "material-upload-dialog has-preview",
+        "create" or "edit" when !useLink => $"material-upload-dialog has-preview",
         _ => "material-upload-dialog"
     };
 
@@ -51,7 +51,7 @@ public partial class Materials : IDisposable
     }
     private string DetectedType => fileTypes.FirstOrDefault(item => item.Id.ToString("D") == editForm?.FileTypeId)?.Name
         ?? (selected is not null && selected.FileTypeId.ToString("D") == editForm?.FileTypeId ? FileType(selected)?.Name : null)
-        ?? "Se detectará al seleccionar el archivo";
+        ?? I18n.T("Se detectará al seleccionar el archivo");
     private const long MaxFileBytes = 25 * 1024 * 1024;
     private bool loading, loadingDetail, loadingCategories, loadingFileTypes, saving, hasNext, disposed;
     private int page = 1, pageSize = 10, loadedPageSize = 10, requestVersion;
@@ -68,22 +68,22 @@ public partial class Materials : IDisposable
     private string ApiBaseUrl => Configuration["Api:BaseUrl"]!;
     private string DialogTitle => dialogMode switch
     {
-        "create" => "Agregar material", "edit" => "Editar material",
-        "status" => selected?.Active == true ? "Desactivar material" : "Reactivar material",
+        "create" => I18n.T("Agregar material"), "edit" => I18n.T("Editar material"),
+        "status" => selected?.Active == true ? I18n.T("Desactivar material") : I18n.T("Reactivar material"),
         "preview" when selected is { } current => current.Name,
-        _ => "Material de apoyo"
+        _ => I18n.T("Material de apoyo")
     };
     private string? DialogSubtitle => dialogMode == "preview" && selected is { } current
         ? $"{CategoryName(current)} · {MaterialPresentation.Kind(current, FileType(current))}" : null;
     private string EmptyTitle => appliedFilter.OnlyHelpful == true
-        ? "Aún no marcaste materiales como útiles" : "No hay materiales con estos filtros";
+        ? I18n.T("Aún no marcaste materiales como útiles") : I18n.T("No hay materiales con estos filtros");
     private string EmptyHint => appliedFilter.OnlyHelpful == true
-        ? "Usa «Marcar útil» en los materiales que te ayuden para encontrarlos aquí rápidamente."
-        : "Prueba otro nombre, clasificación o tipo de archivo.";
+        ? I18n.T("Usa «Marcar útil» en los materiales que te ayuden para encontrarlos aquí rápidamente.")
+        : I18n.T("Prueba otro nombre, clasificación o tipo de archivo.");
     private long? total;
-    private string PageOf => total is { } all ? $" de {Math.Max(1, (all + pageSize - 1) / pageSize)}" : "";
+    private string PageOf => total is { } all ? I18n.T(" de {0}", Math.Max(1, (all + pageSize - 1) / pageSize)) : "";
     private string ResultRange => materials.Count == 0 ? "0 resultados"
-        : $"Mostrando {(page - 1) * loadedPageSize + 1}–{(page - 1) * loadedPageSize + materials.Count}{(total is { } all ? $" de {all}" : "")}";
+        : I18n.T("Mostrando {0}–{1}", (page - 1) * loadedPageSize + 1, (page - 1) * loadedPageSize + materials.Count) + (total is { } all ? I18n.T(" de {0}", all) : "");
     private bool HasChanges => editForm is not null && (pendingFile is not null || dialogMode == "create" || selected is not null && (
         editForm.Name.Trim() != selected.Name || editForm.FileLink.Trim() != selected.FileLink
         || !Guid.TryParse(editForm.ErrorClassificationId, out var category) || category != selected.ErrorClassificationId
@@ -104,9 +104,9 @@ public partial class Materials : IDisposable
             categories = rows.OrderBy(item => item.Name).ToList();
             foreach (var item in rows) knownCategoryNames[item.Id] = item.Name;
         }
-        catch (OperationCanceledException) { if (!disposed) categoryError = "La consulta de clasificaciones tardó demasiado."; }
+        catch (OperationCanceledException) { if (!disposed) categoryError = I18n.T("La consulta de clasificaciones tardó demasiado."); }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or InvalidOperationException)
-        { if (!disposed) categoryError = "No se pudieron cargar las clasificaciones. " + ErrorMessage(ex); }
+        { if (!disposed) categoryError = I18n.T("No se pudieron cargar las clasificaciones. ") + ErrorMessage(ex); }
         finally { loadingCategories = false; }
     }
 
@@ -122,9 +122,9 @@ public partial class Materials : IDisposable
             fileTypes = rows.OrderBy(item => item.Name).ToList();
             foreach (var item in rows) knownFileTypes[item.Id] = item;
         }
-        catch (OperationCanceledException) { if (!disposed) fileTypeError = "La consulta de tipos de archivo tardó demasiado."; }
+        catch (OperationCanceledException) { if (!disposed) fileTypeError = I18n.T("La consulta de tipos de archivo tardó demasiado."); }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or InvalidOperationException)
-        { if (!disposed) fileTypeError = "No se pudieron cargar los tipos de archivo. " + ErrorMessage(ex); }
+        { if (!disposed) fileTypeError = I18n.T("No se pudieron cargar los tipos de archivo. ") + ErrorMessage(ex); }
         finally { loadingFileTypes = false; }
     }
 
@@ -137,7 +137,7 @@ public partial class Materials : IDisposable
             foreach (var item in batch)
             {
                 if (id(item) == Guid.Empty || !active(item) || !rows.TryAdd(id(item), item))
-                    throw new InvalidOperationException("El catálogo contiene registros inválidos o páginas repetidas. Inténtalo de nuevo.");
+                    throw new InvalidOperationException(I18n.T("El catálogo contiene registros inválidos o páginas repetidas. Inténtalo de nuevo."));
             }
             if (batch.Count < 100) return rows.Values.ToList();
         }
@@ -150,7 +150,7 @@ public partial class Materials : IDisposable
             Navigation.NavigateTo("/auth/login", replace: true);
             return false;
         }
-        if (manage && !CanManage) { dialogError = "Solo docentes y coordinadores pueden modificar el material."; return false; }
+        if (manage && !CanManage) { dialogError = I18n.T("Solo docentes y coordinadores pueden modificar el material."); return false; }
         return true;
     }
 
@@ -162,13 +162,13 @@ public partial class Materials : IDisposable
         if (!string.IsNullOrWhiteSpace(categoryId))
         {
             if (!Guid.TryParse(categoryId, out var id) || id == Guid.Empty)
-            { validationError = "Selecciona una clasificación válida o deja el filtro vacío."; return Task.CompletedTask; }
+            { validationError = I18n.T("Selecciona una clasificación válida o deja el filtro vacío."); return Task.CompletedTask; }
             category = id;
         }
         if (!string.IsNullOrWhiteSpace(fileTypeId))
         {
             if (!Guid.TryParse(fileTypeId, out var id) || id == Guid.Empty)
-            { validationError = "Selecciona un tipo de archivo válido o deja el filtro vacío."; return Task.CompletedTask; }
+            { validationError = I18n.T("Selecciona un tipo de archivo válido o deja el filtro vacío."); return Task.CompletedTask; }
             type = id;
         }
         appliedFilter = new()
@@ -211,7 +211,7 @@ public partial class Materials : IDisposable
             if (disposed || version != requestVersion) return;
             var rows = RequireData(response);
             if (rows.Any(item => item.Id == Guid.Empty || filter.Active is { } active && item.Active != active))
-                throw new InvalidOperationException("La respuesta no corresponde a los materiales solicitados.");
+                throw new InvalidOperationException(I18n.T("La respuesta no corresponde a los materiales solicitados."));
             // Count es el número de registros de esta página, no el total global.
             if (requestedPage > page && rows.Count == 0) { hasNext = false; return; }
             materials = rows;
@@ -222,7 +222,7 @@ public partial class Materials : IDisposable
             foreach (var material in rows) RememberOptions(material);
         }
         catch (OperationCanceledException)
-        { if (!disposed && version == requestVersion && !cancellation.IsCancellationRequested) error = "La consulta tardó demasiado. Inténtalo de nuevo."; }
+        { if (!disposed && version == requestVersion && !cancellation.IsCancellationRequested) error = I18n.T("La consulta tardó demasiado. Inténtalo de nuevo."); }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or InvalidOperationException)
         { if (!disposed && version == requestVersion) error = ErrorMessage(ex); }
         finally
@@ -258,7 +258,7 @@ public partial class Materials : IDisposable
         {
             var detail = RequireData(await MaterialService.GetAsync(material.Id, lifetime.Token));
             if (disposed) return;
-            if (detail.Id != material.Id) throw new InvalidOperationException("No se recibió el material solicitado.");
+            if (detail.Id != material.Id) throw new InvalidOperationException(I18n.T("No se recibió el material solicitado."));
             selected = detail;
             RememberOptions(detail);
             commentDraft = "";
@@ -272,7 +272,7 @@ public partial class Materials : IDisposable
                 useLink = !IsUploadedFile(detail.FileLink);
             }
         }
-        catch (OperationCanceledException) { if (!disposed) dialogError = "La consulta del material tardó demasiado. Cierra la ventana e inténtalo de nuevo."; }
+        catch (OperationCanceledException) { if (!disposed) dialogError = I18n.T("La consulta del material tardó demasiado. Cierra la ventana e inténtalo de nuevo."); }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or InvalidOperationException)
         { if (!disposed) dialogError = ErrorMessage(ex); }
         finally { loadingDetail = false; }
@@ -297,7 +297,7 @@ public partial class Materials : IDisposable
         pendingFile = null;
         dialogError = null;
         if (args.File.Size is <= 0 or > MaxFileBytes)
-        { dialogError = "Selecciona un archivo con contenido de hasta 25 MiB."; return; }
+        { dialogError = I18n.T("Selecciona un archivo con contenido de hasta 25 MiB."); return; }
         pendingFile = args.File;
         if (string.IsNullOrWhiteSpace(editForm.Name)) editForm.Name = Path.GetFileNameWithoutExtension(args.File.Name);
         DetectFileType();
@@ -342,15 +342,15 @@ public partial class Materials : IDisposable
         var errors = editForm.Validate(ApiBaseUrl, !useLink && pendingFile is not null);
         if (useLink && (dialogMode == "create" || editForm.FileLink.Trim() != selected?.FileLink)
             && (!Uri.TryCreate(editForm.FileLink.Trim(), UriKind.Absolute, out var linkUri)
-            || linkUri.Scheme is not ("https" or "http"))) errors.Add("Ingresa un enlace HTTP o HTTPS completo.");
+            || linkUri.Scheme is not ("https" or "http"))) errors.Add(I18n.T("Ingresa un enlace HTTP o HTTPS completo."));
         if (dialogMode == "create" && pendingFile is null && string.IsNullOrWhiteSpace(editForm.FileLink))
-            errors.Add("Selecciona el archivo que deseas subir.");
+            errors.Add(I18n.T("Selecciona el archivo que deseas subir."));
         if (!categories.Any(item => item.Id.ToString("D") == editForm.ErrorClassificationId)
             && selected?.ErrorClassificationId.ToString("D") != editForm.ErrorClassificationId)
-            errors.Add("Selecciona una clasificación disponible.");
+            errors.Add(I18n.T("Selecciona una clasificación disponible."));
         if (!fileTypes.Any(item => item.Id.ToString("D") == editForm.FileTypeId)
             && selected?.FileTypeId.ToString("D") != editForm.FileTypeId)
-            errors.Add(useLink ? "No hay un tipo de enlace activo en el catálogo." : "No se encontró un tipo activo para este archivo en el catálogo.");
+            errors.Add(useLink ? I18n.T("No hay un tipo de enlace activo en el catálogo.") : I18n.T("No se encontró un tipo activo para este archivo en el catálogo."));
         if (errors.Count > 0) { dialogError = string.Join(" ", errors); return; }
         if (!HasChanges) return;
         var creating = dialogMode == "create";
@@ -365,7 +365,7 @@ public partial class Materials : IDisposable
                 var uploaded = RequireData(await MaterialService.UploadFileAsync(stream, file.Name, lifetime.Token));
                 if (disposed) return;
                 if (MaterialPresentation.ResolveLink(uploaded.FileLink, ApiBaseUrl) is null || uploaded.FileSize != file.Size)
-                    throw new InvalidOperationException("El servidor no confirmó el archivo subido.");
+                    throw new InvalidOperationException(I18n.T("El servidor no confirmó el archivo subido."));
                 editForm.FileLink = uploaded.FileLink;
                 editForm.FileSize = uploaded.FileSize;
                 editForm.UploadDate = DateTime.Now;
@@ -379,16 +379,16 @@ public partial class Materials : IDisposable
             if (disposed) return;
             var saved = RequireData(response);
             if (saved.Id == Guid.Empty || !creating && saved.Id != original!.Id)
-                throw new InvalidOperationException("No se pudo confirmar el guardado. Revisa el listado antes de reintentar.");
+                throw new InvalidOperationException(I18n.T("No se pudo confirmar el guardado. Revisa el listado antes de reintentar."));
         }
         catch (OperationCanceledException)
-        { if (!disposed) dialogError = "El guardado tardó demasiado. Revisa el listado antes de reintentar: el material podría haberse guardado."; return; }
+        { if (!disposed) dialogError = I18n.T("El guardado tardó demasiado. Revisa el listado antes de reintentar: el material podría haberse guardado."); return; }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or InvalidOperationException or ArgumentException or IOException)
         { if (!disposed) dialogError = ErrorMessage(ex, mutation: true); return; }
         finally { saving = false; }
 
         CloseDialog();
-        status = creating ? "Material agregado." : "Cambios del material guardados.";
+        status = creating ? I18n.T("Material agregado.") : I18n.T("Cambios del material guardados.");
         await LoadAsync(creating ? 1 : page);
     }
 
@@ -404,23 +404,23 @@ public partial class Materials : IDisposable
             var saved = RequireData(await MaterialService.UpdateAsync(new() { Id = material.Id, Active = newActive }, lifetime.Token));
             if (disposed) return;
             if (saved.Id != material.Id || saved.Active != newActive)
-                throw new InvalidOperationException("No se pudo confirmar el estado del material. Revisa el listado.");
+                throw new InvalidOperationException(I18n.T("No se pudo confirmar el estado del material. Revisa el listado."));
         }
         catch (OperationCanceledException)
-        { if (!disposed) dialogError = "El cambio de estado tardó demasiado. Revisa el listado antes de reintentar."; return; }
+        { if (!disposed) dialogError = I18n.T("El cambio de estado tardó demasiado. Revisa el listado antes de reintentar."); return; }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or InvalidOperationException)
         { if (!disposed) dialogError = ErrorMessage(ex, mutation: true); return; }
         finally { saving = false; }
 
         CloseDialog();
-        status = newActive ? "Material reactivado." : "Material desactivado.";
+        status = newActive ? I18n.T("Material reactivado.") : I18n.T("Material desactivado.");
         await LoadAsync(materials.Count == 1 && page > 1 && appliedFilter.Active is not null ? page - 1 : page);
     }
 
     private static T RequireData<T>(ApiResponse<T>? response) where T : class
     {
         if (response?.Data is not { } data || response.Error is { ErrorCode: not 0 })
-            throw new InvalidOperationException("La API no devolvió una respuesta válida de material de apoyo.");
+            throw new InvalidOperationException(I18n.T("La API no devolvió una respuesta válida de material de apoyo."));
         return data;
     }
 
@@ -432,7 +432,7 @@ public partial class Materials : IDisposable
     private FileTypeResponse? FileType(SupportMaterialResponse material) => knownFileTypes.GetValueOrDefault(material.FileTypeId);
     private string? ResolveLink(SupportMaterialResponse material) => MaterialPresentation.ResolveLink(material.FileLink, ApiBaseUrl);
     private string CategoryName(SupportMaterialResponse material) => string.IsNullOrWhiteSpace(material.ErrorClassificationName)
-        ? knownCategoryNames.GetValueOrDefault(material.ErrorClassificationId, "Sin clasificación") : material.ErrorClassificationName;
+        ? knownCategoryNames.GetValueOrDefault(material.ErrorClassificationId, I18n.T("Sin clasificación")) : material.ErrorClassificationName;
 
     private async Task RegisterViewAsync(SupportMaterialResponse material)
     {
@@ -465,7 +465,7 @@ public partial class Materials : IDisposable
         }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or InvalidOperationException or ArgumentException)
         {
-            feedbackError = "No se pudo guardar tu respuesta. Inténtalo de nuevo.";
+            feedbackError = I18n.T("No se pudo guardar tu respuesta. Inténtalo de nuevo.");
             if (dialogMode != "preview") status = feedbackError;
         }
         catch (OperationCanceledException) { }
@@ -489,19 +489,19 @@ public partial class Materials : IDisposable
         if (exception is HttpRequestException http)
         {
             if (http.StatusCode == HttpStatusCode.Unauthorized)
-            { Session.Clear(); Navigation.NavigateTo("/auth/login", replace: true); return "Tu sesión venció. Vuelve a iniciar sesión."; }
+            { Session.Clear(); Navigation.NavigateTo("/auth/login", replace: true); return I18n.T("Tu sesión venció. Vuelve a iniciar sesión."); }
             return http.StatusCode switch
             {
-                HttpStatusCode.Forbidden => mutation ? "Solo docentes y coordinadores pueden modificar el material." : "No tienes permiso para consultar el material.",
-                HttpStatusCode.NotFound => "El material ya no está disponible.",
-                HttpStatusCode.MethodNotAllowed => "La API en ejecución no tiene habilitada esta operación. Reinicia la API con la versión que incluye la subida de archivos.",
-                HttpStatusCode.BadRequest or HttpStatusCode.UnprocessableEntity => "Revisa el nombre, enlace, clasificación y tipo de archivo e inténtalo de nuevo.",
-                HttpStatusCode.TooManyRequests => "Hay demasiadas solicitudes. Espera un momento antes de reintentar.",
-                _ => mutation ? "No se pudo confirmar el guardado. Revisa el listado antes de reintentar." : "No se pudo consultar el material de apoyo. Inténtalo de nuevo."
+                HttpStatusCode.Forbidden => mutation ? I18n.T("Solo docentes y coordinadores pueden modificar el material.") : I18n.T("No tienes permiso para consultar el material."),
+                HttpStatusCode.NotFound => I18n.T("El material ya no está disponible."),
+                HttpStatusCode.MethodNotAllowed => I18n.T("La API en ejecución no tiene habilitada esta operación. Reinicia la API con la versión que incluye la subida de archivos."),
+                HttpStatusCode.BadRequest or HttpStatusCode.UnprocessableEntity => I18n.T("Revisa el nombre, enlace, clasificación y tipo de archivo e inténtalo de nuevo."),
+                HttpStatusCode.TooManyRequests => I18n.T("Hay demasiadas solicitudes. Espera un momento antes de reintentar."),
+                _ => mutation ? ApiErrors.WithAdvice(http, "Revisa el listado antes de reintentar.") : ApiErrors.Describe(http)
             };
         }
         if (exception is InvalidOperationException or ArgumentException) return exception.Message;
-        return mutation ? "No se pudo interpretar la respuesta del guardado. Revisa el listado antes de reintentar." : "La respuesta de material de apoyo no tiene el formato esperado.";
+        return mutation ? I18n.T("No se pudo interpretar la respuesta del guardado. Revisa el listado antes de reintentar.") : I18n.T("La respuesta de material de apoyo no tiene el formato esperado.");
     }
 
     public void Dispose()

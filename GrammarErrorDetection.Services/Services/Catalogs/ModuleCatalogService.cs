@@ -26,7 +26,7 @@ public sealed class ModuleCatalogService(IApiClient apiClient) : IModuleCatalogS
             Validator.ValidateObject(filter, new ValidationContext(filter), validateAllProperties: true);
             if (filter.Name is not null) query.Add($"Filter.Name={Uri.EscapeDataString(filter.Name)}");
             if (filter.Level is { } level) query.Add($"Filter.Level={level.ToString(CultureInfo.InvariantCulture)}");
-            if (filter.Active is { } active) query.Add($"Filter.Active={(active ? "true" : "false")}");
+            if (filter.Active is { } active) query.Add(active ? "Filter.Active=true" : "Filter.Active=false");
         }
         return apiClient.GetAsync<ApiResponse<List<ModuleItem>>>($"{Route}?{string.Join('&', query)}", cancellationToken);
     }

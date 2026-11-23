@@ -47,7 +47,7 @@ public partial class UserEditModal : IDisposable
             return;
         }
         if (Session.Current is null) { Navigation.NavigateTo("/auth/login", replace: true); return; }
-        if (!Session.Roles.Contains("Coordinator", StringComparer.Ordinal)) { error = "No tienes permiso para actualizar usuarios."; return; }
+        if (!Session.Roles.Contains("Coordinator", StringComparer.Ordinal)) { error = I18n.T("No tienes permiso para actualizar usuarios."); return; }
         saving = true;
         try
         {
@@ -55,7 +55,7 @@ public partial class UserEditModal : IDisposable
             if (disposed) return;
             if (response?.Data is null || response.Data.Id != User.Id || response.Error is { ErrorCode: not 0 })
             {
-                error = "No se pudo confirmar la actualización. Revisa los datos e inténtalo de nuevo.";
+                error = I18n.T("No se pudo confirmar la actualización. Revisa los datos e inténtalo de nuevo.");
                 return;
             }
             await OnSaved.InvokeAsync(response.Data);
@@ -70,14 +70,14 @@ public partial class UserEditModal : IDisposable
             }
             error = ex.StatusCode switch
             {
-                HttpStatusCode.Forbidden => "No tienes permiso para actualizar usuarios.",
-                HttpStatusCode.Conflict => "El correo o el CI ya están registrados. Revisa los datos.",
-                HttpStatusCode.BadRequest => "Revisa los datos del usuario e inténtalo de nuevo.",
-                _ => "No se pudo guardar el usuario. Inténtalo de nuevo."
+                HttpStatusCode.Forbidden => I18n.T("No tienes permiso para actualizar usuarios."),
+                HttpStatusCode.Conflict => I18n.T("El correo o el CI ya están registrados. Revisa los datos."),
+                HttpStatusCode.BadRequest => I18n.T("Revisa los datos del usuario e inténtalo de nuevo."),
+                _ => ApiErrors.Describe(ex)
             };
         }
-        catch (OperationCanceledException) { if (!disposed) error = "La actualización tardó demasiado. Inténtalo de nuevo."; }
-        catch (JsonException) { if (!disposed) error = "No se pudo interpretar la respuesta de actualización."; }
+        catch (OperationCanceledException) { if (!disposed) error = I18n.T("La actualización tardó demasiado. Inténtalo de nuevo."); }
+        catch (JsonException) { if (!disposed) error = I18n.T("No se pudo interpretar la respuesta de actualización."); }
         finally { saving = false; }
     }
 

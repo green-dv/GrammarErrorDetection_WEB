@@ -3,19 +3,19 @@
 <section class="users-page users-directory levels-page" aria-labelledby="levels-title">
     <header class="users-heading">
         <div class="users-heading-content">
-            <p class="users-eyebrow">CETI · GAMIFICACIÓN</p>
-            <h1 id="levels-title">Niveles de puntos</h1>
-            <p>Niveles que alcanzan los usuarios al sumar puntos. Los puntos mínimos deben aumentar con el nivel y siempre debe haber un nivel activo con 0 puntos.</p>
+            <p class="users-eyebrow">@L["CETI · GAMIFICACIÓN"]</p>
+            <h1 id="levels-title">@L["Niveles de puntos"]</h1>
+            <p>@L["Niveles que alcanzan los usuarios al sumar puntos. Los puntos mínimos deben aumentar con el nivel y siempre debe haber un nivel activo con 0 puntos."]</p>
         </div>
-        <button type="button" class="data-table-button data-table-button-primary" disabled="@(busy || updatingStatus)" @onclick="() => creating = true" aria-haspopup="dialog">+ Nuevo nivel</button>
+        <button type="button" class="data-table-button data-table-button-primary" disabled="@(busy || updatingStatus)" @onclick="() => creating = true" aria-haspopup="dialog">@L["+ Nuevo nivel"]</button>
     </header>
 
     <div class="data-table-card">
-        <header class="data-table-heading"><div><h2>Listado de niveles</h2><p>Busca por nombre. Deja los filtros vacíos para ver todos los niveles.</p></div></header>
-        <FilterPanel Model="filters" Title="Filtrar niveles" Busy="busy" OnSearch="SearchAsync" OnInvalid="ShowValidationErrors" OnClear="ClearFiltersAsync">
-                    <label class="data-table-field"><span>Nombre</span><InputText @bind-Value="filters.Name" placeholder="Nombre del nivel" maxlength="50" /></label>
-                    <label class="data-table-field"><span>Estado</span>
-                        <select @bind="statusFilter"><option value="">Todos</option><option value="true">Activos</option><option value="false">Deshabilitados</option></select>
+        <header class="data-table-heading"><div><h2>@L["Listado de niveles"]</h2><p>@L["Busca por nombre. Deja los filtros vacíos para ver todos los niveles."]</p></div></header>
+        <FilterPanel Model="filters" Title="@L["Filtrar niveles"]" Busy="busy" OnSearch="SearchAsync" OnInvalid="ShowValidationErrors" OnClear="ClearFiltersAsync">
+                    <label class="data-table-field"><span>@L["Nombre"]</span><InputText @bind-Value="filters.Name" placeholder="@L["Nombre del nivel"]" maxlength="50" /></label>
+                    <label class="data-table-field"><span>@L["Estado"]</span>
+                        <select @bind="statusFilter"><option value="">@L["Todos"]</option><option value="true">@L["Activos"]</option><option value="false">@L["Deshabilitados"]</option></select>
                     </label>
         </FilterPanel>
         @if (validationErrors.Count > 0)
@@ -24,20 +24,20 @@
         }
         @if (error is not null)
         {
-            <div class="data-table-error" role="alert"><span>@error</span><button type="button" class="data-table-text-button" @onclick="RetryAsync" disabled="@busy">Reintentar</button></div>
+            <div class="data-table-error" role="alert"><span>@error</span><button type="button" class="data-table-text-button" @onclick="RetryAsync" disabled="@busy">@L["Reintentar"]</button></div>
         }
         @if (status is not null) { <p class="data-table-message" role="status">@status</p> }
-        <p class="data-table-summary" role="status">@(busy ? "Cargando niveles…" : error is not null ? "Consulta no disponible" : $"{total} {(total == 1 ? "nivel" : "niveles")} en total")</p>
+        <p class="data-table-summary" role="status">@(busy ? L["Cargando niveles…"] : error is not null ? L["Consulta no disponible"] : I18n.T(total == 1 ? "{0} nivel en total" : "{0} niveles en total", total))</p>
 
-        <ListPager Top="true" Label="Paginación de niveles" @bind-PageSize="pageSize" @bind-PageSize:after="ChangePageSizeAsync" PageSizes="5,10,20" PageSizeLabel="Filas por página" PageSizeDisabled="@busy" Page="page" PageOf="@($" de {TotalPages}")" Info="@(busy ? "Consultando…" : error is null ? ResultRange : "")" PreviousDisabled="@(busy || page <= 1)" NextDisabled="@(busy || page >= TotalPages)" OnPrevious="PreviousPageAsync" OnNext="NextPageAsync" />
-        <div class="data-table-scroll simple-table-region" role="region" aria-label="Listado de niveles" aria-busy="@busy.ToString().ToLowerInvariant()" tabindex="0">
+        <ListPager Top="true" Label="@L["Paginación de niveles"]" @bind-PageSize="pageSize" @bind-PageSize:after="ChangePageSizeAsync" PageSizes="5,10,20" PageSizeLabel="@L["Filas por página"]" PageSizeDisabled="@busy" Page="page" PageOf="@(I18n.T(" de {0}", TotalPages))" Info="@(busy ? L["Consultando…"] : error is null ? ResultRange : "")" PreviousDisabled="@(busy || page <= 1)" NextDisabled="@(busy || page >= TotalPages)" OnPrevious="PreviousPageAsync" OnNext="NextPageAsync" />
+        <div class="data-table-scroll simple-table-region" role="region" aria-label="@L["Listado de niveles"]" aria-busy="@busy.ToString().ToLowerInvariant()" tabindex="0">
             <table class="data-table">
-                <caption class="data-table-sr-only">Nombre, número de nivel, puntos mínimos, usuarios, estado y acciones de los niveles.</caption>
-                <thead><tr><th scope="col">Nombre</th><th scope="col">Nivel</th><th scope="col">Puntos mínimos</th><th scope="col">Usuarios</th><th scope="col">Estado</th><th scope="col" class="data-table-actions-heading">Acciones</th></tr></thead>
+                <caption class="data-table-sr-only">@L["Nombre, número de nivel, puntos mínimos, usuarios, estado y acciones de los niveles."]</caption>
+                <thead><tr><th scope="col">@L["Nombre"]</th><th scope="col">@L["Nivel"]</th><th scope="col">@L["Puntos mínimos"]</th><th scope="col">@L["Usuarios"]</th><th scope="col">@L["Estado"]</th><th scope="col" class="data-table-actions-heading">@L["Acciones"]</th></tr></thead>
                 <tbody>
                     @if (busy)
                     {
-                        <tr><td colspan="6" class="data-table-empty">Cargando niveles…</td></tr>
+                        <tr><td colspan="6" class="data-table-empty">@L["Cargando niveles…"]</td></tr>
                     }
                     else
                     {
@@ -45,26 +45,26 @@
                         {
                             <tr @key="level.Id">
                                 <th scope="row"><span class="data-table-primary">@level.Name</span></th>
-                                <td><span class="data-table-chip">Nivel @level.Level</span></td>
+                                <td><span class="data-table-chip">@L["Nivel {0}", level.Level]</span></td>
                                 <td><span class="data-table-primary">@level.MinPoints.ToString("N0")</span><span class="data-table-secondary"> puntos</span></td>
                                 <td><span class="data-table-secondary">@level.UserCount @(level.UserCount == 1 ? "usuario" : "usuarios")</span></td>
                                 <td><StatusPill Active="level.Active" On="Activo" Off="Deshabilitado" /></td>
                                 <td>
-                                    <RowActions Label="@level.Name" OnEdit="() => editing = level" OnDelete="() => statusLevel = level" EditDisabled="updatingStatus" DeleteDisabled="updatingStatus" Restore="@(!level.Active)" DeleteTitle="@(level.Active ? "Deshabilitar" : "Reactivar")" DisableIcon="true" />
+                                    <RowActions Label="@level.Name" OnEdit="() => editing = level" OnDelete="() => statusLevel = level" EditDisabled="updatingStatus" DeleteDisabled="updatingStatus" Restore="@(!level.Active)" DeleteTitle="@(level.Active ? L["Deshabilitar"] : L["Reactivar"])" DisableIcon="true" />
                                 </td>
                             </tr>
                         }
                         @if (levels.Count == 0 && error is null)
                         {
-                            <tr><td colspan="6" class="data-table-empty"><strong>No se encontraron niveles</strong><p>Prueba con otros filtros o crea uno nuevo.</p><button type="button" class="data-table-button" @onclick="ClearFiltersAsync">Limpiar filtros</button></td></tr>
+                            <tr><td colspan="6" class="data-table-empty"><strong>@L["No se encontraron niveles"]</strong><p>@L["Prueba con otros filtros o crea uno nuevo."]</p><button type="button" class="data-table-button" @onclick="ClearFiltersAsync">@L["Limpiar filtros"]</button></td></tr>
                         }
                     }
                 </tbody>
             </table>
         </div>
             @* Celular (≤640px): fichas en lugar de la tabla. En escritorio quedan ocultas por CSS. *@
-            <ul class="lcards" aria-label="Listado de niveles" aria-busy="@busy.ToString().ToLowerInvariant()">
-                @if (busy) { <ListCardEmpty Message="Cargando niveles…" /> }
+            <ul class="lcards" aria-label="@L["Listado de niveles"]" aria-busy="@busy.ToString().ToLowerInvariant()">
+                @if (busy) { <ListCardEmpty Message="@L["Cargando niveles…"]" /> }
                 else
                 {
                     @foreach (var level in levels)
@@ -72,13 +72,13 @@
                         <SimpleListCard @key="level.Id" Active="level.Active" ActiveText="Activo" InactiveText="Deshabilitado" Title="@level.Name" BadgeValue="@level.Level.ToString()" BadgeCaption="nivel">
                             <Subtitle>Nivel @level.Level · desde @level.MinPoints.ToString("N0") puntos</Subtitle>
                             <Detail>@level.UserCount @(level.UserCount == 1 ? "usuario" : "usuarios") en este nivel</Detail>
-                            <Actions><RowActions Label="@level.Name" OnEdit="() => editing = level" OnDelete="() => statusLevel = level" EditDisabled="updatingStatus" DeleteDisabled="updatingStatus" Restore="@(!level.Active)" DeleteTitle="@(level.Active ? "Deshabilitar" : "Reactivar")" DisableIcon="true" /></Actions>
+                            <Actions><RowActions Label="@level.Name" OnEdit="() => editing = level" OnDelete="() => statusLevel = level" EditDisabled="updatingStatus" DeleteDisabled="updatingStatus" Restore="@(!level.Active)" DeleteTitle="@(level.Active ? L["Deshabilitar"] : L["Reactivar"])" DisableIcon="true" /></Actions>
                         </SimpleListCard>
                     }
-                    @if (levels.Count == 0 && error is null) { <ListCardEmpty Title="No se encontraron niveles" Hint="Prueba con otros filtros o crea uno nuevo." OnClear="ClearFiltersAsync" /> }
+                    @if (levels.Count == 0 && error is null) { <ListCardEmpty Title="@L["No se encontraron niveles"]" Hint="@L["Prueba con otros filtros o crea uno nuevo."]" OnClear="ClearFiltersAsync" /> }
                 }
             </ul>
-        <ListPager Label="Paginación de niveles" @bind-PageSize="pageSize" @bind-PageSize:after="ChangePageSizeAsync" PageSizes="5,10,20" PageSizeLabel="Filas por página" PageSizeDisabled="@busy" Page="page" PageOf="@($" de {TotalPages}")" Info="@(busy ? "Consultando…" : error is null ? ResultRange : "")" PreviousDisabled="@(busy || page <= 1)" NextDisabled="@(busy || page >= TotalPages)" OnPrevious="PreviousPageAsync" OnNext="NextPageAsync" />
+        <ListPager Label="@L["Paginación de niveles"]" @bind-PageSize="pageSize" @bind-PageSize:after="ChangePageSizeAsync" PageSizes="5,10,20" PageSizeLabel="@L["Filas por página"]" PageSizeDisabled="@busy" Page="page" PageOf="@(I18n.T(" de {0}", TotalPages))" Info="@(busy ? L["Consultando…"] : error is null ? ResultRange : "")" PreviousDisabled="@(busy || page <= 1)" NextDisabled="@(busy || page >= TotalPages)" OnPrevious="PreviousPageAsync" OnNext="NextPageAsync" />
     </div>
 </section>
 
@@ -92,12 +92,12 @@
 }
 @if (statusLevel is not null)
 {
-    <ModalDialog Title="@(statusLevel.Active ? "Deshabilitar nivel" : "Reactivar nivel")" Busy="@updatingStatus" OnClose="CloseStatus">
+    <ModalDialog Title="@(statusLevel.Active ? L["Deshabilitar nivel"] : L["Reactivar nivel"])" Busy="@updatingStatus" OnClose="CloseStatus">
         <div class="ceti-modal-body">
             @if (statusError is not null) { <div class="ceti-modal-errors" role="alert"><p>@statusError</p></div> }
             <p>¿Quieres @(statusLevel.Active ? "deshabilitar" : "reactivar") el nivel <strong>@statusLevel.Name</strong>?</p>
-            <p>@(statusLevel.Active ? (statusLevel.UserCount > 0 ? $"{statusLevel.UserCount} {(statusLevel.UserCount == 1 ? "usuario pasará" : "usuarios pasarán")} al nivel que les corresponda por sus puntos. " : "") + "El nivel se conserva y podrás reactivarlo cuando quieras. Siempre debe quedar un nivel activo con 0 puntos." : "El nivel volverá a estar activo y se reasignará el nivel de los usuarios según sus puntos.")</p>
+            <p>@(statusLevel.Active ? (statusLevel.UserCount > 0 ? I18n.T(statusLevel.UserCount == 1 ? "{0} usuario pasará al nivel que les corresponda por sus puntos. " : "{0} usuarios pasarán al nivel que les corresponda por sus puntos. ", statusLevel.UserCount) : "") + L["El nivel se conserva y podrás reactivarlo cuando quieras. Siempre debe quedar un nivel activo con 0 puntos."] : L["El nivel volverá a estar activo y se reasignará el nivel de los usuarios según sus puntos."])</p>
         </div>
-        <footer class="ceti-modal-footer"><span role="status">@(updatingStatus ? "Actualizando estado…" : "")</span><div><button type="button" class="data-table-button" disabled="@updatingStatus" @onclick="CloseStatus">Cancelar</button><button type="button" class="data-table-button data-table-button-danger" disabled="@updatingStatus" @onclick="ConfirmStatusAsync">@(statusLevel.Active ? "Deshabilitar" : "Reactivar")</button></div></footer>
+        <footer class="ceti-modal-footer"><span role="status">@(updatingStatus ? L["Actualizando estado…"] : "")</span><div><button type="button" class="data-table-button" disabled="@updatingStatus" @onclick="CloseStatus">@L["Cancelar"]</button><button type="button" class="data-table-button data-table-button-danger" disabled="@updatingStatus" @onclick="ConfirmStatusAsync">@(statusLevel.Active ? L["Deshabilitar"] : L["Reactivar"])</button></div></footer>
     </ModalDialog>
 }

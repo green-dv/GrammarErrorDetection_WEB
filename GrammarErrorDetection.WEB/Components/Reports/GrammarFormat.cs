@@ -5,11 +5,11 @@ namespace GrammarErrorDetection.WEB.Components.Reports;
 /// <summary>Formato de cifras y tendencias de los reportes gramaticales (compartido por el tablero y sus fichas).</summary>
 public static class GrammarFormat
 {
-    private static readonly CultureInfo Spanish = CultureInfo.GetCultureInfo("es-ES");
+    private static readonly CultureInfo Spanish = I18n.Culture;
 
     public static string Number(decimal? value, string format = "0.00") => value?.ToString(format, Spanish) ?? "—";
 
-    public static string Signed(decimal? value) => value.HasValue ? value.Value.ToString("+0.##;-0.##;0", Spanish) : "Sin comparación";
+    public static string Signed(decimal? value) => value.HasValue ? value.Value.ToString("+0.##;-0.##;0", Spanish) : I18n.T("Sin comparación");
 
     public static string ChangeWithUnit(decimal? value, string unit, bool fractional = false)
         => value.HasValue ? $"{(fractional ? value.Value.ToString("+0.00;-0.00;0.00", Spanish) : Signed(value))} {unit}" : "Sin comparación";
@@ -18,7 +18,7 @@ public static class GrammarFormat
 
     public static string TrendLabel(string trend) => trend switch
     {
-        "Improved" => "Mejora", "Worsened" => "Aumenta la dificultad", "Unchanged" => "Sin cambios", _ => "Sin datos comparables"
+        "Improved" => I18n.T("Mejora"), "Worsened" => I18n.T("Aumenta la dificultad"), "Unchanged" => I18n.T("Sin cambios"), _ => I18n.T("Sin datos comparables")
     };
 
     public static string TrendClass(string trend) => trend switch

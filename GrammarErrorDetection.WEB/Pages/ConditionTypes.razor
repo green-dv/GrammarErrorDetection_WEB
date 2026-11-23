@@ -4,7 +4,7 @@
 @inject AuthSessionState Session
 @inject NavigationManager Navigation
 
-<PageTitle>Tipos de condición | CETI La Paz</PageTitle>
+<PageTitle>@L["Tipos de condición | CETI La Paz"]</PageTitle>
 
 @if (Session.Current is not null)
 {
@@ -14,9 +14,9 @@
     }
     else
     {
-        <h1>Acceso restringido</h1>
-        <p>La gestión de tipos de condición está disponible para coordinadores.</p>
-        <a href="home">Volver al inicio</a>
+        <h1>@L["Acceso restringido"]</h1>
+        <p>@L["La gestión de tipos de condición está disponible para coordinadores."]</p>
+        <a href="home">@L["Volver al inicio"]</a>
     }
 }
 

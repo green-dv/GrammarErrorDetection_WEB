@@ -91,7 +91,7 @@ public partial class RegistrationFilterLookup : IDisposable
                 var data = Data(await Users.SearchAsync(new() { PageNumber = requestedPage, PageSize = PageSize, Filter = filter.Normalize() }, cancellation.Token));
                 returned = data.Count;
                 found = data.Where(item => item.Id != Guid.Empty).Select(item => new LookupOption(item.Id,
-                    $"{item.FirstName} {item.LastName}".Trim(), $"CIC: {Text(item.Ci)} · {Text(item.Email)} · Tel.: {Text(item.Phone)}")).ToList();
+                    $"{item.FirstName} {item.LastName}".Trim(), I18n.T("CIC: {0} · {1} · Tel.: {2}", Text(item.Ci), Text(item.Email), Text(item.Phone)))).ToList();
             }
             else
             {

@@ -2,12 +2,12 @@
 @inject NavigationManager Navigation
 
 <div class="ceti-shell">
-    <a class="ceti-skip-link" href="@(Navigation.Uri.Split('#')[0] + "#ceti-content")">Saltar al contenido</a>
+    <a class="ceti-skip-link" href="@(Navigation.Uri.Split('#')[0] + "#ceti-content")">@L["Saltar al contenido"]</a>
     <NavMenu />
     <div class="ceti-workspace">
         <header class="ceti-topbar">
-            <span class="ceti-topbar-caption">Portal académico</span>
-            <span class="profile-portal-label">CETI · LA PAZ</span>
+            <span class="ceti-topbar-caption">@L["Portal académico"]</span>
+            <span class="profile-portal-label">@L["CETI · LA PAZ"]</span>
         </header>
         <main id="ceti-content" class="ceti-content" tabindex="-1">@Body</main>
     </div>

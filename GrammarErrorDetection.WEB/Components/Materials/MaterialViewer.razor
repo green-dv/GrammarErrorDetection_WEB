@@ -9,26 +9,26 @@
                 <img src="@Material.Link" alt="@Material.Name" referrerpolicy="no-referrer" />
                 break;
             case MaterialPreviewKind.Frame when Material.Link is not null:
-                <iframe src="@Material.Link" title="Vista previa de @Material.Name" loading="lazy" referrerpolicy="no-referrer"></iframe>
+                <iframe src="@Material.Link" title="@L["Vista previa de {0}", Material.Name]" loading="lazy" referrerpolicy="no-referrer"></iframe>
                 break;
             case MaterialPreviewKind.External when Material.Link is not null:
                 <div class="material-viewer-fallback">
                     <FileIcon Format="URL" Large="true" />
-                    <strong>Enlace externo</strong>
-                    <span>Este material está alojado en otro sitio y se abre en una pestaña nueva.</span>
-                    <a class="mv-button mv-button-primary" href="@Material.Link" target="_blank" rel="noopener noreferrer">Abrir enlace</a>
+                    <strong>@L["Enlace externo"]</strong>
+                    <span>@L["Este material está alojado en otro sitio y se abre en una pestaña nueva."]</span>
+                    <a class="mv-button mv-button-primary" href="@Material.Link" target="_blank" rel="noopener noreferrer">@L["Abrir enlace"]</a>
                 </div>
                 break;
             case MaterialPreviewKind.Download when Material.Link is not null:
                 <div class="material-viewer-fallback">
                     <FileIcon Format="@Material.Format" Large="true" />
-                    <strong>Vista previa no disponible</strong>
-                    <span>Los archivos @Material.Format no se pueden mostrar en el navegador. Descárgalo para abrirlo.</span>
-                    <a class="mv-button mv-button-primary" href="@MaterialPresentation.DownloadLink(Material.Link)" download rel="noopener noreferrer">Descargar archivo</a>
+                    <strong>@L["Vista previa no disponible"]</strong>
+                    <span>@L["Los archivos {0} no se pueden mostrar en el navegador. Descárgalo para abrirlo.", Material.Format]</span>
+                    <a class="mv-button mv-button-primary" href="@MaterialPresentation.DownloadLink(Material.Link)" download rel="noopener noreferrer">@L["Descargar archivo"]</a>
                 </div>
                 break;
             default:
-                <div class="material-viewer-fallback"><strong>El enlace de este material no es válido.</strong></div>
+                <div class="material-viewer-fallback"><strong>@L["El enlace de este material no es válido."]</strong></div>
                 break;
         }
     </div>
@@ -45,21 +45,21 @@
 
         <dl class="mv-meta">
             <div>
-                <dt><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6Z"/><path d="M14 2v6h6M9 13h6m-6 4h6"/></svg>Tipo</dt>
+                <dt><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h9l5 5v15H6Z"/><path d="M14 2v6h6M9 13h6m-6 4h6"/></svg>@L["Tipo"]</dt>
                 <dd><span class="mv-badge">@Material.Format</span> <small>@Material.TypeLabel</small></dd>
             </div>
             <div>
-                <dt><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>Tamaño</dt>
-                <dd>@(kind == MaterialPreviewKind.External ? "Enlace" : MaterialPresentation.Size(Material.FileSize))</dd>
+                <dt><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>@L["Tamaño"]</dt>
+                <dd>@(kind == MaterialPreviewKind.External ? L["Enlace"] : MaterialPresentation.Size(Material.FileSize))</dd>
             </div>
             <div>
-                <dt><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4m8-4v4"/></svg>Fecha</dt>
+                <dt><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4m8-4v4"/></svg>@L["Fecha"]</dt>
                 <dd>@Material.UploadDate.ToString("d 'de' MMM 'de' yyyy", Spanish)</dd>
             </div>
             @if (!string.IsNullOrWhiteSpace(Material.UploadedBy))
             {
                 <div>
-                    <dt><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 16 0v1"/></svg>Subido por</dt>
+                    <dt><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 16 0v1"/></svg>@L["Subido por"]</dt>
                     <dd>@Material.UploadedBy</dd>
                 </div>
             }
@@ -71,18 +71,18 @@
                 @if (kind == MaterialPreviewKind.External)
                 {
                     <a class="mv-button mv-button-primary" href="@Material.Link" target="_blank" rel="noopener noreferrer">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6m0-6L10 14M18 14v6H4V6h6"/></svg>Abrir enlace
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6m0-6L10 14M18 14v6H4V6h6"/></svg>@L["Abrir enlace"]
                     </a>
                 }
                 else
                 {
                     <a class="mv-button mv-button-primary" href="@MaterialPresentation.DownloadLink(Material.Link)" download rel="noopener noreferrer">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></svg>Descargar
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></svg>@L["Descargar"]
                     </a>
                     @if (kind != MaterialPreviewKind.Download)
                     {
                         <a class="mv-button mv-button-outline" href="@Material.Link" target="_blank" rel="noopener noreferrer">
-                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6m0-6L10 14M18 14v6H4V6h6"/></svg>Visualizar en pestaña nueva
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6m0-6L10 14M18 14v6H4V6h6"/></svg>@L["Visualizar en pestaña nueva"]
                         </a>
                     }
                 }
@@ -99,7 +99,7 @@
 </div>
 
 @code {
-    private static readonly System.Globalization.CultureInfo Spanish = System.Globalization.CultureInfo.GetCultureInfo("es-ES");
+    private static readonly System.Globalization.CultureInfo Spanish = I18n.Culture;
 
     [Parameter, EditorRequired] public MaterialView Material { get; set; } = default!;
     /// <summary>Tarjeta "¿Te resultó útil?" (solo para estudiantes).</summary>

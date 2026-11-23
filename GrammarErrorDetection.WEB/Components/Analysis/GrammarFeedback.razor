@@ -1,7 +1,7 @@
 @* Errores gramaticales de un párrafo: por oración, qué palabra falló, cómo corregirla y de qué categoría es. Cada oración con errores se puede plegar. *@
 @using GrammarErrorDetection.Models.Texts
 
-<h3 class="an-panel-title">Errores gramaticales</h3>
+<h3 class="an-panel-title">@L["Errores gramaticales"]</h3>
 @if (ErrorCount == 0)
 {
     <p class="an-summary is-ok"><AnalysisIcon Name="check" /><span>¡Buen trabajo! No encontramos errores gramaticales en @Total @AnalysisFormat.Plural(Total, "oración", "oraciones").</span></p>
@@ -24,13 +24,13 @@ else
                 <p class="an-text" lang="en"><SentenceText Text="@sentence.OriginalSentence" Ranges="@AnalysisFormat.GrammarRanges(sentence.OriginalSentence, errors)" Kind="MarkKind.Grammar" /></p>
                 @if (clean)
                 {
-                    <span class="an-flag is-ok"><AnalysisIcon Name="check" /><span>Sin errores gramaticales</span></span>
+                    <span class="an-flag is-ok"><AnalysisIcon Name="check" /><span>@L["Sin errores gramaticales"]</span></span>
                 }
                 else
                 {
                     <button type="button" class="an-flag an-flag--toggle is-err" aria-expanded="@(open ? "true" : "false")" aria-controls="an-body-@sentence.Id" @onclick="() => OnToggle.InvokeAsync(sentence.Id)">
-                        <AnalysisIcon Name="alert" /><span>@count @AnalysisFormat.Plural(count, "error", "errores")@(open ? "" : " · Ver corrección")</span><AnalysisIcon Name="chevron" Class="an-chev" />
-                        <span class="ceti-sr-only"> de la oración @sentence.SentenceIndex</span>
+                        <AnalysisIcon Name="alert" /><span>@count @AnalysisFormat.Plural(count, "error", "errores")@(open ? "" : L[" · Ver corrección"])</span><AnalysisIcon Name="chevron" Class="an-chev" />
+                        <span class="ceti-sr-only"> @L["de la oración {0}", sentence.SentenceIndex]</span>
                     </button>
                 }
             </div>
@@ -43,23 +43,23 @@ else
                     }
                     else
                     {
-                        <ul class="an-issues" aria-label="Errores de la oración @sentence.SentenceIndex">
+                        <ul class="an-issues" aria-label="@L["Errores de la oración {0}", sentence.SentenceIndex]">
                             @foreach (var error in errors)
                             {
                                 <li class="an-issue" @key="error.Id">
                                     <p class="an-change">
-                                        <del class="an-wrong"><span class="ceti-sr-only">Palabra con error: </span>@(error.ErrorToken ?? "—")</del>
+                                        <del class="an-wrong"><span class="ceti-sr-only">@L["Palabra con error:"] </span>@(error.ErrorToken ?? "—")</del>
                                         @if (!string.IsNullOrWhiteSpace(error.SuggestedCorrection))
                                         {
                                             <AnalysisIcon Name="arrow" />
-                                            <ins class="an-right"><span class="ceti-sr-only">Se escribe: </span>@error.SuggestedCorrection</ins>
+                                            <ins class="an-right"><span class="ceti-sr-only">@L["Se escribe:"] </span>@error.SuggestedCorrection</ins>
                                         }
                                     </p>
                                     <p class="an-meta">
-                                        <span class="an-tag"><span class="ceti-sr-only">Categoría: </span>@AnalysisFormat.Category(error.ErrorClassificationName)</span>
+                                        <span class="an-tag"><span class="ceti-sr-only">@L["Categoría:"] </span>@AnalysisFormat.Category(error.ErrorClassificationName)</span>
                                         @if (error.ConfidenceScore is { } confidence)
                                         {
-                                            <span class="an-conf" title="Confianza del modelo en este error">@AnalysisFormat.Confidence(confidence) % de confianza</span>
+                                            <span class="an-conf" title="@L["Confianza del modelo en este error"]">@AnalysisFormat.Confidence(confidence) % de confianza</span>
                                         }
                                     </p>
                                 </li>
@@ -70,7 +70,7 @@ else
                     {
                         <div class="an-fix">
                             <AnalysisIcon Name="check" />
-                            <div><p class="an-fix-label">Así quedaría</p><p class="an-fix-text" lang="en">@correction</p></div>
+                            <div><p class="an-fix-label">@L["Así quedaría"]</p><p class="an-fix-text" lang="en">@correction</p></div>
                         </div>
                     }
                 </div>
@@ -80,10 +80,10 @@ else
 </ol>
 @if (ShowReinforcement && ErrorCount > 0)
 {
-    <aside class="an-next" aria-label="Material recomendado">
+    <aside class="an-next" aria-label="@L["Material recomendado"]">
         <AnalysisIcon Name="book" />
-        <div class="an-next-copy"><strong>Refuerza estos errores</strong><span>Revisa el material de apoyo elegido según tus errores más frecuentes.</span></div>
-        <a class="data-table-button data-table-button-primary" href="recommendations">Ver recomendaciones</a>
+        <div class="an-next-copy"><strong>@L["Refuerza estos errores"]</strong><span>@L["Revisa el material de apoyo elegido según tus errores más frecuentes."]</span></div>
+        <a class="data-table-button data-table-button-primary" href="recommendations">@L["Ver recomendaciones"]</a>
     </aside>
 }
 

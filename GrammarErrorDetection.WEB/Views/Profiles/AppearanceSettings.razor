@@ -3,10 +3,15 @@
 @* Configuración > Apariencia: tema claro, oscuro o el del sistema. La preferencia se guarda en este navegador
    (window.cetiTheme, definido en index.html) y se aplica al instante. *@
 <div class="settings-content appearance-settings">
-    <h2>Apariencia</h2>
-    <p>Elige cómo se ve el portal en este navegador.</p>
+    <h2>@L["Apariencia e idioma"]</h2>
+    <h3 class="appearance-subtitle">@L["Idioma"]</h3>
+    <p>@L["Elige el idioma del portal."]</p>
+    <LanguageSwitcher />
 
-    <div class="appearance-options" role="radiogroup" aria-label="Tema">
+    <h3 class="appearance-subtitle">@L["Apariencia"]</h3>
+    <p>@L["Elige cómo se ve el portal en este navegador."]</p>
+
+    <div class="appearance-options" role="radiogroup" aria-label="@L["Tema"]">
         @foreach (var option in Options)
         {
             var selected = choice == option.Key;
@@ -31,15 +36,15 @@
             </button>
         }
     </div>
-    <p class="settings-status" role="status">@(ready ? $"Tema activo: {(applied == "dark" ? "oscuro" : "claro")}{(choice == "system" ? ", según tu sistema" : "")}." : "Cargando tu preferencia…")</p>
+    <p class="settings-status" role="status">@(ready ? L[choice == "system" ? "Tema activo: {0}, según tu sistema." : "Tema activo: {0}.", applied == "dark" ? L["oscuro"] : L["claro"]] : L["Cargando tu preferencia…"])</p>
 </div>
 
 @code {
     private static readonly (string Key, string Label, string Help)[] Options =
     [
-        ("light", "Claro", "Fondo blanco, ideal con mucha luz."),
-        ("dark", "Oscuro", "Fondo azul oscuro, descansa la vista de noche."),
-        ("system", "Según el sistema", "Cambia solo, igual que tu dispositivo.")
+        ("light", I18n.T("Claro"), I18n.T("Fondo blanco, ideal con mucha luz.")),
+        ("dark", I18n.T("Oscuro"), I18n.T("Fondo azul oscuro, descansa la vista de noche.")),
+        ("system", I18n.T("Según el sistema"), I18n.T("Cambia solo, igual que tu dispositivo."))
     ];
     private string choice = "system";
     private string applied = "light";

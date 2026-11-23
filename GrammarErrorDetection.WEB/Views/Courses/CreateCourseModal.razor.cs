@@ -44,7 +44,7 @@ public partial class CreateCourseModal : IDisposable
     private (Guid, int, int)? loadedScope;
     private bool ValidScope => model.ModuleNameId != Guid.Empty && model.Year is >= 1 and <= 9999 && model.Bimester is >= 1 and <= 6;
     private int TransferCount => selected.Values.Count(NeedsTransfer);
-    private string SelectionSummary => $"{selected.Count} {(selected.Count == 1 ? "estudiante" : "estudiantes")} · {TransferCount} {(TransferCount == 1 ? "traslado" : "traslados")}" + (IsEdit ? $" · {RemovedCount} {(RemovedCount == 1 ? "baja" : "bajas")}" : "");
+    private string SelectionSummary => $"{selected.Count} {(selected.Count == 1 ? "estudiante" : "estudiantes")} · {TransferCount} {(TransferCount == 1 ? "traslado" : "traslados")}" + (IsEdit ? I18n.T(RemovedCount == 1 ? " · {0} baja" : " · {0} bajas", RemovedCount) : "");
     private readonly CancellationTokenSource lifetime = new();
     private CancellationTokenSource? eligibilityCancellation;
 
@@ -80,18 +80,18 @@ public partial class CreateCourseModal : IDisposable
             {
                 var response = await CourseService.GetRegistrationsAsync(Course!.Id, number, lifetime.Token);
                 if (disposed) return;
-                if (response?.Data is null || response.Error is { ErrorCode: not 0 }) throw new InvalidOperationException("No se pudieron cargar las inscripciones actuales.");
+                if (response?.Data is null || response.Error is { ErrorCode: not 0 }) throw new InvalidOperationException(I18n.T("No se pudieron cargar las inscripciones actuales."));
                 var added = 0;
                 foreach (var registration in response.Data)
                 {
                     if (registration.Id == Guid.Empty || registration.UserId == Guid.Empty || registration.ClassId != Course.Id || !registration.Active)
-                        throw new InvalidOperationException("Las inscripciones recibidas no corresponden al curso. Reintenta la consulta.");
+                        throw new InvalidOperationException(I18n.T("Las inscripciones recibidas no corresponden al curso. Reintenta la consulta."));
                     if (registrations.Add(registration.Id)) added++;
                     students.TryAdd(registration.UserId, new EligibleStudent { UserId = registration.UserId, IsAssigned = true,
                         Assignments = [new() { ClassId = Course.Id, RegistrationId = registration.Id, ModuleNameId = Course.ModuleNameId, ModuleName = Course.ModuleName, Parallel = Course.Parallel, StartTime = Course.StartTime, EndTime = Course.EndTime }] });
                 }
                 if (response.Data.Count < 100) break;
-                if (added == 0) throw new InvalidOperationException("La consulta de inscripciones no avanzó de página.");
+                if (added == 0) throw new InvalidOperationException(I18n.T("La consulta de inscripciones no avanzó de página."));
             }
             // Completar nombres sin depender de la primera página de elegibles.
             if (students.Count > 0)
@@ -101,7 +101,7 @@ public partial class CreateCourseModal : IDisposable
                 {
                     var response = await CourseService.GetEligibleStudentsAsync(new() { ModuleNameId = Course!.ModuleNameId, Year = Course.Year, Bimester = Course.Bimester, IsAssigned = true, PageNumber = number, PageSize = 100 }, lifetime.Token);
                     if (disposed) return;
-                    if (response?.Data is null || response.Error is { ErrorCode: not 0 }) throw new InvalidOperationException("No se pudieron cargar los estudiantes actuales.");
+                    if (response?.Data is null || response.Error is { ErrorCode: not 0 }) throw new InvalidOperationException(I18n.T("No se pudieron cargar los estudiantes actuales."));
                     var added = 0;
                     foreach (var student in response.Data)
                     {
@@ -109,15 +109,15 @@ public partial class CreateCourseModal : IDisposable
                         if (students.ContainsKey(student.UserId)) students[student.UserId] = student;
                     }
                     if (response.Data.Count < 100 || students.Keys.All(seen.Contains)) break;
-                    if (added == 0) throw new InvalidOperationException("La consulta de estudiantes no avanzó de página.");
+                    if (added == 0) throw new InvalidOperationException(I18n.T("La consulta de estudiantes no avanzó de página."));
                 }
             }
             foreach (var student in students.Values) { originalStudents.Add(student.UserId, student); selected.Add(student.UserId, student); }
             membersLoaded = true;
         }
         catch (HttpRequestException ex) { if (!disposed) initializationError = HttpError(ex, false); }
-        catch (OperationCanceledException) { if (!disposed) initializationError = "La carga de inscripciones tardó demasiado. Reintenta para editar con la lista completa."; }
-        catch (JsonException) { if (!disposed) initializationError = "No se pudieron interpretar las inscripciones actuales."; }
+        catch (OperationCanceledException) { if (!disposed) initializationError = I18n.T("La carga de inscripciones tardó demasiado. Reintenta para editar con la lista completa."); }
+        catch (JsonException) { if (!disposed) initializationError = I18n.T("No se pudieron interpretar las inscripciones actuales."); }
         catch (InvalidOperationException ex) { if (!disposed) initializationError = ex.Message; }
         finally { initializing = false; }
         if (membersLoaded && !disposed) await LoadEligibleAsync(1);
@@ -126,7 +126,7 @@ public partial class CreateCourseModal : IDisposable
     private bool CheckPermission()
     {
         if (Session.Current is null) { Navigation.NavigateTo("/auth/login", replace: true); return false; }
-        if (!Session.IsInRole("Coordinator") || Session.IsInRole("Teacher")) { error = "No tienes permiso para gestionar cursos."; return false; }
+        if (!Session.IsInRole("Coordinator") || Session.IsInRole("Teacher")) { error = I18n.T("No tienes permiso para gestionar cursos."); return false; }
         return true;
     }
 
@@ -172,11 +172,11 @@ public partial class CreateCourseModal : IDisposable
                 FirstName = appliedFirstName, LastName = appliedLastName, CI = appliedCi
             }, cancellation.Token);
             if (disposed || version != requestVersion || scope != Scope) return;
-            if (response?.Data is null || response.Error is { ErrorCode: not 0 }) throw new InvalidOperationException("No se pudo consultar a los estudiantes elegibles.");
+            if (response?.Data is null || response.Error is { ErrorCode: not 0 }) throw new InvalidOperationException(I18n.T("No se pudo consultar a los estudiantes elegibles."));
             if (requestedPage > page && response.Data.Count == 0)
             {
                 hasNext = false;
-                eligibilityStatus = "Has llegado al final del listado.";
+                eligibilityStatus = I18n.T("Has llegado al final del listado.");
                 return;
             }
             eligible = response.Data.Where(student => student.UserId != Guid.Empty).DistinctBy(student => student.UserId).ToList();
@@ -189,9 +189,9 @@ public partial class CreateCourseModal : IDisposable
             page = requestedPage;
             hasNext = response.Data.Count == PageSize;
         }
-        catch (OperationCanceledException) { if (!disposed && version == requestVersion && !cancellation.IsCancellationRequested) eligibilityError = "La consulta tardó demasiado. Inténtalo de nuevo."; }
+        catch (OperationCanceledException) { if (!disposed && version == requestVersion && !cancellation.IsCancellationRequested) eligibilityError = I18n.T("La consulta tardó demasiado. Inténtalo de nuevo."); }
         catch (HttpRequestException ex) { if (!disposed && version == requestVersion) eligibilityError = HttpError(ex, false); }
-        catch (JsonException) { if (!disposed && version == requestVersion) eligibilityError = "No se pudo interpretar la respuesta de estudiantes elegibles."; }
+        catch (JsonException) { if (!disposed && version == requestVersion) eligibilityError = I18n.T("No se pudo interpretar la respuesta de estudiantes elegibles."); }
         catch (InvalidOperationException ex) { if (!disposed && version == requestVersion) eligibilityError = ex.Message; }
         finally
         {
@@ -223,9 +223,9 @@ public partial class CreateCourseModal : IDisposable
         model.Parallel = (model.Parallel ?? "").Trim();
         validationErrors.Clear();
         if (!editContext.Validate()) { validationErrors = editContext.GetValidationMessages().Distinct().ToList(); return; }
-        if (selected.Count > 0 && (loadedScope != Scope || eligibilityError is not null)) { error = "Consulta los estudiantes elegibles para el módulo y periodo seleccionados."; return; }
-        if (TransferCount > 0 && !transferConfirmed) { error = "Confirma el traslado de los estudiantes que ya tienen un curso asignado."; return; }
-        if (RemovedCount > 0 && !removalConfirmed) { error = "Confirma que quieres quitar a los estudiantes omitidos de la selección final."; return; }
+        if (selected.Count > 0 && (loadedScope != Scope || eligibilityError is not null)) { error = I18n.T("Consulta los estudiantes elegibles para el módulo y periodo seleccionados."); return; }
+        if (TransferCount > 0 && !transferConfirmed) { error = I18n.T("Confirma el traslado de los estudiantes que ya tienen un curso asignado."); return; }
+        if (RemovedCount > 0 && !removalConfirmed) { error = I18n.T("Confirma que quieres quitar a los estudiantes omitidos de la selección final."); return; }
         saving = true;
         try
         {
@@ -236,14 +236,14 @@ public partial class CreateCourseModal : IDisposable
             if (response?.Data?.Class is not { Id: var id } || id == Guid.Empty || response.Error is { ErrorCode: not 0 }
                 || (IsEdit && (id != Course!.Id || response.Data.Students is null || !model.StudentIds.ToHashSet().SetEquals(response.Data.Students.Select(student => student.UserId)))))
             {
-                error = "No se pudo confirmar el guardado. Revisa el listado antes de volver a enviar el formulario.";
+                error = I18n.T("No se pudo confirmar el guardado. Revisa el listado antes de volver a enviar el formulario.");
                 return;
             }
             if (IsEdit) await OnSaved.InvokeAsync(response.Data); else await OnCreated.InvokeAsync(response.Data);
         }
         catch (HttpRequestException ex) { if (!disposed) error = HttpError(ex, true); }
-        catch (OperationCanceledException) { if (!disposed) error = "No se pudo confirmar el guardado a tiempo. Revisa el listado antes de volver a enviar."; }
-        catch (JsonException) { if (!disposed) error = "No se pudo interpretar la respuesta. Revisa el listado antes de volver a enviar."; }
+        catch (OperationCanceledException) { if (!disposed) error = I18n.T("No se pudo confirmar el guardado a tiempo. Revisa el listado antes de volver a enviar."); }
+        catch (JsonException) { if (!disposed) error = I18n.T("No se pudo interpretar la respuesta. Revisa el listado antes de volver a enviar."); }
         finally { saving = false; }
     }
 
@@ -252,18 +252,18 @@ public partial class CreateCourseModal : IDisposable
         if (exception.StatusCode == HttpStatusCode.Unauthorized)
         {
             Session.Clear(); Navigation.NavigateTo("/auth/login", replace: true);
-            return "Tu sesión venció. Vuelve a iniciar sesión.";
+            return I18n.T("Tu sesión venció. Vuelve a iniciar sesión.");
         }
         return exception.StatusCode switch
         {
-            HttpStatusCode.Forbidden => "No tienes permiso para realizar esta operación.",
-            HttpStatusCode.BadRequest => "Revisa los datos del curso y la selección de estudiantes.",
-            HttpStatusCode.Conflict => "La asignación o disponibilidad cambió. Revisa los estudiantes y el horario antes de volver a enviar.",
-            _ => creating ? "No se pudo confirmar el guardado. Revisa el listado antes de volver a enviar." : "No se pudo cargar el listado. Inténtalo de nuevo."
+            HttpStatusCode.Forbidden => I18n.T("No tienes permiso para realizar esta operación."),
+            HttpStatusCode.BadRequest => I18n.T("Revisa los datos del curso y la selección de estudiantes."),
+            HttpStatusCode.Conflict => I18n.T("La asignación o disponibilidad cambió. Revisa los estudiantes y el horario antes de volver a enviar."),
+            _ => creating ? ApiErrors.WithAdvice(exception, "Revisa el listado antes de volver a enviar.") : ApiErrors.Describe(exception)
         };
     }
 
-    private static string FullName(EligibleStudent student) => string.IsNullOrWhiteSpace($"{student.FirstName} {student.LastName}".Trim()) ? $"Estudiante {student.UserId:D}" : $"{student.FirstName} {student.LastName}".Trim();
+    private static string FullName(EligibleStudent student) => string.IsNullOrWhiteSpace($"{student.FirstName} {student.LastName}".Trim()) ? I18n.T("Estudiante {0:D}", student.UserId) : $"{student.FirstName} {student.LastName}".Trim();
     private static TimeOnly ParseTime(string? value) => TimeOnly.TryParse(value?.TrimEnd('Z', 'z'), System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var time) ? time : default;
     private static string Initials(EligibleStudent student) => $"{student.FirstName.FirstOrDefault()}{student.LastName.FirstOrDefault()}".Replace("\0", "");
     private static string AssignmentHour(string? value) => TimeOnly.TryParse(value?.TrimEnd('Z', 'z'), System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var time) ? time.ToString("HH:mm") : "—";

@@ -63,7 +63,7 @@ public partial class ApplyRegistrationModal : IDisposable
             }, lifetime.Token));
             if (disposed || !Allowed) return;
             if (data.Any(item => item.ClassId == Guid.Empty || item.Year != loadedYear || item.Bimester != loadedBimester))
-                throw new InvalidOperationException("El servicio devolvió cursos que no corresponden al periodo consultado.");
+                throw new InvalidOperationException(I18n.T("El servicio devolvió cursos que no corresponden al periodo consultado."));
             courses = data;
             hasNext = data.Count == period.PageSize;
             loaded = true;
@@ -84,7 +84,7 @@ public partial class ApplyRegistrationModal : IDisposable
     {
         if (disposed || Busy || !Allowed || selected is null) return;
         if (selected.Year != period.Year || selected.Bimester != period.Bimester || !courses.Contains(selected))
-        { saveError = "Consulta nuevamente los cursos del periodo elegido."; return; }
+        { saveError = I18n.T("Consulta nuevamente los cursos del periodo elegido."); return; }
         saving = true;
         saveError = null;
         try
@@ -92,7 +92,7 @@ public partial class ApplyRegistrationModal : IDisposable
             var response = Data(await Registrations.ApplyAsync(new() { ClassId = selected.ClassId }, lifetime.Token));
             if (disposed || !Allowed) return;
             if (response.Id == Guid.Empty || response.UserId != owner || response.ClassId != selected.ClassId || !IsPending(response))
-                throw new InvalidOperationException("No se pudo confirmar la solicitud. Consulta Mis inscripciones antes de volver a intentarlo.");
+                throw new InvalidOperationException(I18n.T("No se pudo confirmar la solicitud. Consulta Mis inscripciones antes de volver a intentarlo."));
             await OnSaved.InvokeAsync(response);
         }
         catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or JsonException or InvalidOperationException)

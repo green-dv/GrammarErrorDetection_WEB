@@ -12,6 +12,8 @@ public class EvaluationWriteRequest
     public int? OralScore { get; set; }
     public int? AcademicPerformance { get; set; }
     public bool Active { get; set; } = true;
+    /// <summary>Comentario opcional sobre el estudiante en este examen (hasta 500 caracteres). Vacío lo borra al actualizar.</summary>
+    public string? Comment { get; set; }
 }
 
 public sealed class EvaluationUpdateRequest : EvaluationWriteRequest

@@ -19,7 +19,7 @@ public sealed class PasswordChangeFlowState
     public void Start(AuthSessionResponse response, string email, bool? isTotpEnabled)
     {
         ArgumentNullException.ThrowIfNull(response);
-        Ticket = response.PasswordChange ?? throw new InvalidOperationException("La API no entregó el ticket para cambiar la contraseña.");
+        Ticket = response.PasswordChange ?? throw new InvalidOperationException(I18n.T("La API no entregó el ticket para cambiar la contraseña."));
         Email = email;
         IsTotpEnabled = isTotpEnabled;
         Name = response.User?.Name;
@@ -27,7 +27,7 @@ public sealed class PasswordChangeFlowState
 
     public CompletePasswordChangeRequest CreateRequest(string newPassword) => Ticket is { } ticket
         ? new() { ChallengeId = ticket.ChallengeId, Token = ticket.Token, NewPassword = newPassword }
-        : throw new InvalidOperationException("Vuelve a iniciar sesión.");
+        : throw new InvalidOperationException(I18n.T("Vuelve a iniciar sesión."));
 
     public void Clear()
     {

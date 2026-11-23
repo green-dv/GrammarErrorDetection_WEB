@@ -57,7 +57,7 @@ public partial class GamificationEditor : IDisposable
     private string originalConditions = "[]";
     private bool IsEdit => Achievement is not null || Challenge is not null;
     private bool ConditionLocked => !IsAchievement && Challenge is { Status: not "Draft" };
-    private string Title => $"{(IsEdit ? "Editar" : "Crear")} {(IsAchievement ? "logro" : "desafío")}";
+    private string Title => $"{(IsEdit ? "Editar" : I18n.T("Crear"))} {(IsAchievement ? "logro" : I18n.T("desafío"))}";
     private string? CodeOf(ConditionRow row) => conditions.FirstOrDefault(item => item.Id == row.TypeId)?.Code ?? originalCodes.GetValueOrDefault(row.TypeId);
     private bool ConditionsChanged => ConditionsKey() != originalConditions;
 
@@ -118,15 +118,15 @@ public partial class GamificationEditor : IDisposable
     {
         var problems = new List<string>();
         if (ConditionLocked) return problems;
-        if (IsAchievement && conditionRows.Count == 0) problems.Add("El logro requiere al menos una condición.");
-        if (!IsAchievement && model.Status == "Published" && conditionRows.Count == 0) problems.Add("Para publicar el desafío agrega al menos una condición.");
-        if (conditionRows.Count > MaxConditions) problems.Add($"Se permiten hasta {MaxConditions} condiciones.");
+        if (IsAchievement && conditionRows.Count == 0) problems.Add(I18n.T("El logro requiere al menos una condición."));
+        if (!IsAchievement && model.Status == "Published" && conditionRows.Count == 0) problems.Add(I18n.T("Para publicar el desafío agrega al menos una condición."));
+        if (conditionRows.Count > MaxConditions) problems.Add(I18n.T("Se permiten hasta {0} condiciones.", MaxConditions));
         for (var index = 0; index < conditionRows.Count; index++)
         {
             var row = conditionRows[index];
-            if (row.TypeId == Guid.Empty) { problems.Add($"Condición {index + 1}: selecciona la actividad."); continue; }
+            if (row.TypeId == Guid.Empty) { problems.Add(I18n.T("Condición {0}: selecciona la actividad.", index + 1)); continue; }
             problems.AddRange(ConditionConfiguration.Validate(CodeOf(row), row.Target, row.Operator, row.MinimumWords, row.MinimumScore)
-                .Select(problem => $"Condición {index + 1}: {problem}"));
+                .Select(problem => I18n.T("Condición {0}: {1}", index + 1, problem)));
         }
         return problems;
     }
@@ -135,7 +135,7 @@ public partial class GamificationEditor : IDisposable
     {
         if (Session.Current is null) { Navigation.NavigateTo("/auth/login", replace: true); return false; }
         if (Session.IsInRole("Coordinator")) return true;
-        error = "No tienes permiso para gestionar la gamificación."; return false;
+        error = I18n.T("No tienes permiso para gestionar la gamificación."); return false;
     }
 
     private async Task LoadCatalogsAsync()
@@ -151,10 +151,10 @@ public partial class GamificationEditor : IDisposable
                 collections = await ReadAllAsync<AchievementCollectionResponse>((page) => Service.SearchAchievementCollectionsAsync(new() { PageNumber = page, PageSize = 100 }, lifetime.Token), item => item.Id);
             }
         }
-        catch (OperationCanceledException) { if (!disposed) catalogError = "La carga de catálogos tardó demasiado."; }
+        catch (OperationCanceledException) { if (!disposed) catalogError = I18n.T("La carga de catálogos tardó demasiado."); }
         catch (HttpRequestException ex) { if (!disposed) catalogError = HttpError(ex); }
         catch (Exception ex) when (ex is InvalidOperationException or JsonException)
-        { if (!disposed) catalogError = "No se pudieron cargar los catálogos de categorías, colecciones o condiciones."; }
+        { if (!disposed) catalogError = I18n.T("No se pudieron cargar los catálogos de categorías, colecciones o condiciones."); }
         finally { loading = false; }
     }
 
@@ -168,7 +168,7 @@ public partial class GamificationEditor : IDisposable
             var added = 0;
             foreach (var item in rows) if (id(item) != Guid.Empty && result.TryAdd(id(item), item)) added++;
             if (rows.Count < 100) return result.Values.ToList();
-            if (added == 0) throw new InvalidOperationException("El catálogo no avanzó de página.");
+            if (added == 0) throw new InvalidOperationException(I18n.T("El catálogo no avanzó de página."));
         }
     }
 
@@ -180,16 +180,16 @@ public partial class GamificationEditor : IDisposable
         try
         {
             var file = args.File;
-            if (file.Size is <= 0 or > 5 * 1024 * 1024) throw new InvalidOperationException("La imagen debe pesar entre 1 byte y 5 MB.");
+            if (file.Size is <= 0 or > 5 * 1024 * 1024) throw new InvalidOperationException(I18n.T("La imagen debe pesar entre 1 byte y 5 MB."));
             if (file.ContentType is not ("image/png" or "image/jpeg" or "image/webp" or "image/gif"))
-                throw new InvalidOperationException("Selecciona una imagen PNG, JPG, WebP o GIF.");
+                throw new InvalidOperationException(I18n.T("Selecciona una imagen PNG, JPG, WebP o GIF."));
             using var stream = file.OpenReadStream(5 * 1024 * 1024, lifetime.Token);
             using var buffer = new MemoryStream();
             await stream.CopyToAsync(buffer, lifetime.Token);
             imageBytes = buffer.ToArray(); imageName = file.Name; imageType = file.ContentType;
             imagePreview = $"data:{imageType};base64,{Convert.ToBase64String(imageBytes)}";
         }
-        catch (OperationCanceledException) { if (!disposed) fileError = "No se completó la carga de la imagen."; }
+        catch (OperationCanceledException) { if (!disposed) fileError = I18n.T("No se completó la carga de la imagen."); }
         catch (Exception ex) when (ex is IOException or InvalidOperationException) { fileError = ex.Message; }
         finally { readingImage = false; }
     }
@@ -201,14 +201,14 @@ public partial class GamificationEditor : IDisposable
         error = null; errors.Clear();
         if (!context.Validate()) errors.AddRange(context.GetValidationMessages());
         if (fileError is not null) errors.Add(fileError);
-        if (IsAchievement && model.CategoryId == Guid.Empty) errors.Add("Selecciona una categoría.");
+        if (IsAchievement && model.CategoryId == Guid.Empty) errors.Add(I18n.T("Selecciona una categoría."));
         if (IsAchievement && model.CollectionId != Guid.Empty && model.TierOrder is not > 0)
-            errors.Add("Indica un orden de nivel entero mayor que cero para la colección.");
+            errors.Add(I18n.T("Indica un orden de nivel entero mayor que cero para la colección."));
         if (!IsAchievement)
         {
-            if (string.IsNullOrWhiteSpace(model.Instructions)) errors.Add("Indica las instrucciones del desafío.");
-            if (model.StartDate is null || model.EndDate is null) errors.Add("Indica las fechas de inicio y fin.");
-            else if (model.EndDate <= model.StartDate) errors.Add("La fecha de fin debe ser posterior al inicio.");
+            if (string.IsNullOrWhiteSpace(model.Instructions)) errors.Add(I18n.T("Indica las instrucciones del desafío."));
+            if (model.StartDate is null || model.EndDate is null) errors.Add(I18n.T("Indica las fechas de inicio y fin."));
+            else if (model.EndDate <= model.StartDate) errors.Add(I18n.T("La fecha de fin debe ser posterior al inicio."));
         }
         errors.AddRange(ValidateConditions());
         if (errors.Count > 0) return;
@@ -239,10 +239,10 @@ public partial class GamificationEditor : IDisposable
                         request.AchievementCollectionId = model.CollectionId;
                         request.TierOrder = model.TierOrder;
                     }
-                    if (!HasChanges(request) && image is null) { error = "No hay cambios para guardar."; return; }
+                    if (!HasChanges(request) && image is null) { error = I18n.T("No hay cambios para guardar."); return; }
                     sent = true;
                     var response = RequireSaved(await Service.UpdateAchievementAsync(request, image, imageName, imageType, lifetime.Token));
-                    if (response.Id != a.Id) throw new JsonException("Respuesta de actualización inesperada.");
+                    if (response.Id != a.Id) throw new JsonException(I18n.T("Respuesta de actualización inesperada."));
                 }
                 else
                 {
@@ -254,7 +254,7 @@ public partial class GamificationEditor : IDisposable
                         AchievementCollectionId = model.CollectionId == Guid.Empty ? null : model.CollectionId,
                         TierOrder = model.CollectionId == Guid.Empty ? null : model.TierOrder
                     }, image, imageName, imageType, lifetime.Token));
-                    if (response.Id == Guid.Empty) throw new JsonException("Respuesta de creación inesperada.");
+                    if (response.Id == Guid.Empty) throw new JsonException(I18n.T("Respuesta de creación inesperada."));
                 }
             }
             else if (Challenge is { } c)
@@ -268,10 +268,10 @@ public partial class GamificationEditor : IDisposable
                     Status = Changed(model.Status, c.Status),
                     Conditions = sendConditions ? conditionList : null
                 };
-                if (!HasChanges(request)) { error = "No hay cambios para guardar."; return; }
+                if (!HasChanges(request)) { error = I18n.T("No hay cambios para guardar."); return; }
                 sent = true;
                 var response = RequireSaved(await Service.UpdateChallengeAsync(request, lifetime.Token));
-                if (response.Id != c.Id) throw new JsonException("Respuesta de actualización inesperada.");
+                if (response.Id != c.Id) throw new JsonException(I18n.T("Respuesta de actualización inesperada."));
             }
             else
             {
@@ -282,7 +282,7 @@ public partial class GamificationEditor : IDisposable
                     Points = model.Points, Active = model.Active, StartDate = BoliviaWallTime(model.StartDate)!.Value, EndDate = BoliviaWallTime(model.EndDate)!.Value,
                     Status = model.Status, Conditions = conditionList
                 }, lifetime.Token));
-                if (response.Id == Guid.Empty) throw new JsonException("Respuesta de creación inesperada.");
+                if (response.Id == Guid.Empty) throw new JsonException(I18n.T("Respuesta de creación inesperada."));
             }
             saved = true;
         }
@@ -294,7 +294,7 @@ public partial class GamificationEditor : IDisposable
                 error = uncertain ? UncertainMessage : HttpError(ex);
             }
         }
-        catch (OperationCanceledException) { if (!disposed) { uncertain = sent; error = sent ? UncertainMessage : "Se canceló la operación."; } }
+        catch (OperationCanceledException) { if (!disposed) { uncertain = sent; error = sent ? UncertainMessage : I18n.T("Se canceló la operación."); } }
         catch (JsonException) { if (!disposed) { uncertain = sent; error = UncertainMessage; } }
         catch (InvalidOperationException ex) { if (!disposed) error = ex.Message; }
         finally { saving = false; }
@@ -304,20 +304,20 @@ public partial class GamificationEditor : IDisposable
     private static T RequireSaved<T>(GrammarErrorDetection.Models.Responses.ApiResponse<T>? response) where T : class
     {
         if (response?.Error is { ErrorCode: not 0 } error)
-            throw new InvalidOperationException(error.ErrorMessage ?? "La API rechazó la operación.");
-        return response?.Data ?? throw new JsonException("No se recibió confirmación del guardado.");
+            throw new InvalidOperationException(error.ErrorMessage ?? I18n.T("La API rechazó la operación."));
+        return response?.Data ?? throw new JsonException(I18n.T("No se recibió confirmación del guardado."));
     }
     private string HttpError(HttpRequestException ex)
     {
-        if (ex.StatusCode == HttpStatusCode.Unauthorized) { Session.Clear(); Navigation.NavigateTo("/auth/login", replace: true); return "La sesión expiró."; }
+        if (ex.StatusCode == HttpStatusCode.Unauthorized) { Session.Clear(); Navigation.NavigateTo("/auth/login", replace: true); return I18n.T("La sesión expiró."); }
         return ex.StatusCode switch
         {
-            HttpStatusCode.Forbidden => "No tienes permiso para realizar esta operación.",
+            HttpStatusCode.Forbidden => I18n.T("No tienes permiso para realizar esta operación."),
             HttpStatusCode.BadRequest => IsAchievement && IsEdit
-                ? "La API rechazó los cambios. Si alguien ya obtuvo este logro, no se pueden modificar sus condiciones. Revisa los datos o crea otro logro."
-                : "La API rechazó los datos. Revisa los campos y las condiciones.",
-            HttpStatusCode.Conflict => "Los datos cambiaron o entran en conflicto. Cierra y actualiza el listado.",
-            _ => "No se pudo completar la solicitud."
+                ? I18n.T("La API rechazó los cambios. Si alguien ya obtuvo este logro, no se pueden modificar sus condiciones. Revisa los datos o crea otro logro.")
+                : I18n.T("La API rechazó los datos. Revisa los campos y las condiciones."),
+            HttpStatusCode.Conflict => I18n.T("Los datos cambiaron o entran en conflicto. Cierra y actualiza el listado."),
+            _ => ApiErrors.Describe(ex)
         };
     }
     private static string? Changed(string value, string? original) => value == original ? null : value;

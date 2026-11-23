@@ -32,13 +32,13 @@ public sealed class RegistrationService(IApiClient apiClient) : IRegistrationSer
     public Task<ApiResponse<RegistrationResponse>?> ApplyAsync(RegistrationApplyRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        if (request.ClassId == Guid.Empty) throw new ArgumentException("Selecciona un curso válido.");
+        if (request.ClassId == Guid.Empty) throw new ArgumentException(I18n.T("Selecciona un curso válido."));
         Validator.ValidateObject(request, new(request), true);
         return apiClient.PostAsync<RegistrationApplyRequest, ApiResponse<RegistrationResponse>>("api/Registration/apply", request, cancellationToken);
     }
     public Task<ApiResponse<RegistrationResponse>?> DecideAsync(Guid id, bool approved, CancellationToken cancellationToken = default)
     {
-        if (id == Guid.Empty) throw new ArgumentException("Selecciona una inscripción válida.");
+        if (id == Guid.Empty) throw new ArgumentException(I18n.T("Selecciona una inscripción válida."));
         return apiClient.PutAsync<RegistrationDecisionRequest, ApiResponse<RegistrationResponse>>($"api/Registration/{id:D}/decision", new(approved), cancellationToken);
     }
     public Task<ApiResponse<List<RegistrationListItem>>?> GetMineAsync(RegistrationSearchRequest request, CancellationToken cancellationToken = default)
@@ -60,7 +60,7 @@ public sealed class RegistrationService(IApiClient apiClient) : IRegistrationSer
             Add("Status", filter.Status);
             if (mine) Add("Active", filter.Active?.ToString().ToLowerInvariant());
         }
-        return apiClient.GetAsync<ApiResponse<List<RegistrationListItem>>>($"api/Registration{(mine ? "/mine" : "")}?{string.Join("&", query)}", cancellationToken);
+        return apiClient.GetAsync<ApiResponse<List<RegistrationListItem>>>($"{(mine ? "api/Registration/mine" : "api/Registration")}?{string.Join("&", query)}", cancellationToken);
     }
     private static string Number(int value) => value.ToString(CultureInfo.InvariantCulture);
 }

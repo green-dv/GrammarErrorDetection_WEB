@@ -24,11 +24,11 @@ public partial class StudentCourseList : IDisposable
     private int page = 1, pageSize = 20;
     private bool loading, hasNext, disposed;
     private long? total;
-    private string PageOf => total is { } all ? $" de {Math.Max(1, (all + pageSize - 1) / pageSize)}" : "";
+    private string PageOf => total is { } all ? I18n.T(" de {0}", Math.Max(1, (all + pageSize - 1) / pageSize)) : "";
     private string? error;
     private Guid TargetUser => UserId ?? owner;
     private bool IsOwn => TargetUser == owner;
-    private string Title => IsOwn ? "Mis cursos" : "Cursos del estudiante";
+    private string Title => IsOwn ? I18n.T("Mis cursos") : I18n.T("Cursos del estudiante");
     private bool Allowed => TargetUser != Guid.Empty && Session.Current?.User?.Id == owner &&
         ((IsOwn && Session.IsInRole("Student")) || Session.IsInRole("Coordinator"));
 

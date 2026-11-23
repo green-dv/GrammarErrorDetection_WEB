@@ -98,20 +98,20 @@ public static class MaterialPresentation
 
     public static string Kind(SupportMaterialResponse material, FileTypeResponse? type = null)
     {
-        if (type?.MimeType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) == true) return "Imagen";
+        if (type?.MimeType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) == true) return I18n.T("Imagen");
         if (string.Equals(type?.MimeType, "application/pdf", StringComparison.OrdinalIgnoreCase)) return "PDF";
         return Format(material, type) switch
         {
             "PDF" => "PDF",
-            "PNG" or "JPG" or "JPEG" or "WEBP" or "GIF" or "AVIF" or "SVG" => "Imagen",
-            "URL" => "Enlace",
-            _ => "Documento"
+            "PNG" or "JPG" or "JPEG" or "WEBP" or "GIF" or "AVIF" or "SVG" => I18n.T("Imagen"),
+            "URL" => I18n.T("Enlace"),
+            _ => I18n.T("Documento")
         };
     }
 
     public static string Size(long? bytes) => bytes switch
     {
-        null => "No indicado",
+        null => I18n.T("No indicado"),
         < 1024 => $"{bytes} B",
         < 1024 * 1024 => $"{bytes / 1024d:0.#} KB",
         < 1024L * 1024 * 1024 => $"{bytes / (1024d * 1024):0.#} MB",

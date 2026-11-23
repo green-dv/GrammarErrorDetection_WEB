@@ -22,12 +22,12 @@ public partial class RegistrationList : IDisposable
     private Guid owner;
     private bool loading, deciding, applying, approving, hasNext, disposed;
     private long? total;
-    private string PagerInfo => total is { } all ? $"Mostrando {(page - 1) * pageSize + 1}–{(page - 1) * pageSize + entries.Count} de {all}" : $"{entries.Count} resultados en esta página";
-    private string PageOf => total is { } all ? $" de {Math.Max(1, (all + pageSize - 1) / pageSize)}" : "";
+    private string PagerInfo => total is { } all ? I18n.T("Mostrando {0}–{1} de {2}", (page - 1) * pageSize + 1, (page - 1) * pageSize + entries.Count, all) : I18n.T("{0} resultados en esta página", entries.Count);
+    private string PageOf => total is { } all ? I18n.T(" de {0}", Math.Max(1, (all + pageSize - 1) / pageSize)) : "";
     private string? error, message, decisionError;
     private int page = 1, pageSize = 20;
     private bool Allowed => Session.Current?.User?.Id == owner && Session.IsInRole(Mine ? "Student" : "Coordinator");
-    private string Title => CoursesOnly ? "Mis cursos" : Mine ? "Mis inscripciones" : "Inscripciones";
+    private string Title => CoursesOnly ? I18n.T("Mis cursos") : Mine ? I18n.T("Mis inscripciones") : I18n.T("Inscripciones");
     private const int Columns = 8;
 
     protected override async Task OnInitializedAsync()
@@ -78,7 +78,7 @@ public partial class RegistrationList : IDisposable
             if (disposed || !Allowed) return;
             var data = Data(response);
             if (data.Any(item => Mine && item.UserId.HasValue && item.UserId != owner))
-                throw new InvalidOperationException("El servicio devolvió inscripciones no válidas para esta consulta.");
+                throw new InvalidOperationException(I18n.T("El servicio devolvió inscripciones no válidas para esta consulta."));
             total = response?.TotalCount;
             hasNext = total is { } all ? (long)requestedPage * pageSize < all : data.Count == pageSize;
             entries = CoursesOnly ? data.Where(item => item.Active != false && !string.Equals(item.Status, "Rejected", StringComparison.OrdinalIgnoreCase)).ToList() : data;
@@ -106,9 +106,9 @@ public partial class RegistrationList : IDisposable
             if (disposed || !Allowed) return;
             if (response.Id != item.RegistrationId || (item.UserId.HasValue && response.UserId != item.UserId) || (item.ClassId.HasValue && response.ClassId != item.ClassId)
                 || response.Active != approving || !string.Equals(response.Status, approving ? "Approved" : "Rejected", StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException("No se pudo confirmar la decisión. Actualiza el listado antes de volver a intentarlo.");
+                throw new InvalidOperationException(I18n.T("No se pudo confirmar la decisión. Actualiza el listado antes de volver a intentarlo."));
             reviewing = null;
-            message = approving ? "Inscripción aprobada." : "Inscripción rechazada y desactivada. El estudiante ya no pertenece al curso.";
+            message = approving ? I18n.T("Inscripción aprobada.") : I18n.T("Inscripción rechazada y desactivada. El estudiante ya no pertenece al curso.");
             await LoadAsync(page);
             if (!disposed && error is null && entries.Count == 0 && page > 1) await LoadAsync(page - 1);
         }
@@ -129,7 +129,7 @@ public partial class RegistrationList : IDisposable
     private async Task AppliedAsync(RegistrationResponse item)
     {
         applying = false;
-        message = "Solicitud guardada. La inscripción está pendiente de aprobación.";
+        message = I18n.T("Solicitud guardada. La inscripción está pendiente de aprobación.");
         await LoadAsync(1);
     }
     public void Dispose()

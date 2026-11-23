@@ -127,6 +127,7 @@ public sealed class AtRiskStudent
     public Guid UserId { get; set; }
     public string StudentName { get; set; } = string.Empty;
     public string? Email { get; set; }
+    public string? Phone { get; set; }
     public Guid ClassId { get; set; }
     public string ModuleName { get; set; } = string.Empty;
     public int Year { get; set; }

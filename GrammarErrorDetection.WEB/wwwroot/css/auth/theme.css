@@ -12,3 +12,6 @@
 .auth-shell .text-brand-red { color: var(--color-brand-red); }
 .auth-shell .text-muted { color: var(--color-muted) !important; }
 .auth-shell .hover\:text-brand-blue:hover { color: var(--color-brand-blue) !important; }
+
+/* El titular del panel azul debe ser blanco aunque el tema oscuro fuerce el color de los h1. */
+:root .auth-shell .auth-brand h1, :root[data-theme] .auth-shell .auth-brand h1, :root[data-theme] .auth-shell .auth-brand h2 { color: #fff; }

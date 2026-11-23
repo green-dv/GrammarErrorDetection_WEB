@@ -2,9 +2,9 @@
 @inject NavigationManager Navigation
 
 <PageTitle>@Title | CETI La Paz</PageTitle>
-<header class="portal-heading"><p class="portal-eyebrow">CETI · PORTAL ACADÉMICO</p><h1>@Title</h1></header>
-<p class="portal-empty">Esta sección aún no está disponible.</p>
+<header class="portal-heading"><p class="portal-eyebrow">@L["CETI · PORTAL ACADÉMICO"]</p><h1>@Title</h1></header>
+<p class="portal-empty">@L["Esta sección aún no está disponible."]</p>
 
 @code {
-    private string Title => PortalNavigation.Options.FirstOrDefault(option => option.Path == Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0].Trim('/'))?.Label ?? "Portal académico";
+    private string Title => PortalNavigation.Options.FirstOrDefault(option => option.Path == Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0].Trim('/'))?.Label ?? I18n.T("Portal académico");
 }

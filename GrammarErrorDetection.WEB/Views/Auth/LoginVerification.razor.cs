@@ -44,14 +44,14 @@ public partial class LoginVerification : IDisposable
         VerifyTotpLoginRequest? totpRequest = null;
         try
         {
-            var email = Flow.PendingEmail ?? throw new InvalidOperationException("Vuelve a iniciar sesión.");
+            var email = Flow.PendingEmail ?? throw new InvalidOperationException(I18n.T("Vuelve a iniciar sesión."));
             var response = Flow.IsTotpSelected
                 ? await AuthService.VerifyTotpAsync(totpRequest = Flow.CreateTotpVerificationRequest(model.Code), lifetime.Token)
                 : await AuthService.VerifyLoginAsync(Flow.CreateEmailVerificationRequest(model.Code), lifetime.Token);
             if (lifetime.IsCancellationRequested) return;
             if (response?.Error is { ErrorCode: not 0 } || response?.Data is null)
             {
-                status = "No se pudo verificar el acceso. Revisa el código e inténtalo de nuevo.";
+                status = I18n.T("No se pudo verificar el acceso. Revisa el código e inténtalo de nuevo.");
                 return;
             }
             if (response.Data.RequiresPasswordChange)
@@ -70,23 +70,23 @@ public partial class LoginVerification : IDisposable
         }
         catch (HttpRequestException ex) when (ex.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.BadRequest)
         {
-            status = "El código es incorrecto o venció. Revísalo e inténtalo de nuevo.";
+            status = I18n.T("El código es incorrecto o venció. Revísalo e inténtalo de nuevo.");
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.TooManyRequests)
         {
-            status = "Demasiados intentos. Espera un momento e inténtalo de nuevo.";
+            status = I18n.T("Demasiados intentos. Espera un momento e inténtalo de nuevo.");
         }
-        catch (HttpRequestException)
+        catch (HttpRequestException ex)
         {
-            status = "No se pudo verificar el acceso con la API. Inténtalo de nuevo.";
+            status = ApiErrors.Describe(ex);
         }
         catch (OperationCanceledException)
         {
-            if (!lifetime.IsCancellationRequested) status = "La solicitud tardó demasiado. Inténtalo de nuevo.";
+            if (!lifetime.IsCancellationRequested) status = I18n.T("La solicitud tardó demasiado. Inténtalo de nuevo.");
         }
         catch (JsonException)
         {
-            status = "No se pudo interpretar la respuesta de verificación.";
+            status = I18n.T("No se pudo interpretar la respuesta de verificación.");
         }
         catch (InvalidOperationException ex)
         {

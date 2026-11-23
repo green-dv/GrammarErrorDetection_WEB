@@ -7,39 +7,39 @@
     {
         <header class="users-heading">
             <div class="users-heading-content">
-                <p class="users-eyebrow">CETI · COMUNIDAD ACADÉMICA</p>
-                <h1 id="users-title">Usuarios</h1>
-                <p>Datos de contacto y recorrido académico de los estudiantes.</p>
+                <p class="users-eyebrow">@L["CETI · COMUNIDAD ACADÉMICA"]</p>
+                <h1 id="users-title">@L["Usuarios"]</h1>
+                <p>@L["Datos de contacto y recorrido académico de los estudiantes."]</p>
             </div>
             @if (CanManageUsers)
             {
-                <button type="button" class="data-table-button data-table-button-primary" disabled="@(busy || loadingCatalogs || roles.Count == 0)" @onclick="() => creatingUser = true" aria-haspopup="dialog">+ Nuevo usuario</button>
+                <button type="button" class="data-table-button data-table-button-primary" disabled="@(busy || loadingCatalogs || roles.Count == 0)" @onclick="() => creatingUser = true" aria-haspopup="dialog">@L["+ Nuevo usuario"]</button>
             }
         </header>
     }
     <div class="data-table-card">
-        <header class="data-table-heading"><div><h2>@ListTitle</h2><p>@(IsCourseList ? "Datos de contacto, inscripción y notas de ambos exámenes." : "Busca por uno o varios campos. Deja los filtros vacíos para consultar todos los usuarios.")</p></div></header>
+        <header class="data-table-heading"><div><h2>@ListTitle</h2><p>@(IsCourseList ? L["Datos de contacto, inscripción y notas de ambos exámenes."] : L["Busca por uno o varios campos. Deja los filtros vacíos para consultar todos los usuarios."])</p></div></header>
         <EditForm Model="filters" OnValidSubmit="SearchAsync" OnInvalidSubmit="ShowValidationErrors" novalidate>
-            <DataAnnotationsValidator />
+            <LocalizedValidator />
             <div class="data-filter-panel data-filter-panel-inset">
                 @if (!IsCourseList)
                 {
-                    <div class="data-filter-heading"><span>Filtrar usuarios</span><span>Combina los campos que necesites</span></div>
+                    <div class="data-filter-heading"><span>@L["Filtrar usuarios"]</span><span>@L["Combina los campos que necesites"]</span></div>
                 }
                 <div class="data-table-toolbar users-filters">
-                    <label class="data-table-field"><span>Nombre</span><InputText @bind-Value="filters.FirstName" placeholder="Nombre" maxlength="50" /></label>
-                    <label class="data-table-field"><span>Apellido</span><InputText @bind-Value="filters.LastName" placeholder="Apellido" maxlength="50" /></label>
-                    <label class="data-table-field"><span>Correo</span><InputText @bind-Value="filters.Email" placeholder="Buscar correo" maxlength="100" /></label>
-                    <label class="data-table-field"><span>CI</span><InputText @bind-Value="filters.Ci" placeholder="Documento de identidad" maxlength="15" /></label>
-                    <label class="data-table-field"><span>Teléfono</span><InputText @bind-Value="filters.Phone" placeholder="Teléfono" maxlength="12" /></label>
-                    <label class="data-table-field"><span>Fecha de registro</span><InputDate @bind-Value="filters.CreatedAt" /></label>
+                    <label class="data-table-field"><span>@L["Nombre"]</span><InputText @bind-Value="filters.FirstName" placeholder="@L["Nombre"]" maxlength="50" /></label>
+                    <label class="data-table-field"><span>@L["Apellido"]</span><InputText @bind-Value="filters.LastName" placeholder="@L["Apellido"]" maxlength="50" /></label>
+                    <label class="data-table-field"><span>@L["Correo"]</span><InputText @bind-Value="filters.Email" placeholder="@L["Buscar correo"]" maxlength="100" /></label>
+                    <label class="data-table-field"><span>@L["CI"]</span><InputText @bind-Value="filters.Ci" placeholder="@L["Documento de identidad"]" maxlength="15" /></label>
+                    <label class="data-table-field"><span>@L["Teléfono"]</span><InputText @bind-Value="filters.Phone" placeholder="@L["Teléfono"]" maxlength="12" /></label>
+                    <label class="data-table-field"><span>@L["Fecha de registro"]</span><InputDate @bind-Value="filters.CreatedAt" /></label>
                     @if (!IsCourseList)
                     {
-                        <label class="data-table-field"><span>Rol</span><InputSelect @bind-Value="filters.RoleId" disabled="@(loadingCatalogs || roles.Count == 0)"><option value="">Todos los roles</option>@foreach (var role in roles) { <option value="@role.Id">@role.Name</option> }</InputSelect></label>
-                        <label class="data-table-field"><span>Curso actual</span><InputSelect @bind-Value="filters.CurrentModuleNameId" disabled="@(loadingCatalogs || modules.Count == 0)"><option value="">Todos los módulos</option>@foreach (var module in modules) { <option value="@module.Id">@module.Name</option> }</InputSelect></label>
+                        <label class="data-table-field"><span>@L["Rol"]</span><InputSelect @bind-Value="filters.RoleId" disabled="@(loadingCatalogs || roles.Count == 0)"><option value="">@L["Todos los roles"]</option>@foreach (var role in roles) { <option value="@role.Id">@role.Name</option> }</InputSelect></label>
+                        <label class="data-table-field"><span>@L["Curso actual"]</span><InputSelect @bind-Value="filters.CurrentModuleNameId" disabled="@(loadingCatalogs || modules.Count == 0)"><option value="">@L["Todos los módulos"]</option>@foreach (var module in modules) { <option value="@module.Id">@module.Name</option> }</InputSelect></label>
                     }
-                    <label class="data-table-field"><span>@(IsCourseList ? "Estado de cuenta" : "Estado")</span><InputSelect @bind-Value="filters.Active"><option value="">Todos</option><option value="true">Activo</option><option value="false">Inactivo</option></InputSelect></label>
-                    <div class="data-filter-actions"><button type="submit" class="data-table-button data-table-button-primary" disabled="@busy">Buscar</button><button type="button" class="data-table-button" @onclick="ClearFiltersAsync" disabled="@busy">Limpiar filtros</button></div>
+                    <label class="data-table-field"><span>@(IsCourseList ? L["Estado de cuenta"] : L["Estado"])</span><InputSelect @bind-Value="filters.Active"><option value="">@L["Todos"]</option><option value="true">@L["Activo"]</option><option value="false">@L["Inactivo"]</option></InputSelect></label>
+                    <div class="data-filter-actions"><button type="submit" class="data-table-button data-table-button-primary" disabled="@busy">@L["Buscar"]</button><button type="button" class="data-table-button" @onclick="ClearFiltersAsync" disabled="@busy">@L["Limpiar filtros"]</button></div>
                 </div>
             </div>
         </EditForm>
@@ -49,34 +49,34 @@
         }
         @if (catalogError is not null)
         {
-            <div class="data-table-error" role="alert"><span>@catalogError</span><button type="button" class="data-table-text-button" @onclick="LoadCatalogsAsync" disabled="@loadingCatalogs">Reintentar filtros</button></div>
+            <div class="data-table-error" role="alert"><span>@catalogError</span><button type="button" class="data-table-text-button" @onclick="LoadCatalogsAsync" disabled="@loadingCatalogs">@L["Reintentar filtros"]</button></div>
         }
         @if (error is not null)
         {
-            <div class="data-table-error" role="alert"><span>@error</span><button type="button" class="data-table-text-button" @onclick="RetryAsync" disabled="@busy">Reintentar</button></div>
+            <div class="data-table-error" role="alert"><span>@error</span><button type="button" class="data-table-text-button" @onclick="RetryAsync" disabled="@busy">@L["Reintentar"]</button></div>
         }
-        @if (loadingGrades) { <p class="data-table-message" role="status">Cargando evaluaciones…</p> }
-        @if (gradesError is not null) { <div class="data-table-error" role="alert">@gradesError <button type="button" class="data-table-text-button" disabled="@(busy || loadingGrades)" @onclick="RetryGradesAsync">Reintentar notas</button></div> }
+        @if (loadingGrades) { <p class="data-table-message" role="status">@L["Cargando evaluaciones…"]</p> }
+        @if (gradesError is not null) { <div class="data-table-error" role="alert">@gradesError <button type="button" class="data-table-text-button" disabled="@(busy || loadingGrades)" @onclick="RetryGradesAsync">@L["Reintentar notas"]</button></div> }
         @if (status is not null) { <p class="data-table-message" role="status">@status</p> }
-        <p class="data-table-summary" role="status">@(busy ? (IsCourseList ? "Cargando estudiantes…" : "Cargando usuarios…") : error is not null ? "Consulta no disponible" : $"{total ?? users.Count} {(IsCourseList ? "estudiantes" : "usuarios")} {(total is null ? "en esta página" : "en total")}")</p>
+        <p class="data-table-summary" role="status">@(busy ? (IsCourseList ? L["Cargando estudiantes…"] : L["Cargando usuarios…"]) : error is not null ? L["Consulta no disponible"] : I18n.T(total is null ? (IsCourseList ? "{0} estudiantes en esta página" : "{0} usuarios en esta página") : (IsCourseList ? "{0} estudiantes en total" : "{0} usuarios en total"), total ?? users.Count))</p>
 
-        <ListPager Top="true" Label="@(IsCourseList ? "Paginación de estudiantes" : "Paginación de usuarios")" @bind-PageSize="pageSize" @bind-PageSize:after="ChangePageSizeAsync" PageSizes="5,10,20" PageSizeLabel="Filas por página" PageSizeDisabled="@busy" Page="page" PageOf="@PageOf" Info="@(busy ? "Consultando…" : error is null ? ResultRange : "")" PreviousDisabled="@(busy || page <= 1)" NextDisabled="@(busy || !hasNext)" OnPrevious="PreviousPageAsync" OnNext="NextPageAsync" />
+        <ListPager Top="true" Label="@(IsCourseList ? L["Paginación de estudiantes"] : L["Paginación de usuarios"])" @bind-PageSize="pageSize" @bind-PageSize:after="ChangePageSizeAsync" PageSizes="5,10,20" PageSizeLabel="@L["Filas por página"]" PageSizeDisabled="@busy" Page="page" PageOf="@PageOf" Info="@(busy ? L["Consultando…"] : error is null ? ResultRange : "")" PreviousDisabled="@(busy || page <= 1)" NextDisabled="@(busy || !hasNext)" OnPrevious="PreviousPageAsync" OnNext="NextPageAsync" />
         <div class="data-table-scroll users-table-region" role="region" aria-label="@ListTitle" aria-busy="@busy.ToString().ToLowerInvariant()" tabindex="0">
             <table class="data-table users-table @(IsCourseList ? "course-students-table" : "")">
-                <caption class="data-table-sr-only">@(IsCourseList ? "Estudiantes del curso seleccionado, contacto, inscripción, dos exámenes y promedio del curso." : "Contacto, curso anterior, curso actual, nota y acciones de los usuarios.")</caption>
-                <thead><tr><th scope="col">@(IsCourseList ? "Estudiante" : "Nombre y apellido")</th><th scope="col">CI / Teléfono</th>@if (IsCourseList) { <th scope="col">Inscripción</th><th scope="col">Examen 1</th><th scope="col">Examen 2</th><th scope="col">Promedio</th><th scope="col" class="course-grade-actions">Acciones</th> } else { <th scope="col">Anterior curso</th><th scope="col">Curso actual</th><th scope="col">Nota actual</th><th scope="col" class="data-table-actions-heading">Acciones</th> }</tr></thead>
+                <caption class="data-table-sr-only">@(IsCourseList ? L["Estudiantes del curso seleccionado, contacto, inscripción, dos exámenes y promedio del curso."] : L["Contacto, curso anterior, curso actual, nota y acciones de los usuarios."])</caption>
+                <thead><tr><th scope="col">@(IsCourseList ? L["Estudiante"] : L["Nombre y apellido"])</th><th scope="col">@L["CI / Teléfono"]</th>@if (IsCourseList) { <th scope="col">@L["Inscripción"]</th><th scope="col">@L["Examen 1"]</th><th scope="col">@L["Examen 2"]</th><th scope="col">@L["Promedio"]</th><th scope="col" class="course-grade-actions">@L["Acciones"]</th> } else { <th scope="col">@L["Anterior curso"]</th><th scope="col">@L["Curso actual"]</th><th scope="col">@L["Nota actual"]</th><th scope="col" class="data-table-actions-heading">@L["Acciones"]</th> }</tr></thead>
                 <tbody>
                     @if (busy)
                     {
-                        <tr><td colspan="@ColumnCount" class="data-table-empty">@(IsCourseList ? "Cargando estudiantes…" : "Cargando usuarios…")</td></tr>
+                        <tr><td colspan="@ColumnCount" class="data-table-empty">@(IsCourseList ? L["Cargando estudiantes…"] : L["Cargando usuarios…"])</td></tr>
                     }
                     else
                     {
                         @foreach (var user in users)
                         {
                             <tr @key="user.Id">
-                                <th scope="row"><div class="data-table-identity"><span class="data-table-avatar" aria-hidden="true">@Initials(user)</span><div><span class="data-table-primary">@FullName(user)</span><span class="data-table-secondary">@user.Email</span><div class="users-identity-tags">@if (!IsCourseList) { <span class="users-role">@(string.IsNullOrWhiteSpace(user.RoleName) ? "Sin rol informado" : user.RoleName)</span><StatusPill Active="user.Active" On="Activo" Off="Inactivo" /> } else if (!user.Active) { <StatusPill Active="false" Off="Cuenta inactiva" /> }</div></div></div></th>
-                                <td><span class="data-table-primary">@user.Ci</span><span class="data-table-secondary">@(user.Phone ?? "Sin teléfono")</span></td>
+                                <th scope="row"><div class="data-table-identity"><span class="data-table-avatar" aria-hidden="true">@Initials(user)</span><div><span class="data-table-primary">@FullName(user)</span><span class="data-table-secondary">@user.Email</span><div class="users-identity-tags">@if (!IsCourseList) { <span class="users-role">@(string.IsNullOrWhiteSpace(user.RoleName) ? L["Sin rol informado"] : user.RoleName)</span><StatusPill Active="user.Active" On="Activo" Off="@L["Inactivo"]" /> } else if (!user.Active) { <StatusPill Active="false" Off="@L["Cuenta inactiva"]" /> }</div></div></div></th>
+                                <td><span class="data-table-primary">@user.Ci</span><span class="data-table-secondary">@(user.Phone ?? L["Sin teléfono"])</span></td>
                                 @if (IsCourseList)
                                 {
                                     <td><span class="data-table-chip">@RegistrationStatus(user)</span></td>
@@ -86,20 +86,20 @@
                                         <td><strong class="@StudentGradeDraft.Color(score)">@(score?.ToString("0.##") ?? "—")</strong><span class="data-table-grade-scale"> / 100</span></td>
                                     }
                                     <td><strong class="@StudentGradeDraft.Color(GradeFor(user).Average)">@(GradeFor(user).Average?.ToString("0.##") ?? "—")</strong><span class="data-table-grade-scale"> / 100</span><span class="data-table-secondary">@StudentGradeDraft.Result(GradeFor(user).Average)</span></td>
-                                    <td class="course-grade-actions"><button type="button" class="data-table-row-button grade-register-button" disabled="@(!CanOpenGrades || loadingGrades || (CanRegisterGrades && (gradesError is not null || !gradeRegistrations.ContainsKey(user.Id))))" @onclick="() => OpenGrades(user)" title="@(!loadingGrades && !gradeRegistrations.ContainsKey(user.Id) ? "No se recibió una inscripción válida para este módulo." : "Registrar notas")" aria-label="Registrar notas de @FullName(user)" aria-haspopup="dialog">Registrar notas</button>@if (CanAssignPoints) { <button type="button" class="data-table-button data-table-row-button points-assign-button" disabled="@resolvingPoints" @onclick="() => OpenPoints(user)" aria-label="Asignar puntos a @FullName(user)" aria-haspopup="dialog">+ Asignar puntos</button> }</td>
+                                    <td class="course-grade-actions"><button type="button" class="data-table-row-button grade-register-button" disabled="@(!CanOpenGrades || loadingGrades || (CanRegisterGrades && (gradesError is not null || !gradeRegistrations.ContainsKey(user.Id))))" @onclick="() => OpenGrades(user)" title="@(!loadingGrades && !gradeRegistrations.ContainsKey(user.Id) ? L["No se recibió una inscripción válida para este módulo."] : L["Registrar notas"])" aria-label="@L["Registrar notas de {0}", FullName(user)]" aria-haspopup="dialog">@L["Registrar notas"]</button>@if (CanAssignPoints) { <button type="button" class="data-table-button data-table-row-button points-assign-button" disabled="@resolvingPoints" @onclick="() => OpenPoints(user)" aria-label="@L["Asignar puntos a {0}", FullName(user)]" aria-haspopup="dialog">@L["+ Asignar puntos"]</button> }</td>
                                 }
                                 else
                                 {
                                     <td><span class="data-table-chip">@PreviousCourse(user)</span></td>
                                     <td><span class="data-table-primary">@CurrentCourse(user)</span><span class="data-table-secondary">@Schedule(user)</span></td>
                                     <td><span class="data-table-grade">@(user.CurrentCourseFinalScore?.ToString("0.##") ?? "—")</span>@if (user.CurrentCourseFinalScore is not null) { <span class="data-table-grade-scale"> / 100</span> }</td>
-                                    <td><div class="points-user-actions"><RowActions Label="@FullName(user)" OnView="() => ViewProfile(user)" OnEdit="() => OpenEdit(user)" OnDelete="() => OpenStatus(user)" EditDisabled="@updatingStatus" DeleteDisabled="@updatingStatus" Restore="@(!user.Active)" DeleteTitle="@(user.Active ? "Desactivar" : "Reactivar")" />@if (CanManageUsers && user.Active && user.Id != Session.Current?.User?.Id) { <button type="button" class="data-table-button data-table-row-button" disabled="@resending" @onclick="() => resendUser = user" aria-label="Reenviar credenciales a @FullName(user)" aria-haspopup="dialog">Reenviar credenciales</button> }@if (CanAssignPoints) { <button type="button" class="data-table-button data-table-row-button points-assign-button" disabled="@resolvingPoints" @onclick="() => OpenPoints(user)" aria-label="Asignar puntos a @FullName(user)" aria-haspopup="dialog">+ Asignar puntos</button> }</div></td>
+                                    <td><div class="points-user-actions"><RowActions Label="@FullName(user)" OnView="() => ViewProfile(user)" OnEdit="() => OpenEdit(user)" OnDelete="() => OpenStatus(user)" EditDisabled="@updatingStatus" DeleteDisabled="@updatingStatus" Restore="@(!user.Active)" DeleteTitle="@(user.Active ? L["Desactivar"] : L["Reactivar"])" />@if (CanManageUsers && user.Active && user.Id != Session.Current?.User?.Id) { <button type="button" class="data-table-button data-table-row-button" disabled="@resending" @onclick="() => resendUser = user" aria-label="@L["Reenviar credenciales a {0}", FullName(user)]" aria-haspopup="dialog">@L["Reenviar credenciales"]</button> }@if (CanAssignPoints) { <button type="button" class="data-table-button data-table-row-button points-assign-button" disabled="@resolvingPoints" @onclick="() => OpenPoints(user)" aria-label="@L["Asignar puntos a {0}", FullName(user)]" aria-haspopup="dialog">@L["+ Asignar puntos"]</button> }</div></td>
                                 }
                             </tr>
                         }
                         @if (users.Count == 0 && error is null)
                         {
-                            <tr><td colspan="@ColumnCount" class="data-table-empty"><strong>@(IsCourseList ? "No se encontraron estudiantes en este curso" : "No se encontraron usuarios")</strong><p>Prueba con otros filtros.</p><button type="button" class="data-table-button" @onclick="ClearFiltersAsync">Limpiar filtros</button></td></tr>
+                            <tr><td colspan="@ColumnCount" class="data-table-empty"><strong>@(IsCourseList ? L["No se encontraron estudiantes en este curso"] : L["No se encontraron usuarios"])</strong><p>@L["Prueba con otros filtros."]</p><button type="button" class="data-table-button" @onclick="ClearFiltersAsync">@L["Limpiar filtros"]</button></td></tr>
                         }
                     }
                 </tbody>
@@ -107,7 +107,7 @@
         </div>
         @* Celular (≤640px): fichas en lugar de la tabla. En escritorio quedan ocultas por CSS. *@
         <ul class="lcards" aria-label="@ListTitle" aria-busy="@busy.ToString().ToLowerInvariant()">
-            @if (busy) { <li class="lcard-empty">@(IsCourseList ? "Cargando estudiantes…" : "Cargando usuarios…")</li> }
+            @if (busy) { <li class="lcard-empty">@(IsCourseList ? L["Cargando estudiantes…"] : L["Cargando usuarios…"])</li> }
             else
             {
                 @foreach (var user in users)
@@ -117,13 +117,13 @@
                         <div class="lcard-head">
                             <span class="lcard-avatar" aria-hidden="true">@Initials(user)</span>
                             <div class="lcard-who"><strong>@FullName(user)</strong><span>@user.Email</span></div>
-                            @if (!IsCourseList) { <StatusPill Active="user.Active" On="Activo" Off="Inactivo" /> }
-                            else if (!user.Active) { <StatusPill Active="false" Off="Cuenta inactiva" /> }
+                            @if (!IsCourseList) { <StatusPill Active="user.Active" On="Activo" Off="@L["Inactivo"]" /> }
+                            else if (!user.Active) { <StatusPill Active="false" Off="@L["Cuenta inactiva"]" /> }
                         </div>
                         <p class="lcard-tags">
-                            @if (!IsCourseList) { <span class="users-role">@(string.IsNullOrWhiteSpace(user.RoleName) ? "Sin rol informado" : user.RoleName)</span> }
+                            @if (!IsCourseList) { <span class="users-role">@(string.IsNullOrWhiteSpace(user.RoleName) ? L["Sin rol informado"] : user.RoleName)</span> }
                             else { <span class="data-table-chip">@RegistrationStatus(user)</span> }
-                            <span>CI @user.Ci</span><span>@(user.Phone ?? "Sin teléfono")</span>
+                            <span>@L["CI {0}", user.Ci]</span><span>@(user.Phone ?? L["Sin teléfono"])</span>
                         </p>
                         @if (IsCourseList)
                         {
@@ -131,32 +131,32 @@
                                 @for (var exam = 0; exam < 2; exam++)
                                 {
                                     var score = grade.Total(exam);
-                                    <div><span>Examen @(exam + 1)</span><strong class="@StudentGradeDraft.Color(score)">@(score?.ToString("0.##") ?? "—")</strong></div>
+                                    <div><span>@L["Examen {0}", exam + 1]</span><strong class="@StudentGradeDraft.Color(score)">@(score?.ToString("0.##") ?? "—")</strong></div>
                                 }
-                                <div class="is-average"><span>Promedio</span><strong class="@StudentGradeDraft.Color(grade.Average)">@(grade.Average?.ToString("0.##") ?? "—")</strong><small>@StudentGradeDraft.Result(grade.Average)</small></div>
+                                <div class="is-average"><span>@L["Promedio"]</span><strong class="@StudentGradeDraft.Color(grade.Average)">@(grade.Average?.ToString("0.##") ?? "—")</strong><small>@StudentGradeDraft.Result(grade.Average)</small></div>
                             </div>
                             <div class="lcard-actions">
-                                <button type="button" class="data-table-button data-table-row-button grade-register-button" disabled="@(!CanOpenGrades || loadingGrades || (CanRegisterGrades && (gradesError is not null || !gradeRegistrations.ContainsKey(user.Id))))" @onclick="() => OpenGrades(user)" aria-label="Registrar notas de @FullName(user)" aria-haspopup="dialog">Registrar notas</button>
-                                @if (CanAssignPoints) { <button type="button" class="data-table-button data-table-row-button points-assign-button" disabled="@resolvingPoints" @onclick="() => OpenPoints(user)" aria-label="Asignar puntos a @FullName(user)" aria-haspopup="dialog">+ Asignar puntos</button> }
+                                <button type="button" class="data-table-button data-table-row-button grade-register-button" disabled="@(!CanOpenGrades || loadingGrades || (CanRegisterGrades && (gradesError is not null || !gradeRegistrations.ContainsKey(user.Id))))" @onclick="() => OpenGrades(user)" aria-label="@L["Registrar notas de {0}", FullName(user)]" aria-haspopup="dialog">@L["Registrar notas"]</button>
+                                @if (CanAssignPoints) { <button type="button" class="data-table-button data-table-row-button points-assign-button" disabled="@resolvingPoints" @onclick="() => OpenPoints(user)" aria-label="@L["Asignar puntos a {0}", FullName(user)]" aria-haspopup="dialog">@L["+ Asignar puntos"]</button> }
                             </div>
                         }
                         else
                         {
                             <dl class="lcard-grid">
-                                <div class="lcard-wide"><dt>Curso actual</dt><dd>@CurrentCourse(user)<small>@Schedule(user)</small></dd></div>
-                                <div><dt>Curso anterior</dt><dd>@PreviousCourse(user)</dd></div>
-                                <div><dt>Nota actual</dt><dd class="lcard-score">@(user.CurrentCourseFinalScore?.ToString("0.##") ?? "—")@if (user.CurrentCourseFinalScore is not null) { <span> / 100</span> }</dd></div>
+                                <div class="lcard-wide"><dt>@L["Curso actual"]</dt><dd>@CurrentCourse(user)<small>@Schedule(user)</small></dd></div>
+                                <div><dt>@L["Curso anterior"]</dt><dd>@PreviousCourse(user)</dd></div>
+                                <div><dt>@L["Nota actual"]</dt><dd class="lcard-score">@(user.CurrentCourseFinalScore?.ToString("0.##") ?? "—")@if (user.CurrentCourseFinalScore is not null) { <span> / 100</span> }</dd></div>
                             </dl>
                             <div class="lcard-actions">
-                                <div class="points-user-actions"><RowActions Label="@FullName(user)" OnView="() => ViewProfile(user)" OnEdit="() => OpenEdit(user)" OnDelete="() => OpenStatus(user)" EditDisabled="@updatingStatus" DeleteDisabled="@updatingStatus" Restore="@(!user.Active)" DeleteTitle="@(user.Active ? "Desactivar" : "Reactivar")" />@if (CanManageUsers && user.Active && user.Id != Session.Current?.User?.Id) { <button type="button" class="data-table-button data-table-row-button" disabled="@resending" @onclick="() => resendUser = user" aria-label="Reenviar credenciales a @FullName(user)" aria-haspopup="dialog">Reenviar credenciales</button> }@if (CanAssignPoints) { <button type="button" class="data-table-button data-table-row-button points-assign-button" disabled="@resolvingPoints" @onclick="() => OpenPoints(user)" aria-label="Asignar puntos a @FullName(user)" aria-haspopup="dialog">+ Asignar puntos</button> }</div>
+                                <div class="points-user-actions"><RowActions Label="@FullName(user)" OnView="() => ViewProfile(user)" OnEdit="() => OpenEdit(user)" OnDelete="() => OpenStatus(user)" EditDisabled="@updatingStatus" DeleteDisabled="@updatingStatus" Restore="@(!user.Active)" DeleteTitle="@(user.Active ? L["Desactivar"] : L["Reactivar"])" />@if (CanManageUsers && user.Active && user.Id != Session.Current?.User?.Id) { <button type="button" class="data-table-button data-table-row-button" disabled="@resending" @onclick="() => resendUser = user" aria-label="@L["Reenviar credenciales a {0}", FullName(user)]" aria-haspopup="dialog">@L["Reenviar credenciales"]</button> }@if (CanAssignPoints) { <button type="button" class="data-table-button data-table-row-button points-assign-button" disabled="@resolvingPoints" @onclick="() => OpenPoints(user)" aria-label="@L["Asignar puntos a {0}", FullName(user)]" aria-haspopup="dialog">@L["+ Asignar puntos"]</button> }</div>
                             </div>
                         }
                     </li>
                 }
-                @if (users.Count == 0 && error is null) { <ListCardEmpty Title="@(IsCourseList ? "No se encontraron estudiantes en este curso" : "No se encontraron usuarios")" Hint="Prueba con otros filtros." OnClear="ClearFiltersAsync" /> }
+                @if (users.Count == 0 && error is null) { <ListCardEmpty Title="@(IsCourseList ? L["No se encontraron estudiantes en este curso"] : L["No se encontraron usuarios"])" Hint="@L["Prueba con otros filtros."]" OnClear="ClearFiltersAsync" /> }
             }
         </ul>
-        <ListPager Label="@(IsCourseList ? "Paginación de estudiantes" : "Paginación de usuarios")" @bind-PageSize="pageSize" @bind-PageSize:after="ChangePageSizeAsync" PageSizes="5,10,20" PageSizeLabel="Filas por página" PageSizeDisabled="@busy" Page="page" PageOf="@PageOf" Info="@(busy ? "Consultando…" : error is null ? ResultRange : "")" PreviousDisabled="@(busy || page <= 1)" NextDisabled="@(busy || !hasNext)" OnPrevious="PreviousPageAsync" OnNext="NextPageAsync" />
+        <ListPager Label="@(IsCourseList ? L["Paginación de estudiantes"] : L["Paginación de usuarios"])" @bind-PageSize="pageSize" @bind-PageSize:after="ChangePageSizeAsync" PageSizes="5,10,20" PageSizeLabel="@L["Filas por página"]" PageSizeDisabled="@busy" Page="page" PageOf="@PageOf" Info="@(busy ? L["Consultando…"] : error is null ? ResultRange : "")" PreviousDisabled="@(busy || page <= 1)" NextDisabled="@(busy || !hasNext)" OnPrevious="PreviousPageAsync" OnNext="NextPageAsync" />
     </div>
 </section>
 
@@ -166,13 +166,13 @@
 }
 @if (CanManageUsers && resendUser is not null)
 {
-    <ModalDialog Title="Reenviar credenciales" Busy="@resending" OnClose="() => { if (!resending) resendUser = null; }">
+    <ModalDialog Title="@L["Reenviar credenciales"]" Busy="@resending" OnClose="() => { if (!resending) resendUser = null; }">
         <div class="ceti-modal-body">
             @if (resendError is not null) { <div class="ceti-modal-errors" role="alert"><p>@resendError</p></div> }
-            <p>Se generará una nueva contraseña temporal para <strong>@FullName(resendUser)</strong> y se enviará a <strong>@resendUser.Email</strong>.</p>
-            <p>La contraseña actual dejará de funcionar y deberá crear una nueva al iniciar sesión.</p>
+            <p>@L["Se generará una nueva contraseña temporal para"] <strong>@FullName(resendUser)</strong> @L["y se enviará a"] <strong>@resendUser.Email</strong>.</p>
+            <p>@L["La contraseña actual dejará de funcionar y deberá crear una nueva al iniciar sesión."]</p>
         </div>
-        <footer class="ceti-modal-footer"><span role="status">@(resending ? "Enviando…" : "")</span><div><button type="button" class="data-table-button" disabled="@resending" @onclick="() => resendUser = null">Cancelar</button><button type="button" class="data-table-button data-table-button-primary" disabled="@resending" @onclick="ConfirmResendAsync">Generar y enviar</button></div></footer>
+        <footer class="ceti-modal-footer"><span role="status">@(resending ? L["Enviando…"] : "")</span><div><button type="button" class="data-table-button" disabled="@resending" @onclick="() => resendUser = null">@L["Cancelar"]</button><button type="button" class="data-table-button data-table-button-primary" disabled="@resending" @onclick="ConfirmResendAsync">@L["Generar y enviar"]</button></div></footer>
     </ModalDialog>
 }
 @if (CanManageUsers && editingUser is not null)
@@ -181,13 +181,13 @@
 }
 @if (CanManageUsers && statusUser is not null)
 {
-    <ModalDialog Title="@(statusUser.Active ? "Desactivar usuario" : "Reactivar usuario")" Busy="@updatingStatus" OnClose="CloseStatus">
+    <ModalDialog Title="@(statusUser.Active ? L["Desactivar usuario"] : L["Reactivar usuario"])" Busy="@updatingStatus" OnClose="CloseStatus">
         <div class="ceti-modal-body">
             @if (statusError is not null) { <div class="ceti-modal-errors" role="alert"><p>@statusError</p></div> }
             <p>¿Quieres @(statusUser.Active ? "desactivar" : "reactivar") a <strong>@FullName(statusUser)</strong>?</p>
-            <p>@(statusUser.Active ? "El usuario quedará inactivo. Sus datos se conservarán." : "El usuario volverá a estar activo.")</p>
+            <p>@(statusUser.Active ? L["El usuario quedará inactivo. Sus datos se conservarán."] : L["El usuario volverá a estar activo."])</p>
         </div>
-        <footer class="ceti-modal-footer"><span role="status">@(updatingStatus ? "Actualizando estado…" : "")</span><div><button type="button" class="data-table-button" disabled="@updatingStatus" @onclick="CloseStatus">Cancelar</button><button type="button" class="data-table-button data-table-button-danger" disabled="@updatingStatus" @onclick="ConfirmStatusAsync">@(statusUser.Active ? "Desactivar" : "Reactivar")</button></div></footer>
+        <footer class="ceti-modal-footer"><span role="status">@(updatingStatus ? L["Actualizando estado…"] : "")</span><div><button type="button" class="data-table-button" disabled="@updatingStatus" @onclick="CloseStatus">@L["Cancelar"]</button><button type="button" class="data-table-button data-table-button-danger" disabled="@updatingStatus" @onclick="ConfirmStatusAsync">@(statusUser.Active ? L["Desactivar"] : L["Reactivar"])</button></div></footer>
     </ModalDialog>
 }
 

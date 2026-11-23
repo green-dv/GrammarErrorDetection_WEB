@@ -4,7 +4,7 @@
 @inject AuthSessionState Session
 @inject NavigationManager Navigation
 
-<PageTitle>Plan de estudio | CETI La Paz</PageTitle>
+<PageTitle>@L["Plan de estudio | CETI La Paz"]</PageTitle>
 
 @if (Session.Current?.User is not null)
 {
@@ -19,12 +19,12 @@
         <section class="users-page recommendations-page" aria-labelledby="recommendations-title">
             <header class="users-heading">
                 <div>
-                    <p class="users-eyebrow">CETI · APRENDIZAJE PERSONALIZADO</p>
-                    <h1 id="recommendations-title">Recomendaciones</h1>
-                    <p>Material de apoyo elegido según los errores gramaticales que más se repiten en los párrafos analizados.</p>
+                    <p class="users-eyebrow">@L["CETI · APRENDIZAJE PERSONALIZADO"]</p>
+                    <h1 id="recommendations-title">@L["Recomendaciones"]</h1>
+                    <p>@L["Material de apoyo elegido según los errores gramaticales que más se repiten en los párrafos analizados."]</p>
                 </div>
             </header>
-            <p class="portal-empty">El plan de estudio personalizado está disponible para estudiantes. Para ver las recomendaciones de un estudiante, abre su reporte gramatical personal.</p>
+            <p class="portal-empty">@L["El plan de estudio personalizado está disponible para estudiantes. Para ver las recomendaciones de un estudiante, abre su reporte gramatical personal."]</p>
         </section>
     }
 }

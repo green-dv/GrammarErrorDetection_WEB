@@ -34,9 +34,9 @@
     private string Label = "";
     private string AriaLabel => kind switch
     {
-        "pdf" => "Documento PDF", "word" => "Documento de Word", "powerpoint" => "Presentación de PowerPoint",
-        "excel" => "Hoja de cálculo de Excel", "image" => "Imagen", "link" => "Enlace", "text" => "Archivo de texto",
-        _ => $"Archivo {Format}"
+        "pdf" => I18n.T("Documento PDF"), "word" => I18n.T("Documento de Word"), "powerpoint" => I18n.T("Presentación de PowerPoint"),
+        "excel" => I18n.T("Hoja de cálculo de Excel"), "image" => I18n.T("Imagen"), "link" => I18n.T("Enlace"), "text" => I18n.T("Archivo de texto"),
+        _ => I18n.T("Archivo {0}", Format)
     };
 
     protected override void OnParametersSet()

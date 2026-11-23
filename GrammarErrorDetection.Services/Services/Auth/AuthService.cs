@@ -26,7 +26,7 @@ public sealed class AuthService(IApiClient apiClient) : IAuthService
     {
         ArgumentNullException.ThrowIfNull(request);
         if (request.ChallengeId == Guid.Empty || string.IsNullOrEmpty(request.Token))
-            throw new InvalidOperationException("Vuelve a iniciar sesión.");
+            throw new InvalidOperationException(I18n.T("Vuelve a iniciar sesión."));
         return apiClient.PostAsync<CompletePasswordChangeRequest, ApiResponse<AuthSessionResponse>>("api/Auth/Login/ChangePassword", request, cancellationToken);
     }
 

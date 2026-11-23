@@ -4,8 +4,8 @@
 @code {
     /// <summary>Estado activo o inactivo; elige la clase y el texto entre On y Off.</summary>
     [Parameter] public bool Active { get; set; }
-    [Parameter] public string On { get; set; } = "Activo";
-    [Parameter] public string Off { get; set; } = "Inactivo";
+    [Parameter] public string On { get; set; } = I18n.T("Activo");
+    [Parameter] public string Off { get; set; } = I18n.T("Inactivo");
 
     /// <summary>Texto y clase propios (por ejemplo, el estado de una inscripción); sustituyen a Active/On/Off.</summary>
     [Parameter] public string? Text { get; set; }

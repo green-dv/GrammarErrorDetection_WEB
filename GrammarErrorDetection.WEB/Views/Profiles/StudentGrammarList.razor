@@ -1,44 +1,44 @@
 <section aria-labelledby="student-grammar-title">
     <div class="data-table-card">
-        <header class="data-table-heading"><div><h2 id="student-grammar-title">Oraciones subidas</h2><p>Oraciones de los párrafos enviados por el usuario de este perfil.</p></div></header>
+        <header class="data-table-heading"><div><h2 id="student-grammar-title">@L["Oraciones subidas"]</h2><p>@L["Oraciones de los párrafos enviados por el usuario de este perfil."]</p></div></header>
         @if (!Allowed)
         {
-            <p class="portal-empty">No tienes permiso para consultar las oraciones de este usuario.</p>
+            <p class="portal-empty">@L["No tienes permiso para consultar las oraciones de este usuario."]</p>
         }
         else
         {
             <div class="data-table-toolbar">
-                <label class="data-table-field"><span>Categoría del error</span><select @bind="category" @bind:after="FilterChanged" disabled="@(loading || error is not null)"><option value="">Todas las categorías</option>@foreach (var option in Categories) { <option value="@option.Id">@option.Name</option> }</select></label>
-                <button type="button" class="data-table-button" disabled="@loading" @onclick="ReloadAsync">Actualizar</button>
+                <label class="data-table-field"><span>@L["Categoría del error"]</span><select @bind="category" @bind:after="FilterChanged" disabled="@(loading || error is not null)"><option value="">@L["Todas las categorías"]</option>@foreach (var option in Categories) { <option value="@option.Id">@option.Name</option> }</select></label>
+                <button type="button" class="data-table-button" disabled="@loading" @onclick="ReloadAsync">@L["Actualizar"]</button>
             </div>
-            @if (error is not null) { <div class="data-table-error" role="alert">@error <button type="button" class="data-table-text-button" disabled="@loading" @onclick="ReloadAsync">Reintentar</button></div> }
-            <p class="data-table-summary" role="status">@(loading ? "Cargando los párrafos y sus oraciones…" : error is not null ? "Consulta no disponible" : $"{FilteredRows.Count} oraciones · {paragraphCount} párrafos consultados")</p>
-            <ListPager Top="true" Label="Paginación de oraciones" @bind-PageSize="pageSize" @bind-PageSize:after="FilterChanged" PageSizes="5,20,50" PageSizeLabel="Filas por página" PageSizeDisabled="@loading" Page="page" PreviousDisabled="@(loading || page <= 1)" NextDisabled="@(loading || page * pageSize >= FilteredRows.Count)" OnPrevious="PreviousPage" OnNext="NextPage" />
-            <div class="data-table-scroll" role="region" aria-label="Oraciones del usuario consultado" aria-busy="@loading.ToString().ToLowerInvariant()" tabindex="0">
+            @if (error is not null) { <div class="data-table-error" role="alert">@error <button type="button" class="data-table-text-button" disabled="@loading" @onclick="ReloadAsync">@L["Reintentar"]</button></div> }
+            <p class="data-table-summary" role="status">@(loading ? L["Cargando los párrafos y sus oraciones…"] : error is not null ? L["Consulta no disponible"] : I18n.T("{0} oraciones · {1} párrafos consultados", FilteredRows.Count, paragraphCount))</p>
+            <ListPager Top="true" Label="@L["Paginación de oraciones"]" @bind-PageSize="pageSize" @bind-PageSize:after="FilterChanged" PageSizes="5,20,50" PageSizeLabel="@L["Filas por página"]" PageSizeDisabled="@loading" Page="page" PreviousDisabled="@(loading || page <= 1)" NextDisabled="@(loading || page * pageSize >= FilteredRows.Count)" OnPrevious="PreviousPage" OnNext="NextPage" />
+            <div class="data-table-scroll" role="region" aria-label="@L["Oraciones del usuario consultado"]" aria-busy="@loading.ToString().ToLowerInvariant()" tabindex="0">
                 <table class="data-table profile-sentences-table data-table-cards">
-                    <caption class="data-table-sr-only">Fecha de envío, oración original, corrección, categorías de error y cantidad total de errores de cada oración.</caption>
-                    <thead><tr><th scope="col">Fecha de envío</th><th scope="col">Oración</th><th scope="col">Corrección</th><th scope="col">Categorías</th><th scope="col">Errores</th></tr></thead>
+                    <caption class="data-table-sr-only">@L["Fecha de envío, oración original, corrección, categorías de error y cantidad total de errores de cada oración."]</caption>
+                    <thead><tr><th scope="col">@L["Fecha de envío"]</th><th scope="col">@L["Oración"]</th><th scope="col">@L["Corrección"]</th><th scope="col">@L["Categorías"]</th><th scope="col">@L["Errores"]</th></tr></thead>
                     <tbody>
-                        @if (loading) { <tr><td colspan="5" class="data-table-empty">Cargando oraciones…</td></tr> }
-                        else if (error is not null) { <tr><td colspan="5" class="data-table-empty">No se pudo consultar el listado.</td></tr> }
+                        @if (loading) { <tr><td colspan="5" class="data-table-empty">@L["Cargando oraciones…"]</td></tr> }
+                        else if (error is not null) { <tr><td colspan="5" class="data-table-empty">@L["No se pudo consultar el listado."]</td></tr> }
                         else
                         {
                             @foreach (var row in VisibleRows)
                             {
                                 <tr @key="(row.ParagraphId, row.Sentence.Id)">
-                                    <td data-label="Fecha de envío"><time datetime="@row.SubmissionDate.ToString("s")">@row.SubmissionDate.ToString("dd/MM/yyyy HH:mm")</time><span class="data-table-secondary">Oración @row.Sentence.SentenceIndex</span></td>
-                                    <th data-label="Oración" scope="row" lang="en">@row.Sentence.OriginalSentence</th>
-                                    <td data-label="Corrección" lang="en">@if (!string.IsNullOrWhiteSpace(row.Sentence.CorrectedSentence)) { @row.Sentence.CorrectedSentence } else { <span class="data-table-secondary">Sin corrección informada</span> }</td>
-                                    <td data-label="Categorías">@foreach (var item in RowCategories(row.Sentence)) { <span class="data-table-status @(item.Id.ToString() == category ? "is-active" : "")">@item.Name</span> }@if (row.Sentence.Errors.Count == 0) { <span class="data-table-secondary">@(row.Sentence.ErrorCount == 0 ? "Sin errores detectados" : "Sin detalle de categorías")</span> }</td>
-                                    <td data-label="Errores">@Math.Max(row.Sentence.ErrorCount, row.Sentence.Errors.Count)</td>
+                                    <td data-label="@L["Fecha de envío"]"><time datetime="@row.SubmissionDate.ToString("s")">@row.SubmissionDate.ToString("dd/MM/yyyy HH:mm")</time><span class="data-table-secondary">@L["Oración {0}", row.Sentence.SentenceIndex]</span></td>
+                                    <th data-label="@L["Oración"]" scope="row" lang="en">@row.Sentence.OriginalSentence</th>
+                                    <td data-label="@L["Corrección"]" lang="en">@if (!string.IsNullOrWhiteSpace(row.Sentence.CorrectedSentence)) { @row.Sentence.CorrectedSentence } else { <span class="data-table-secondary">@L["Sin corrección informada"]</span> }</td>
+                                    <td data-label="@L["Categorías"]">@foreach (var item in RowCategories(row.Sentence)) { <span class="data-table-status @(item.Id.ToString() == category ? "is-active" : "")">@item.Name</span> }@if (row.Sentence.Errors.Count == 0) { <span class="data-table-secondary">@(row.Sentence.ErrorCount == 0 ? L["Sin errores detectados"] : L["Sin detalle de categorías"])</span> }</td>
+                                    <td data-label="@L["Errores"]">@Math.Max(row.Sentence.ErrorCount, row.Sentence.Errors.Count)</td>
                                 </tr>
                             }
-                            @if (FilteredRows.Count == 0) { <tr><td colspan="5" class="data-table-empty">@(string.IsNullOrEmpty(category) ? "Este usuario aún no tiene oraciones analizadas para mostrar." : "No hay oraciones con errores de esta categoría.")</td></tr> }
+                            @if (FilteredRows.Count == 0) { <tr><td colspan="5" class="data-table-empty">@(string.IsNullOrEmpty(category) ? L["Este usuario aún no tiene oraciones analizadas para mostrar."] : L["No hay oraciones con errores de esta categoría."])</td></tr> }
                         }
                     </tbody>
                 </table>
             </div>
-            <ListPager Label="Paginación de oraciones" @bind-PageSize="pageSize" @bind-PageSize:after="FilterChanged" PageSizes="5,20,50" PageSizeLabel="Filas por página" PageSizeDisabled="@loading" Page="page" PreviousDisabled="@(loading || page <= 1)" NextDisabled="@(loading || page * pageSize >= FilteredRows.Count)" OnPrevious="PreviousPage" OnNext="NextPage" Note="El filtro incluye todas las oraciones cargadas de este usuario." />
+            <ListPager Label="@L["Paginación de oraciones"]" @bind-PageSize="pageSize" @bind-PageSize:after="FilterChanged" PageSizes="5,20,50" PageSizeLabel="@L["Filas por página"]" PageSizeDisabled="@loading" Page="page" PreviousDisabled="@(loading || page <= 1)" NextDisabled="@(loading || page * pageSize >= FilteredRows.Count)" OnPrevious="PreviousPage" OnNext="NextPage" Note="@L["El filtro incluye todas las oraciones cargadas de este usuario."]" />
         }
     </div>
 </section>
