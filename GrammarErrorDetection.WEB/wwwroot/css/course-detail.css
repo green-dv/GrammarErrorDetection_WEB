@@ -66,3 +66,10 @@
 
 .course-students-table .course-grade-actions { position: sticky; right: 0; z-index: 1; min-width: 155px; background: var(--t-surface); box-shadow: -4px 0 8px #18244008; }
 .course-students-table thead .course-grade-actions { background: var(--brand-navy-fixed); }
+.grade-score-input:has(input[aria-invalid=true]){border-color:#b3261e}
+.grade-field-error{grid-column:1/-1;margin:2px 0 0;font-size:calc(12px * var(--ui-scale, 1))}
+.grade-comment{margin-top:14px;display:grid;gap:6px}
+.grade-comment textarea{width:100%;min-height:72px;resize:vertical;padding:9px 11px;color:var(--t-text);background:var(--t-surface);border:1px solid var(--t-line);border-radius:7px;font:inherit;font-size:calc(14px * var(--ui-scale, 1))}
+.grade-comment textarea:focus{border-color:#285d8c;outline:none;box-shadow:0 0 0 2px #176b9f12}
+.grade-comment textarea[aria-invalid=true]{border-color:#b3261e}
+.grade-comment-count{color:var(--t-muted);text-align:right}

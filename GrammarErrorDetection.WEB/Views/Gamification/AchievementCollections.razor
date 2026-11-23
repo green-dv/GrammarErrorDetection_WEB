@@ -2,44 +2,44 @@
 @if (Allowed)
 {
     <section class="users-page gamification-page collection-page" aria-labelledby="collections-title">
-        <a class="data-table-text-button collection-back" href="@(IsDetail ? "/gamification/collections" : "/gamification")">← @(IsDetail ? "Volver a colecciones" : "Volver a logros")</a>
+        <a class="data-table-text-button collection-back" href="@(IsDetail ? "/gamification/collections" : "/gamification")">← @(IsDetail ? L["Volver a colecciones"] : L["Volver a logros"])</a>
         <header class="users-heading">
-            <div><p class="users-eyebrow">CETI · GAMIFICACIÓN</p><h1 id="collections-title">@(IsDetail ? collection?.Name ?? "Detalle de colección" : "Colecciones de logros")</h1><p>@(IsDetail ? "Los niveles y reconocimientos que forman esta colección." : "Agrupa los logros en recorridos de aprendizaje.")</p></div>
-            @if (CanManage && !IsDetail) { <button type="button" class="data-table-button data-table-button-primary" disabled="@loading" @onclick="OpenCreate" aria-haspopup="dialog">+ Registrar colección</button> }
+            <div><p class="users-eyebrow">@L["CETI · GAMIFICACIÓN"]</p><h1 id="collections-title">@(IsDetail ? collection?.Name ?? L["Detalle de colección"] : L["Colecciones de logros"])</h1><p>@(IsDetail ? L["Los niveles y reconocimientos que forman esta colección."] : L["Agrupa los logros en recorridos de aprendizaje."])</p></div>
+            @if (CanManage && !IsDetail) { <button type="button" class="data-table-button data-table-button-primary" disabled="@loading" @onclick="OpenCreate" aria-haspopup="dialog">@L["+ Registrar colección"]</button> }
             else if (CanManage && collection is not null)
             {
                 <div class="gamification-header-actions">
-                    <button type="button" class="data-table-button data-table-button-primary" disabled="@loading" @onclick="() => OpenEditAchievement(null)" aria-haspopup="dialog">+ Crear logro</button>
-                    <GamificationActions Label="@($"colección {collection.Name}")" Active="collection.Active" Disabled="loading" OnEdit="() => OpenEditCollection(collection)" OnToggleActive="() => OpenStatus(collection)" />
+                    <button type="button" class="data-table-button data-table-button-primary" disabled="@loading" @onclick="() => OpenEditAchievement(null)" aria-haspopup="dialog">@L["+ Crear logro"]</button>
+                    <GamificationActions Label="@(I18n.T("colección {0}", collection.Name))" Active="collection.Active" Disabled="loading" OnEdit="() => OpenEditCollection(collection)" OnToggleActive="() => OpenStatus(collection)" />
                 </div>
             }
         </header>
         @if (IsDetail && collection is not null)
         {
             <article class="collection-overview">
-                <div><span class="collection-symbol" aria-hidden="true">✦</span><div><h2>@collection.Name</h2><p>@(string.IsNullOrWhiteSpace(collection.Description) ? "Sin descripción." : collection.Description)</p></div></div>
-                <dl><div><dt>Estado</dt><dd><span class="data-table-chip">@(collection.Active ? "Activa" : "Inactiva")</span></dd></div><div><dt>Fecha de registro</dt><dd>@collection.CreatedAt.ToString("dd/MM/yyyy")</dd></div><div><dt>Última actualización</dt><dd>@collection.UpdatedAt.ToString("dd/MM/yyyy")</dd></div></dl>
+                <div><span class="collection-symbol" aria-hidden="true">✦</span><div><h2>@collection.Name</h2><p>@(string.IsNullOrWhiteSpace(collection.Description) ? L["Sin descripción."] : collection.Description)</p></div></div>
+                <dl><div><dt>@L["Estado"]</dt><dd><span class="data-table-chip">@(collection.Active ? L["Activa"] : L["Inactiva"])</span></dd></div><div><dt>@L["Fecha de registro"]</dt><dd>@collection.CreatedAt.ToString("dd/MM/yyyy")</dd></div><div><dt>@L["Última actualización"]</dt><dd>@collection.UpdatedAt.ToString("dd/MM/yyyy")</dd></div></dl>
             </article>
         }
         <div class="data-table-card">
-            <header class="data-table-heading"><div><h2>@(IsDetail ? "Logros de esta colección" : "Listado de colecciones")</h2><p>@(IsDetail ? "Consulta las imágenes, metas y puntos de cada logro." : "Selecciona Visualizar para conocer sus detalles y logros.")</p></div></header>
+            <header class="data-table-heading"><div><h2>@(IsDetail ? L["Logros de esta colección"] : L["Listado de colecciones"])</h2><p>@(IsDetail ? L["Consulta las imágenes, metas y puntos de cada logro."] : L["Selecciona Visualizar para conocer sus detalles y logros."])</p></div></header>
             @if (!IsDetail)
             {
                 <form @onsubmit="SearchAsync" @onsubmit:preventDefault><fieldset class="gamification-filters data-filter-panel data-filter-panel-inset" disabled="@loading">
-                    <div class="data-filter-heading"><span>Filtrar colecciones</span><span>Combina los campos que necesites</span></div>
-                    <label class="data-table-field"><span>Nombre</span><input @bind="name" placeholder="Buscar colección" /></label>
-                    <label class="data-table-field"><span>Estado</span><select @bind="active"><option value="">Todas</option><option value="true">Activas</option><option value="false">Inactivas</option></select></label>
-                    <div class="data-filter-actions"><button type="submit" class="data-table-button data-table-button-primary">Buscar</button><button type="button" class="data-table-button" @onclick="ClearAsync">Limpiar</button>
+                    <div class="data-filter-heading"><span>@L["Filtrar colecciones"]</span><span>@L["Combina los campos que necesites"]</span></div>
+                    <label class="data-table-field"><span>@L["Nombre"]</span><input @bind="name" placeholder="@L["Buscar colección"]" /></label>
+                    <label class="data-table-field"><span>@L["Estado"]</span><select @bind="active"><option value="">@L["Todas"]</option><option value="true">@L["Activas"]</option><option value="false">@L["Inactivas"]</option></select></label>
+                    <div class="data-filter-actions"><button type="submit" class="data-table-button data-table-button-primary">@L["Buscar"]</button><button type="button" class="data-table-button" @onclick="ClearAsync">@L["Limpiar"]</button>
                 </div></fieldset></form>
             }
-            @if (error is not null) { <div class="data-table-error" role="alert">@error <button class="data-table-text-button" disabled="@loading" @onclick="() => LoadAsync(page)">Reintentar</button></div> }
+            @if (error is not null) { <div class="data-table-error" role="alert">@error <button class="data-table-text-button" disabled="@loading" @onclick="() => LoadAsync(page)">@L["Reintentar"]</button></div> }
             @if (message is not null) { <p class="data-table-message" role="status">@message</p> }
-            @if (loading) { <p class="data-table-empty" role="status">@(IsDetail ? "Cargando colección y logros…" : "Cargando colecciones…")</p> }
+            @if (loading) { <p class="data-table-empty" role="status">@(IsDetail ? L["Cargando colección y logros…"] : L["Cargando colecciones…"])</p> }
             else if (IsDetail && error is null)
             {
                 @if (achievements.Count == 0)
                 {
-                    <div class="data-table-empty"><strong>Esta colección todavía no tiene logros</strong><p>Los logros de esta colección aparecerán aquí.</p><a class="data-table-button" href="/gamification">Ir a logros</a></div>
+                    <div class="data-table-empty"><strong>@L["Esta colección todavía no tiene logros"]</strong><p>@L["Los logros de esta colección aparecerán aquí."]</p><a class="data-table-button" href="/gamification">@L["Ir a logros"]</a></div>
                 }
                 else
                 {
@@ -48,16 +48,16 @@
                         {
                             <article class="collection-achievement" @key="item.Id">
                                 <div class="collection-achievement-image">
-                                    @if (GamificationAdmin.SafeIcon(item.IconLink) is { } icon) { <img src="@icon" alt="Imagen del logro @item.Name" loading="lazy" /> }
-                                    else { <span aria-label="Logro sin imagen">✦</span> }
-                                    @if (item.TierOrder is { } tier) { <span class="collection-tier">Nivel @tier</span> }
+                                    @if (GamificationAdmin.SafeIcon(item.IconLink) is { } icon) { <img src="@icon" alt="@L["Imagen del logro {0}", item.Name]" loading="lazy" /> }
+                                    else { <span role="img" aria-label="@L["Logro sin imagen"]"><svg class="achievement-default-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8m-4-4v4M7 4h10v5a5 5 0 0 1-10 0ZM7 6H4v2a3 3 0 0 0 3 3m10-5h3v2a3 3 0 0 1-3 3"/></svg></span> }
+                                    @if (item.TierOrder is { } tier) { <span class="collection-tier">@L["Nivel {0}", tier]</span> }
                                 </div>
-                                <div class="collection-achievement-content"><div class="collection-achievement-state"><span class="data-table-chip">@(item.Active ? "Activo" : "Inactivo")</span>@if (item.IsSecret) { <span class="data-table-chip">Secreto</span> }</div>
+                                <div class="collection-achievement-content"><div class="collection-achievement-state"><span class="data-table-chip">@(item.Active ? L["Activo"] : L["Inactivo"])</span>@if (item.IsSecret) { <span class="data-table-chip">@L["Secreto"]</span> }</div>
                                     <h3>@item.Name</h3><p>@item.Description</p>
-                                    <dl><div><dt>@(item.Conditions.Count > 1 ? "Condiciones" : "Condición")</dt><dd>@ConditionConfiguration.Summary(item.Conditions)</dd></div>
-                                    @if (item.AchievementCategoryName is { } category) { <div><dt>Categoría</dt><dd>@category</dd></div> }</dl>
+                                    <dl><div><dt>@(item.Conditions.Count > 1 ? L["Condiciones"] : L["Condición"])</dt><dd>@ConditionConfiguration.Summary(item.Conditions)</dd></div>
+                                    @if (item.AchievementCategoryName is { } category) { <div><dt>@L["Categoría"]</dt><dd>@category</dd></div> }</dl>
                                     <strong class="gamification-points">@item.Points puntos</strong>
-                                    <div class="gamification-card-actions"><GamificationActions Label="@($"logro {item.Name}")" ViewHref="@($"/gamification/achievements/{item.Id:D}")" Active="item.Active" Disabled="loading" OnEdit="() => OpenEditAchievement(item)" OnToggleActive="() => OpenStatus(item)" /></div>
+                                    <div class="gamification-card-actions"><GamificationActions Label="@(I18n.T("logro {0}", item.Name))" ViewHref="@($"/gamification/achievements/{item.Id:D}")" Active="item.Active" Disabled="loading" OnEdit="() => OpenEditAchievement(item)" OnToggleActive="() => OpenStatus(item)" /></div>
                                 </div>
                             </article>
                         }
@@ -66,17 +66,17 @@
             }
             else if (!IsDetail)
             {
-                <ListPager Top="true" Label="@($"Paginación de {(IsDetail ? "logros" : "colecciones")}")" Page="page" PageOf="@PageOf" Info="@(!loading && error is null ? $"{total ?? RowCount} {(IsDetail ? "logros" : "colecciones")} {(total is null ? "en esta página" : "en total")}" : "")" PreviousDisabled="@(loading || page <= 1)" NextDisabled="@(loading || !hasNext)" OnPrevious="() => LoadAsync(page - 1)" OnNext="() => LoadAsync(page + 1)" />
-                <div class="data-table-scroll" role="region" aria-label="Colecciones de logros" tabindex="0"><table class="data-table data-table-cards">
-                    <thead><tr><th scope="col">Colección</th><th scope="col">Estado</th><th scope="col">Registro</th><th scope="col">Acciones</th></tr></thead>
+                <ListPager Top="true" Label="@(I18n.T(IsDetail ? "Paginación de logros" : "Paginación de colecciones"))" Page="page" PageOf="@PageOf" Info="@(!loading && error is null ? I18n.T(total is null ? (IsDetail ? "{0} logros en esta página" : "{0} colecciones en esta página") : (IsDetail ? "{0} logros en total" : "{0} colecciones en total"), total ?? RowCount) : "")" PreviousDisabled="@(loading || page <= 1)" NextDisabled="@(loading || !hasNext)" OnPrevious="() => LoadAsync(page - 1)" OnNext="() => LoadAsync(page + 1)" />
+                <div class="data-table-scroll" role="region" aria-label="@L["Colecciones de logros"]" tabindex="0"><table class="data-table data-table-cards">
+                    <thead><tr><th scope="col">@L["Colección"]</th><th scope="col">@L["Estado"]</th><th scope="col">@L["Registro"]</th><th scope="col">@L["Acciones"]</th></tr></thead>
                     <tbody>@foreach (var item in collections)
                     {
-                        <tr @key="item.Id"><th data-label="Colección" scope="row"><span class="data-table-primary">@item.Name</span><span class="data-table-secondary gamification-description">@(string.IsNullOrWhiteSpace(item.Description) ? "Sin descripción" : item.Description)</span></th><td data-label="Estado"><span class="data-table-chip">@(item.Active ? "Activa" : "Inactiva")</span></td><td data-label="Registro">@item.CreatedAt.ToString("dd/MM/yyyy")</td><td data-label=""><GamificationActions Label="@($"colección {item.Name}")" ViewHref="@($"/gamification/collections/{item.Id:D}")" Active="item.Active" Disabled="loading" OnEdit="() => OpenEditCollection(item)" OnToggleActive="() => OpenStatus(item)" /></td></tr>
+                        <tr @key="item.Id"><th data-label="@L["Colección"]" scope="row"><span class="data-table-primary">@item.Name</span><span class="data-table-secondary gamification-description">@(string.IsNullOrWhiteSpace(item.Description) ? L["Sin descripción"] : item.Description)</span></th><td data-label="@L["Estado"]"><span class="data-table-chip">@(item.Active ? L["Activa"] : L["Inactiva"])</span></td><td data-label="@L["Registro"]">@item.CreatedAt.ToString("dd/MM/yyyy")</td><td data-label=""><GamificationActions Label="@(I18n.T("colección {0}", item.Name))" ViewHref="@($"/gamification/collections/{item.Id:D}")" Active="item.Active" Disabled="loading" OnEdit="() => OpenEditCollection(item)" OnToggleActive="() => OpenStatus(item)" /></td></tr>
                     }
-                    @if (collections.Count == 0 && error is null) { <tr><td colspan="4" class="data-table-empty"><strong>No se encontraron colecciones</strong><p>Prueba con otros filtros.</p></td></tr> }</tbody>
+                    @if (collections.Count == 0 && error is null) { <tr><td colspan="4" class="data-table-empty"><strong>@L["No se encontraron colecciones"]</strong><p>@L["Prueba con otros filtros."]</p></td></tr> }</tbody>
                 </table></div>
             }
-            <ListPager Label="@($"Paginación de {(IsDetail ? "logros" : "colecciones")}")" Page="page" PageOf="@PageOf" Info="@(!loading && error is null ? $"{total ?? RowCount} {(IsDetail ? "logros" : "colecciones")} {(total is null ? "en esta página" : "en total")}" : "")" PreviousDisabled="@(loading || page <= 1)" NextDisabled="@(loading || !hasNext)" OnPrevious="() => LoadAsync(page - 1)" OnNext="() => LoadAsync(page + 1)" />
+            <ListPager Label="@(I18n.T(IsDetail ? "Paginación de logros" : "Paginación de colecciones"))" Page="page" PageOf="@PageOf" Info="@(!loading && error is null ? I18n.T(total is null ? (IsDetail ? "{0} logros en esta página" : "{0} colecciones en esta página") : (IsDetail ? "{0} logros en total" : "{0} colecciones en total"), total ?? RowCount) : "")" PreviousDisabled="@(loading || page <= 1)" NextDisabled="@(loading || !hasNext)" OnPrevious="() => LoadAsync(page - 1)" OnNext="() => LoadAsync(page + 1)" />
         </div>
     </section>
     @if (CanManage && showCreate) { <CollectionCreateModal Collection="editingCollection" OnClose="CloseAndReloadAsync" OnCreated="CreatedAsync" OnSaved="CollectionSavedAsync" /> }

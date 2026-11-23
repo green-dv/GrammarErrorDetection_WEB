@@ -76,15 +76,18 @@ public sealed class ApiClient(HttpClient httpClient) : IApiClient
     private static async Task EnsureSuccessAsync(HttpResponseMessage response, CancellationToken token)
     {
         if (response.IsSuccessStatusCode) return;
-        string? message = null;
+        string? message = null, details = null;
         try
         {
             using var body = JsonDocument.Parse(await response.Content.ReadAsByteArrayAsync(token));
-            if (body.RootElement.ValueKind == JsonValueKind.Object && body.RootElement.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object &&
-                error.TryGetProperty("errorMessage", out var text) && text.ValueKind == JsonValueKind.String)
-                message = text.GetString();
+            if (body.RootElement.ValueKind == JsonValueKind.Object && body.RootElement.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object)
+            {
+                if (error.TryGetProperty("errorMessage", out var text) && text.ValueKind == JsonValueKind.String) message = text.GetString();
+                if (error.TryGetProperty("errorDetails", out var extra) && extra.ValueKind == JsonValueKind.String) details = extra.GetString();
+            }
         }
         catch (JsonException) { }
-        throw new HttpRequestException(message ?? $"El servicio respondió con HTTP {(int)response.StatusCode}.", null, response.StatusCode);
+        // ApiException conserva el mensaje del servidor para mostrarlo; sigue siendo una HttpRequestException.
+        throw new ApiException(message ?? $"El servicio respondió con HTTP {(int)response.StatusCode}.", response.StatusCode, message, details);
     }
 }

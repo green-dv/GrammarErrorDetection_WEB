@@ -1,6 +1,17 @@
-﻿<Router AppAssembly="@typeof(App).Assembly" NotFoundPage="typeof(Pages.NotFound)">
-    <Found Context="routeData">
-        <GrammarErrorDetection.WEB.Navigation.PortalRouteView RouteData="@routeData" />
-        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
-    </Found>
-</Router>
+﻿@implements IDisposable
+
+@* Al cambiar de idioma se vuelve a crear todo el árbol (sin recargar el navegador) para que cada texto se resuelva de nuevo. *@
+<div style="display: contents" @key="I18n.Language">
+    <Router AppAssembly="@typeof(App).Assembly" NotFoundPage="typeof(Pages.NotFound)">
+        <Found Context="routeData">
+            <GrammarErrorDetection.WEB.Navigation.PortalRouteView RouteData="@routeData" />
+            <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        </Found>
+    </Router>
+</div>
+
+@code {
+    protected override void OnInitialized() => I18n.Changed += Refresh;
+    private void Refresh() => _ = InvokeAsync(StateHasChanged);
+    public void Dispose() => I18n.Changed -= Refresh;
+}

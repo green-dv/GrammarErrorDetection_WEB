@@ -3,20 +3,20 @@
 <section class="users-page users-directory conditions-page" aria-labelledby="conditions-title">
     <header class="users-heading">
         <div class="users-heading-content">
-            <p class="users-eyebrow">CETI · GAMIFICACIÓN</p>
-            <h1 id="conditions-title">Tipos de condición</h1>
-            <p>Condiciones medibles con las que se definen logros y desafíos. El código lo calcula el motor de gamificación y no se puede cambiar.</p>
+            <p class="users-eyebrow">@L["CETI · GAMIFICACIÓN"]</p>
+            <h1 id="conditions-title">@L["Tipos de condición"]</h1>
+            <p>@L["Condiciones medibles con las que se definen logros y desafíos. El código lo calcula el motor de gamificación y no se puede cambiar."]</p>
         </div>
-        <button type="button" class="data-table-button data-table-button-primary" disabled="@(busy || updatingStatus)" @onclick="() => creating = true" aria-haspopup="dialog">+ Nuevo tipo</button>
+        <button type="button" class="data-table-button data-table-button-primary" disabled="@(busy || updatingStatus)" @onclick="() => creating = true" aria-haspopup="dialog">@L["+ Nuevo tipo"]</button>
     </header>
 
     <div class="data-table-card">
-        <header class="data-table-heading"><div><h2>Listado de tipos de condición</h2><p>Busca por código o nombre. Deja los filtros vacíos para ver todos los tipos.</p></div></header>
-        <FilterPanel Model="filters" Title="Filtrar tipos" Busy="busy" OnSearch="SearchAsync" OnInvalid="ShowValidationErrors" OnClear="ClearFiltersAsync">
-                    <label class="data-table-field"><span>Código</span><InputText @bind-Value="filters.Code" placeholder="Código del tipo" maxlength="50" /></label>
-                    <label class="data-table-field"><span>Nombre</span><InputText @bind-Value="filters.Name" placeholder="Nombre del tipo" maxlength="100" /></label>
-                    <label class="data-table-field"><span>Estado</span>
-                        <select @bind="statusFilter"><option value="">Todos</option><option value="true">Activos</option><option value="false">Deshabilitados</option></select>
+        <header class="data-table-heading"><div><h2>@L["Listado de tipos de condición"]</h2><p>@L["Busca por código o nombre. Deja los filtros vacíos para ver todos los tipos."]</p></div></header>
+        <FilterPanel Model="filters" Title="@L["Filtrar tipos"]" Busy="busy" OnSearch="SearchAsync" OnInvalid="ShowValidationErrors" OnClear="ClearFiltersAsync">
+                    <label class="data-table-field"><span>@L["Código"]</span><InputText @bind-Value="filters.Code" placeholder="@L["Código del tipo"]" maxlength="50" /></label>
+                    <label class="data-table-field"><span>@L["Nombre"]</span><InputText @bind-Value="filters.Name" placeholder="@L["Nombre del tipo"]" maxlength="100" /></label>
+                    <label class="data-table-field"><span>@L["Estado"]</span>
+                        <select @bind="statusFilter"><option value="">@L["Todos"]</option><option value="true">@L["Activos"]</option><option value="false">@L["Deshabilitados"]</option></select>
                     </label>
         </FilterPanel>
         @if (validationErrors.Count > 0)
@@ -25,45 +25,45 @@
         }
         @if (error is not null)
         {
-            <div class="data-table-error" role="alert"><span>@error</span><button type="button" class="data-table-text-button" @onclick="RetryAsync" disabled="@busy">Reintentar</button></div>
+            <div class="data-table-error" role="alert"><span>@error</span><button type="button" class="data-table-text-button" @onclick="RetryAsync" disabled="@busy">@L["Reintentar"]</button></div>
         }
         @if (status is not null) { <p class="data-table-message" role="status">@status</p> }
-        <p class="data-table-summary" role="status">@(busy ? "Cargando tipos de condición…" : error is not null ? "Consulta no disponible" : $"{total} {(total == 1 ? "tipo" : "tipos")} en total")</p>
+        <p class="data-table-summary" role="status">@(busy ? L["Cargando tipos de condición…"] : error is not null ? L["Consulta no disponible"] : I18n.T(total == 1 ? "{0} tipo en total" : "{0} tipos en total", total))</p>
 
-        <ListPager Top="true" Label="Paginación de tipos de condición" @bind-PageSize="pageSize" @bind-PageSize:after="ChangePageSizeAsync" PageSizes="5,10,20" PageSizeLabel="Filas por página" PageSizeDisabled="@busy" Page="page" PageOf="@($" de {TotalPages}")" Info="@(busy ? "Consultando…" : error is null ? ResultRange : "")" PreviousDisabled="@(busy || page <= 1)" NextDisabled="@(busy || page >= TotalPages)" OnPrevious="PreviousPageAsync" OnNext="NextPageAsync" />
-        <div class="data-table-scroll" role="region" aria-label="Listado de tipos de condición" aria-busy="@busy.ToString().ToLowerInvariant()" tabindex="0">
+        <ListPager Top="true" Label="@L["Paginación de tipos de condición"]" @bind-PageSize="pageSize" @bind-PageSize:after="ChangePageSizeAsync" PageSizes="5,10,20" PageSizeLabel="@L["Filas por página"]" PageSizeDisabled="@busy" Page="page" PageOf="@(I18n.T(" de {0}", TotalPages))" Info="@(busy ? L["Consultando…"] : error is null ? ResultRange : "")" PreviousDisabled="@(busy || page <= 1)" NextDisabled="@(busy || page >= TotalPages)" OnPrevious="PreviousPageAsync" OnNext="NextPageAsync" />
+        <div class="data-table-scroll" role="region" aria-label="@L["Listado de tipos de condición"]" aria-busy="@busy.ToString().ToLowerInvariant()" tabindex="0">
             <table class="data-table data-table-cards">
-                <caption class="data-table-sr-only">Nombre, código, descripción, condiciones que lo usan, estado y acciones de los tipos de condición.</caption>
-                <thead><tr><th scope="col">Nombre</th><th scope="col">Código</th><th scope="col">Descripción</th><th scope="col">En uso</th><th scope="col">Estado</th><th scope="col" class="data-table-actions-heading">Acciones</th></tr></thead>
+                <caption class="data-table-sr-only">@L["Nombre, código, descripción, condiciones que lo usan, estado y acciones de los tipos de condición."]</caption>
+                <thead><tr><th scope="col">@L["Nombre"]</th><th scope="col">@L["Código"]</th><th scope="col">@L["Descripción"]</th><th scope="col">@L["En uso"]</th><th scope="col">@L["Estado"]</th><th scope="col" class="data-table-actions-heading">@L["Acciones"]</th></tr></thead>
                 <tbody>
                     @if (busy)
                     {
-                        <tr><td colspan="6" class="data-table-empty">Cargando tipos de condición…</td></tr>
+                        <tr><td colspan="6" class="data-table-empty">@L["Cargando tipos de condición…"]</td></tr>
                     }
                     else
                     {
                         @foreach (var type in conditionTypes)
                         {
                             <tr @key="type.Id">
-                                <th data-label="Nombre" scope="row"><span class="data-table-primary">@type.Name</span></th>
-                                <td data-label="Código"><span class="data-table-chip">@type.Code</span></td>
-                                <td data-label="Descripción"><span class="data-table-secondary">@(string.IsNullOrWhiteSpace(type.Description) ? "Sin descripción" : type.Description)</span></td>
-                                <td data-label="En uso"><span class="data-table-secondary">@type.UsageCount @(type.UsageCount == 1 ? "condición" : "condiciones")</span></td>
-                                <td data-label="Estado"><StatusPill Active="type.Active" On="Activo" Off="Deshabilitado" /></td>
+                                <th data-label="@L["Nombre"]" scope="row"><span class="data-table-primary">@type.Name</span></th>
+                                <td data-label="@L["Código"]"><span class="data-table-chip">@type.Code</span></td>
+                                <td data-label="@L["Descripción"]"><span class="data-table-secondary">@(string.IsNullOrWhiteSpace(type.Description) ? L["Sin descripción"] : type.Description)</span></td>
+                                <td data-label="@L["En uso"]"><span class="data-table-secondary">@type.UsageCount @(type.UsageCount == 1 ? L["condición"] : "condiciones")</span></td>
+                                <td data-label="@L["Estado"]"><StatusPill Active="type.Active" On="Activo" Off="Deshabilitado" /></td>
                                 <td data-label="">
-                                    <RowActions Label="@type.Name" OnEdit="() => editing = type" OnDelete="() => statusType = type" EditDisabled="updatingStatus" DeleteDisabled="updatingStatus" Restore="@(!type.Active)" DeleteTitle="@(type.Active ? "Deshabilitar" : "Reactivar")" DisableIcon="true" />
+                                    <RowActions Label="@type.Name" OnEdit="() => editing = type" OnDelete="() => statusType = type" EditDisabled="updatingStatus" DeleteDisabled="updatingStatus" Restore="@(!type.Active)" DeleteTitle="@(type.Active ? L["Deshabilitar"] : L["Reactivar"])" DisableIcon="true" />
                                 </td>
                             </tr>
                         }
                         @if (conditionTypes.Count == 0 && error is null)
                         {
-                            <tr><td colspan="6" class="data-table-empty"><strong>No se encontraron tipos de condición</strong><p>Prueba con otros filtros o crea uno nuevo.</p><button type="button" class="data-table-button" @onclick="ClearFiltersAsync">Limpiar filtros</button></td></tr>
+                            <tr><td colspan="6" class="data-table-empty"><strong>@L["No se encontraron tipos de condición"]</strong><p>@L["Prueba con otros filtros o crea uno nuevo."]</p><button type="button" class="data-table-button" @onclick="ClearFiltersAsync">@L["Limpiar filtros"]</button></td></tr>
                         }
                     }
                 </tbody>
             </table>
         </div>
-        <ListPager Label="Paginación de tipos de condición" @bind-PageSize="pageSize" @bind-PageSize:after="ChangePageSizeAsync" PageSizes="5,10,20" PageSizeLabel="Filas por página" PageSizeDisabled="@busy" Page="page" PageOf="@($" de {TotalPages}")" Info="@(busy ? "Consultando…" : error is null ? ResultRange : "")" PreviousDisabled="@(busy || page <= 1)" NextDisabled="@(busy || page >= TotalPages)" OnPrevious="PreviousPageAsync" OnNext="NextPageAsync" />
+        <ListPager Label="@L["Paginación de tipos de condición"]" @bind-PageSize="pageSize" @bind-PageSize:after="ChangePageSizeAsync" PageSizes="5,10,20" PageSizeLabel="@L["Filas por página"]" PageSizeDisabled="@busy" Page="page" PageOf="@(I18n.T(" de {0}", TotalPages))" Info="@(busy ? L["Consultando…"] : error is null ? ResultRange : "")" PreviousDisabled="@(busy || page <= 1)" NextDisabled="@(busy || page >= TotalPages)" OnPrevious="PreviousPageAsync" OnNext="NextPageAsync" />
     </div>
 </section>
 
@@ -77,12 +77,12 @@
 }
 @if (statusType is not null)
 {
-    <ModalDialog Title="@(statusType.Active ? "Deshabilitar tipo de condición" : "Reactivar tipo de condición")" Busy="@updatingStatus" OnClose="CloseStatus">
+    <ModalDialog Title="@(statusType.Active ? L["Deshabilitar tipo de condición"] : L["Reactivar tipo de condición"])" Busy="@updatingStatus" OnClose="CloseStatus">
         <div class="ceti-modal-body">
             @if (statusError is not null) { <div class="ceti-modal-errors" role="alert"><p>@statusError</p></div> }
             <p>¿Quieres @(statusType.Active ? "deshabilitar" : "reactivar") el tipo de condición <strong>@statusType.Name</strong>?</p>
-            <p>@(statusType.Active ? (statusType.UsageCount > 0 ? $"{statusType.UsageCount} {(statusType.UsageCount == 1 ? "condición activa de un logro o desafío usa" : "condiciones activas de logros y desafíos usan")} este tipo y dejará{(statusType.UsageCount == 1 ? "" : "n")} de poder cumplirse mientras esté deshabilitado. " : "") + "El tipo se conserva y podrás reactivarlo cuando quieras." : "El tipo volverá a estar activo y las condiciones que lo usan podrán cumplirse de nuevo.")</p>
+            <p>@(statusType.Active ? (statusType.UsageCount > 0 ? (statusType.UsageCount == 1 ? L["1 condición activa de un logro o desafío usa este tipo y dejará de poder cumplirse mientras esté deshabilitado. "] : L["{0} condiciones activas de logros y desafíos usan este tipo y dejarán de poder cumplirse mientras esté deshabilitado. ", statusType.UsageCount]) : "") + L["El tipo se conserva y podrás reactivarlo cuando quieras."] : L["El tipo volverá a estar activo y las condiciones que lo usan podrán cumplirse de nuevo."])</p>
         </div>
-        <footer class="ceti-modal-footer"><span role="status">@(updatingStatus ? "Actualizando estado…" : "")</span><div><button type="button" class="data-table-button" disabled="@updatingStatus" @onclick="CloseStatus">Cancelar</button><button type="button" class="data-table-button data-table-button-danger" disabled="@updatingStatus" @onclick="ConfirmStatusAsync">@(statusType.Active ? "Deshabilitar" : "Reactivar")</button></div></footer>
+        <footer class="ceti-modal-footer"><span role="status">@(updatingStatus ? L["Actualizando estado…"] : "")</span><div><button type="button" class="data-table-button" disabled="@updatingStatus" @onclick="CloseStatus">@L["Cancelar"]</button><button type="button" class="data-table-button data-table-button-danger" disabled="@updatingStatus" @onclick="ConfirmStatusAsync">@(statusType.Active ? L["Deshabilitar"] : L["Reactivar"])</button></div></footer>
     </ModalDialog>
 }

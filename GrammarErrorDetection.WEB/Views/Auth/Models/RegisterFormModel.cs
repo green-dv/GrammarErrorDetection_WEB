@@ -16,11 +16,12 @@ public sealed class RegisterFormModel : IValidatableObject
     [StringLength(15, ErrorMessage = "El CI admite hasta 15 caracteres.")]
     public string CI { get; set; } = string.Empty;
 
+    [Required(ErrorMessage = "Ingresa tu teléfono.")]
     [StringLength(12, ErrorMessage = "El teléfono admite hasta 12 caracteres.")]
     [Phone(ErrorMessage = "Ingresa un teléfono válido.")]
     public string? Phone { get; set; }
 
-    /// <summary>Opcional.</summary>
+    [Required(ErrorMessage = "Ingresa tu fecha de nacimiento.")]
     public DateOnly? BirthDate { get; set; }
 
     [Required(ErrorMessage = "Ingresa tu correo electrónico.")]

@@ -11,36 +11,36 @@
             <span aria-hidden="true">@Initials</span>
         </div>
         <div class="sh-who">
-            <h2 id="sh-name">@(summary?.Kpis is { } who ? $"{who.FirstName} {who.LastName}".Trim() : "Tu progreso")</h2>
+            <h2 id="sh-name">@(summary?.Kpis is { } who ? $"{who.FirstName} {who.LastName}".Trim() : L["Tu progreso"])</h2>
             @if (summary?.Kpis is { } k)
             {
-                <p>@(k.MemberSince is { } since ? $"Estudiante desde {since.ToString("MMMM 'de' yyyy", Culture)}" : "Estudiante")<span class="sh-level">Nivel @k.LevelNumber, @k.LevelName</span></p>
+                <p>@(k.MemberSince is { } since ? I18n.T("Estudiante desde {0}", since.ToString("MMMM 'de' yyyy", Culture)) : L["Estudiante"])<span class="sh-level">@L["Nivel {0}, {1}", k.LevelNumber, k.LevelName]</span></p>
             }
         </div>
         <div class="sh-identity-actions">
             <label class="sh-course">
-                <span class="data-table-sr-only">Curso</span>
+                <span class="data-table-sr-only">@L["Curso"]</span>
                 <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4m8-4v4" /></svg>
                 <select value="@(classId?.ToString() ?? "")" disabled="@(loading || courses.Count == 0)"
                         @onchange="args => SelectCourseAsync(Guid.TryParse(args.Value?.ToString(), out var id) ? id : null)">
-                    <option value="">Todos mis cursos</option>
+                    <option value="">@L["Todos mis cursos"]</option>
                     @foreach (var course in courses.AsEnumerable().Reverse())
                     {
                         <option value="@course.ClassId">@CourseLabel(course)</option>
                     }
                 </select>
             </label>
-            <a class="data-table-button data-table-button-primary" href="process">Analizar un párrafo</a>
+            <a class="data-table-button data-table-button-primary" href="process">@L["Analizar un párrafo"]</a>
         </div>
     </header>
 
     @if (loading && summary is null)
     {
-        <p class="data-table-message" role="status">Cargando tu resumen…</p>
+        <p class="data-table-message" role="status">@L["Cargando tu resumen…"]</p>
     }
     else if (error is not null && summary is null)
     {
-        <div class="data-table-error" role="alert">@error <button type="button" class="data-table-text-button" @onclick="() => LoadAsync(classId)">Reintentar</button></div>
+        <div class="data-table-error" role="alert">@error <button type="button" class="data-table-text-button" @onclick="() => LoadAsync(classId)">@L["Reintentar"]</button></div>
     }
     else if (summary?.Kpis is { } kpis)
     {
@@ -53,7 +53,7 @@
                 <span class="sh-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6Z" /><path d="M14 2v6h6M9 13h7M9 17h5" /></svg></span>
                 <div>
                     <strong>@kpis.AnalyzedTexts.ToString("N0", Culture)</strong>
-                    <span>Textos analizados</span>
+                    <span>@L["Textos analizados"]</span>
                 </div>
                 <Trend Now="kpis.AnalyzedTexts" Before="kpis.PreviousTexts" Title="@CompareTitle(kpis)" />
             </article>
@@ -61,7 +61,7 @@
                 <span class="sh-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.5" /></svg></span>
                 <div>
                     <strong>@Percent(kpis.AccuracyPercentage)</strong>
-                    <span>Precisión</span>
+                    <span>@L["Precisión"]</span>
                 </div>
                 <Trend Now="kpis.AccuracyPercentage" Before="kpis.PreviousAccuracy" Points="true" Title="@CompareTitle(kpis)" />
             </article>
@@ -77,15 +77,15 @@
                 <span class="sh-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z" /></svg></span>
                 <div>
                     <strong>@((classId is null ? kpis.TotalPoints : kpis.ScopePoints).ToString("N0", Culture))</strong>
-                    <span>@(classId is null ? "Puntos" : "Puntos en este curso")</span>
+                    <span>@(classId is null ? L["Puntos"] : L["Puntos en este curso"])</span>
                 </div>
                 <Trend Now="kpis.ScopePoints" Before="kpis.PreviousPoints" Title="@CompareTitle(kpis)" />
             </article>
             <article class="sh-kpi" style="--tone:var(--sh-flame);--tone-soft:var(--sh-flame-soft)">
                 <span class="sh-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 22c4 0 7-2.7 7-6.6 0-3.6-2.6-6-4.2-8.4-.5 2-1.6 3.2-2.8 3.6.4-3-1-5.9-3.5-7.6.2 3-1.6 5-3 7C4.4 11.6 5 13.7 5 15.4 5 19.3 8 22 12 22Z" /></svg></span>
                 <div>
-                    <strong>@kpis.CurrentStreak @(kpis.CurrentStreak == 1 ? "día" : "días")</strong>
-                    <span>Racha actual</span>
+                    <strong>@kpis.CurrentStreak @(kpis.CurrentStreak == 1 ? L["día"] : L["días"])</strong>
+                    <span>@L["Racha actual"]</span>
                 </div>
                 <span class="sh-chip @(kpis.CurrentStreak >= 3 ? "is-good" : "")">@StreakNote(kpis)</span>
             </article>
@@ -94,12 +94,12 @@
         <div class="sh-row sh-row-charts">
             <section class="sh-card" id="sh-sec-errors" aria-labelledby="sh-compare-title">
                 <header class="sh-card-head">
-                    <h3 id="sh-compare-title">Tú frente a tu curso</h3>
-                    <ul class="sh-legend" aria-hidden="true"><li class="is-me">Tú</li><li class="is-course">Promedio del curso</li></ul>
+                    <h3 id="sh-compare-title">@L["Tú frente a tu curso"]</h3>
+                    <ul class="sh-legend" aria-hidden="true"><li class="is-me">@L["Tú"]</li><li class="is-course">@L["Promedio del curso"]</li></ul>
                 </header>
                 @if (summary.TopCategories.Count == 0)
                 {
-                    <p class="sh-empty">Sin errores registrados @(classId is null ? "todavía" : "en este curso").</p>
+                    <p class="sh-empty">Sin errores registrados @(classId is null ? L["todavía"] : L["en este curso"]).</p>
                 }
                 else
                 {
@@ -118,15 +118,15 @@
                             </div>
                         }
                     </div>
-                    <p class="sh-note">Errores por categoría. El promedio considera a los compañeros que enviaron textos @(classId is null ? "en tus cursos" : "en este curso").</p>
+                    <p class="sh-note">Errores por categoría. El promedio considera a los compañeros que enviaron textos @(classId is null ? L["en tus cursos"] : L["en este curso"]).</p>
                 }
             </section>
 
             <section class="sh-card" aria-labelledby="sh-donut-title">
-                <header class="sh-card-head"><h3 id="sh-donut-title">Categorías más frecuentes</h3></header>
+                <header class="sh-card-head"><h3 id="sh-donut-title">@L["Categorías más frecuentes"]</h3></header>
                 @if (Slices.Count == 0)
                 {
-                    <p class="sh-empty">Cuando se analicen tus párrafos verás aquí en qué te equivocas más.</p>
+                    <p class="sh-empty">@L["Cuando se analicen tus párrafos verás aquí en qué te equivocas más."]</p>
                 }
                 else
                 {
@@ -147,12 +147,12 @@
 
             <section class="sh-card" id="sh-sec-achievements" aria-labelledby="sh-next-title">
                 <header class="sh-card-head">
-                    <h3 id="sh-next-title">Próximos logros</h3>
-                    <a class="sh-link" href="profile">Ver todos</a>
+                    <h3 id="sh-next-title">@L["Próximos logros"]</h3>
+                    <a class="sh-link" href="profile">@L["Ver todos"]</a>
                 </header>
                 @if (summary.NextAchievements.Count == 0)
                 {
-                    <p class="sh-empty">Tienes @kpis.AchievementsObtained logros. No hay más alcanzables por ahora.</p>
+                    <p class="sh-empty">@L["Tienes {0} logros. No hay más alcanzables por ahora.", kpis.AchievementsObtained]</p>
                 }
                 else
                 {
@@ -167,12 +167,12 @@
                                 <div>
                                     <strong>@achievement.Name</strong>
                                     @if (!string.IsNullOrWhiteSpace(achievement.Description)) { <p>@achievement.Description</p> }
-                                    <div class="sh-meter" role="progressbar" aria-label="Avance de @achievement.Name" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@Number(achievement.ProgressPercent)">
+                                    <div class="sh-meter" role="progressbar" aria-label="@L["Avance de {0}", achievement.Name]" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@Number(achievement.ProgressPercent)">
                                         <span style="width:@Width(achievement.ProgressPercent)"></span>
                                     </div>
-                                    <small>@achievement.ConditionsMet de @achievement.ConditionCount @(achievement.ConditionCount == 1 ? "condición" : "condiciones")</small>
+                                    <small>@achievement.ConditionsMet de @achievement.ConditionCount @(achievement.ConditionCount == 1 ? L["condición"] : "condiciones")</small>
                                 </div>
-                                <span class="sh-chip">+@achievement.Points pts</span>
+                                <span class="sh-chip">@L["+{0} pts", achievement.Points]</span>
                             </li>
                         }
                     </ul>
@@ -183,34 +183,34 @@
         <div class="sh-row sh-row-activity">
             <section class="sh-card" id="sh-sec-activity" aria-labelledby="sh-activity-title">
                 <header class="sh-card-head">
-                    <h3 id="sh-activity-title">Tu actividad de la semana</h3>
-                    <span class="sh-muted">Textos analizados por día@(classId is null ? "" : ", en todos tus cursos")</span>
+                    <h3 id="sh-activity-title">@L["Tu actividad de la semana"]</h3>
+                    <span class="sh-muted">Textos analizados por día@(classId is null ? "" : L[", en todos tus cursos"])</span>
                 </header>
                 <div class="sh-days" role="img" aria-label="@ActivityLabel()">
                     @foreach (var day in summary.DailyActivity)
                     {
                         var isToday = day.Day.Date == DateTime.Today;
-                        <div class="sh-day @(isToday ? "is-today" : "")" title="@($"{day.Day.ToString("dddd d", Culture)}: {day.AnalyzedTexts} textos, {day.TotalErrors} errores")">
+                        <div class="sh-day @(isToday ? "is-today" : "")" title="@(I18n.T("{0}: {1} textos, {2} errores", day.Day.ToString("dddd d", Culture), day.AnalyzedTexts, day.TotalErrors))">
                             <b>@day.AnalyzedTexts</b>
                             <span class="sh-day-bar" style="height:@DayHeight(day.AnalyzedTexts)"></span>
-                            <small>@(isToday ? "Hoy" : Capitalize(day.Day.ToString("ddd", Culture).TrimEnd('.')))</small>
+                            <small>@(isToday ? L["Hoy"] : Capitalize(day.Day.ToString("ddd", Culture).TrimEnd('.')))</small>
                         </div>
                     }
                 </div>
             </section>
-            <aside class="sh-coach @Coach(kpis).Tone" aria-label="Consejo de la semana">
+            <aside class="sh-coach @Coach(kpis).Tone" aria-label="@L["Consejo de la semana"]">
                 <strong>@Coach(kpis).Title</strong>
                 <p>@Coach(kpis).Message</p>
                 <dl>
-                    <div><dt>Esta semana</dt><dd>@kpis.TextsThisWeek</dd></div>
-                    <div><dt>Semana anterior</dt><dd>@kpis.TextsPreviousWeek</dd></div>
-                    <div><dt>Mejor racha</dt><dd>@kpis.BestStreak d</dd></div>
+                    <div><dt>@L["Esta semana"]</dt><dd>@kpis.TextsThisWeek</dd></div>
+                    <div><dt>@L["Semana anterior"]</dt><dd>@kpis.TextsPreviousWeek</dd></div>
+                    <div><dt>@L["Mejor racha"]</dt><dd>@kpis.BestStreak d</dd></div>
                 </dl>
             </aside>
         </div>
 
-        <section class="sh-tabs-card" id="sh-sec-detail" aria-label="Detalle">
-            <div class="sh-tabs" role="tablist" aria-label="Secciones del detalle">
+        <section class="sh-tabs-card" id="sh-sec-detail" aria-label="@L["Detalle"]">
+            <div class="sh-tabs" role="tablist" aria-label="@L["Secciones del detalle"]">
                 @foreach (var tab in Tabs)
                 {
                     <button type="button" role="tab" id="sh-tab-@tab.Key" aria-controls="sh-panel" aria-selected="@(activeTab == tab.Key ? "true" : "false")"
@@ -225,17 +225,17 @@
                     case "errors":
                         <div class="sh-detail">
                             <div class="sh-detail-summary">
-                                <h4>Resumen de errores</h4>
+                                <h4>@L["Resumen de errores"]</h4>
                                 <dl>
-                                    <div><dt>Total de errores</dt><dd>@kpis.TotalErrors.ToString("N0", Culture)</dd></div>
-                                    <div><dt>Precisión general</dt><dd>@Percent(kpis.AccuracyPercentage)</dd></div>
-                                    <div><dt>Oraciones con errores</dt><dd>@kpis.SentencesWithErrors de @kpis.TotalSentences</dd></div>
-                                    <div><dt>Textos sin errores</dt><dd>@kpis.ErrorFreeTexts</dd></div>
+                                    <div><dt>@L["Total de errores"]</dt><dd>@kpis.TotalErrors.ToString("N0", Culture)</dd></div>
+                                    <div><dt>@L["Precisión general"]</dt><dd>@Percent(kpis.AccuracyPercentage)</dd></div>
+                                    <div><dt>@L["Oraciones con errores"]</dt><dd>@kpis.SentencesWithErrors de @kpis.TotalSentences</dd></div>
+                                    <div><dt>@L["Textos sin errores"]</dt><dd>@kpis.ErrorFreeTexts</dd></div>
                                 </dl>
                             </div>
                             <div class="sh-detail-categories">
-                                <h4>Principales categorías</h4>
-                                @if (summary.TopCategories.Count == 0) { <p class="sh-empty">Sin errores registrados.</p> }
+                                <h4>@L["Principales categorías"]</h4>
+                                @if (summary.TopCategories.Count == 0) { <p class="sh-empty">@L["Sin errores registrados."]</p> }
                                 else
                                 {
                                     <ul>
@@ -269,14 +269,14 @@
 </section>
 
 @code {
-    internal static readonly CultureInfo Culture = CultureInfo.GetCultureInfo("es-BO");
+    internal static readonly CultureInfo Culture = I18n.BoliviaCulture;
     private static readonly string[] Palette = ["#176b9f", "#c53736", "#d68a12", "#1f8a5b", "#6a5acd", "#9aa6bd"];
     private static readonly (string Key, string Label, string Icon)[] Tabs =
     [
-        ("errors", "Detalle de errores", "<path d='M5 20V12m7 8V7m7 13V4'/>"),
-        ("texts", "Historial de textos", "<path d='M6 2h9l5 5v15H6Z'/><path d='M14 2v6h6M9 13h7M9 17h5'/>"),
-        ("challenges", "Progreso en desafíos", "<path d='M8 21h8m-4-4v4M7 4h10v5a5 5 0 0 1-10 0ZM7 6H4v2a3 3 0 0 0 3 3m10-5h3v2a3 3 0 0 1-3 3'/>"),
-        ("points", "Historial de puntos", "<path d='m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z'/>")
+        ("errors", I18n.T("Detalle de errores"), "<path d='M5 20V12m7 8V7m7 13V4'/>"),
+        ("texts", I18n.T("Historial de textos"), "<path d='M6 2h9l5 5v15H6Z'/><path d='M14 2v6h6M9 13h7M9 17h5'/>"),
+        ("challenges", I18n.T("Progreso en desafíos"), "<path d='M8 21h8m-4-4v4M7 4h10v5a5 5 0 0 1-10 0ZM7 6H4v2a3 3 0 0 0 3 3m10-5h3v2a3 3 0 0 1-3 3'/>"),
+        ("points", I18n.T("Historial de puntos"), "<path d='m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z'/>")
     ];
 
     private static readonly (string, string)[] StudentSections =
@@ -309,7 +309,7 @@
         catch (OperationCanceledException) { }
         catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException or ArgumentException)
         {
-            error = summary is null ? "No se pudo cargar tu resumen." : "No se pudo cambiar de curso. Se muestran los datos anteriores.";
+            error = summary is null ? I18n.T("No se pudo cargar tu resumen.") : I18n.T("No se pudo cambiar de curso. Se muestran los datos anteriores.");
         }
         finally { loading = false; }
     }
@@ -342,28 +342,28 @@
         : "";
 
     private string? LevelTitle => summary?.Kpis is { } k
-        ? k.NextLevelName is null ? "Nivel máximo alcanzado" : $"{k.PointsToNextLevel} pts para {k.NextLevelName}"
+        ? k.NextLevelName is null ? I18n.T("Nivel máximo alcanzado") : I18n.T("{0} pts para {1}", k.PointsToNextLevel, k.NextLevelName)
         : null;
 
     private static string StreakNote(StudentDashboardKpis k) => k.CurrentStreak switch
     {
-        >= 7 => "¡Imparable!",
-        >= 3 => "¡Excelente!",
-        > 0 => "Sigue así",
-        _ => k.BestStreak > 0 ? $"Mejor: {k.BestStreak} d" : "Empieza hoy"
+        >= 7 => I18n.T("¡Imparable!"),
+        >= 3 => I18n.T("¡Excelente!"),
+        > 0 => I18n.T("Sigue así"),
+        _ => k.BestStreak > 0 ? I18n.T("Mejor: {0} d", k.BestStreak) : I18n.T("Empieza hoy")
     };
 
     // Las tendencias solo existen con un curso elegido: se comparan con el curso aprobado anterior.
-    private static string CompareTitle(StudentDashboardKpis k) => $"Frente a tu curso anterior ({k.PreviousModuleName})";
+    private static string CompareTitle(StudentDashboardKpis k) => I18n.T("Frente a tu curso anterior ({0})", k.PreviousModuleName);
 
     private static (string Title, string Message, string Tone) Coach(StudentDashboardKpis k)
     {
         if (k.TextsThisWeek == 0)
-            return ("Esta semana aún no escribes", "Analiza un párrafo hoy para retomar tu racha y sumar puntos.", "is-idle");
+            return (I18n.T("Esta semana aún no escribes"), I18n.T("Analiza un párrafo hoy para retomar tu racha y sumar puntos."), "is-idle");
         if (k.TextsThisWeek >= k.TextsPreviousWeek)
-            return ("¡Vas muy bien!", $"Llevas {k.TextsThisWeek} {(k.TextsThisWeek == 1 ? "texto" : "textos")} en 7 días, igual o más que la semana anterior. Escribe a diario para cuidar tu racha.", "is-good");
+            return (I18n.T("¡Vas muy bien!"), I18n.T(k.TextsThisWeek == 1 ? "Llevas {0} texto en 7 días, igual o más que la semana anterior. Escribe a diario para cuidar tu racha." : "Llevas {0} textos en 7 días, igual o más que la semana anterior. Escribe a diario para cuidar tu racha.", k.TextsThisWeek), "is-good");
         var missing = k.TextsPreviousWeek - k.TextsThisWeek;
-        return ("Casi lo logras", $"Te faltan {missing} {(missing == 1 ? "texto" : "textos")} para igualar la semana anterior ({k.TextsPreviousWeek}).", "is-push");
+        return (I18n.T("Casi lo logras"), I18n.T(missing == 1 ? "Te falta {0} texto para igualar la semana anterior ({1})." : "Te faltan {0} textos para igualar la semana anterior ({1}).", missing, k.TextsPreviousWeek), "is-push");
     }
 
     private decimal MaxBar => summary?.TopCategories.Select(c => Math.Max(c.ErrorCount, c.CourseAverage ?? 0)).DefaultIfEmpty(0).Max() ?? 0;
@@ -377,9 +377,9 @@
     }
 
     private string CompareLabel() => string.Join(", ", summary?.TopCategories.Select(c =>
-        $"{CategoryBars.Label(c.ErrorClassificationName)}: tú {c.ErrorCount}, curso {c.CourseAverage?.ToString("0.#", Culture) ?? "sin datos"}") ?? []);
+        I18n.T("{0}: tú {1}, curso {2}", CategoryBars.Label(c.ErrorClassificationName), c.ErrorCount, c.CourseAverage?.ToString("0.#", Culture) ?? I18n.T("sin datos"))) ?? []);
 
-    private string ActivityLabel() => "Textos por día: " + string.Join(", ",
+    private string ActivityLabel() => I18n.T("Textos por día: ") + string.Join(", ",
         summary?.DailyActivity.Select(d => $"{d.Day.ToString("dddd d", Culture)} {d.AnalyzedTexts}") ?? []);
 
     private static string Capitalize(string text) => text.Length == 0 ? text : char.ToUpper(text[0], Culture) + text[1..];

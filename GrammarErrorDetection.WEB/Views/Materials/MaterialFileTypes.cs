@@ -6,7 +6,7 @@ public static class MaterialFileTypes
 {
     public static FileTypeResponse? ForLink(IEnumerable<FileTypeResponse> types) => types.FirstOrDefault(type =>
         type.Active && (type.MimeType.Equals("text/uri-list", StringComparison.OrdinalIgnoreCase)
-        || new[] { "url", "enlace", "enlaces", "link", "links", "enlace externo" }.Contains(type.Name.Trim().ToLowerInvariant())
+        || new[] { "url", "enlace", "enlaces", "link", "links", I18n.T("enlace externo") }.Contains(type.Name.Trim().ToLowerInvariant())
         || Extensions(type).Contains("url")));
 
     public static FileTypeResponse? ForFile(IEnumerable<FileTypeResponse> types, string name, string mimeType)
@@ -29,9 +29,9 @@ public static class MaterialFileTypes
         };
         return family is "image" or "audio" or "video"
             ? active.FirstOrDefault(type => type.MimeType.Equals(family + "/*", StringComparison.OrdinalIgnoreCase)
-                || (family == "image" && new[] { "imagen", "imagenes", "imágenes" }.Contains(type.Name.Trim().ToLowerInvariant()))
+                || (family == "image" && new[] { "imagen", "imagenes", I18n.T("imágenes") }.Contains(type.Name.Trim().ToLowerInvariant()))
                 || (family == "audio" && type.Name.Equals("Audio", StringComparison.OrdinalIgnoreCase))
-                || (family == "video" && new[] { "video", "videos", "vídeo", "vídeos" }.Contains(type.Name.Trim().ToLowerInvariant())))
+                || (family == "video" && new[] { "video", "videos", I18n.T("vídeo"), I18n.T("vídeos") }.Contains(type.Name.Trim().ToLowerInvariant())))
             : null;
     }
 

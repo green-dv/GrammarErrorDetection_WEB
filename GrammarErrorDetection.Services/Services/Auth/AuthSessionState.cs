@@ -36,7 +36,7 @@ public sealed class AuthSessionState(IAuthSessionStorage? storage = null)
     public void SignIn(AuthSessionResponse response, string expectedEmail, bool? isTotpEnabled = null)
     {
         if (string.IsNullOrWhiteSpace(response.AccessToken) || !string.Equals(response.TokenType, "Bearer", StringComparison.OrdinalIgnoreCase) || response.ExpiresAt <= DateTimeOffset.UtcNow || response.User is null || response.User.Id == Guid.Empty || !string.Equals(response.User.Email, expectedEmail, StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("La API no devolvió una sesión válida. Vuelve a iniciar sesión.");
+            throw new InvalidOperationException(I18n.T("La API no devolvió una sesión válida. Vuelve a iniciar sesión."));
         current = response;
         IsTotpEnabled = isTotpEnabled;
         Persist();

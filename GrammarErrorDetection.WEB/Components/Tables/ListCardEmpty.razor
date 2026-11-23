@@ -8,7 +8,7 @@
     {
         <strong>@Title</strong>
         @if (Hint is not null) { <p>@Hint</p> }
-        @if (OnClear.HasDelegate) { <button type="button" class="data-table-button" @onclick="OnClear">Limpiar filtros</button> }
+        @if (OnClear.HasDelegate) { <button type="button" class="data-table-button" @onclick="OnClear">@L["Limpiar filtros"]</button> }
     }
 </li>
 

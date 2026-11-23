@@ -13,12 +13,12 @@
         <span class="gcard-share-label">@Number(Row.ErrorPercentage, "0.#") % del total</span>
     </div>
     <dl class="gcard-stats">
-        <div><dt>Párrafos relacionados</dt><dd>@Row.RelatedTextCount</dd></div>
+        <div><dt>@L["Párrafos relacionados"]</dt><dd>@Row.RelatedTextCount</dd></div>
         @if (!Personal)
         {
             <div>
-                <dt>Estudiantes afectados</dt>
-                <dd>@Row.AffectedStudentCount<span> de @Row.EnrolledStudentCount</span></dd>
+                <dt>@L["Estudiantes afectados"]</dt>
+                <dd>@Row.AffectedStudentCount<span> @L["de {0}", Row.EnrolledStudentCount]</span></dd>
                 <dd class="gcard-sub">@Number(Row.AffectedStudentPercentage, "0.#") % de los inscritos</dd>
             </div>
         }

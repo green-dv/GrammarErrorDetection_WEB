@@ -30,7 +30,7 @@ public partial class StudentGrammarList : IDisposable
     private IEnumerable<CategoryOption> Categories => rows.SelectMany(row => RowCategories(row.Sentence)).GroupBy(item => item.Id).Select(group => group.First()).OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase);
     private static IEnumerable<CategoryOption> RowCategories(TextSentenceResponse sentence) => sentence.Errors
         .GroupBy(item => item.ErrorClassificationId).Select(group => new CategoryOption(group.Key,
-            group.Select(item => item.ErrorClassificationName).FirstOrDefault(name => !string.IsNullOrWhiteSpace(name)) ?? $"Categoría {group.Key.ToString("D")[..8]}"));
+            group.Select(item => item.ErrorClassificationName).FirstOrDefault(name => !string.IsNullOrWhiteSpace(name)) ?? I18n.T("Categoría {0}", group.Key.ToString("D")[..8])));
 
     protected override void OnInitialized()
     {
@@ -77,34 +77,34 @@ public partial class StudentGrammarList : IDisposable
                 token.ThrowIfCancellationRequested();
                 if (disposed || !Allowed || current != version || UserId != target) return;
                 if (response?.Data is null || response.Error is { ErrorCode: not 0 })
-                    throw new InvalidOperationException("No se pudieron consultar los párrafos de este usuario.");
+                    throw new InvalidOperationException(I18n.T("No se pudieron consultar los párrafos de este usuario."));
                 if (response.Data.Any(item => item.UserId != target || registration.HasValue && item.RegistrationId != registration))
-                    throw new InvalidOperationException("La respuesta contiene párrafos que no corresponden al usuario de este perfil.");
+                    throw new InvalidOperationException(I18n.T("La respuesta contiene párrafos que no corresponden al usuario de este perfil."));
                 var added = 0;
                 foreach (var paragraph in response.Data)
                 {
                     if (paragraph.Id == Guid.Empty || paragraph.Sentences.Any(sentence => sentence.TextId != paragraph.Id))
-                        throw new InvalidOperationException("La respuesta contiene oraciones que no corresponden a su párrafo.");
+                        throw new InvalidOperationException(I18n.T("La respuesta contiene oraciones que no corresponden a su párrafo."));
                     if (paragraphs.TryAdd(paragraph.Id, paragraph)) added++;
                 }
                 if (response.Data.Count < batchSize) break;
-                if (added == 0) throw new InvalidOperationException("El listado de párrafos no avanzó. Intenta actualizarlo.");
+                if (added == 0) throw new InvalidOperationException(I18n.T("El listado de párrafos no avanzó. Intenta actualizarlo."));
             }
             rows = paragraphs.Values.SelectMany(paragraph => paragraph.Sentences.Select(sentence => new SentenceRow(paragraph.Id, paragraph.SubmissionDate, sentence)))
                 .OrderByDescending(row => row.SubmissionDate).ThenBy(row => row.ParagraphId).ThenBy(row => row.Sentence.SentenceIndex).ToList();
             paragraphCount = paragraphs.Count;
             if (!string.IsNullOrEmpty(category) && !Categories.Any(item => item.Id.ToString() == category)) category = "";
         }
-        catch (OperationCanceledException) { if (!disposed && current == version && !token.IsCancellationRequested) error = "La consulta tardó demasiado. Inténtalo de nuevo."; }
+        catch (OperationCanceledException) { if (!disposed && current == version && !token.IsCancellationRequested) error = I18n.T("La consulta tardó demasiado. Inténtalo de nuevo."); }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or InvalidOperationException)
         {
             if (disposed || current != version || !Allowed) return;
             error = ex switch
             {
-                HttpRequestException { StatusCode: HttpStatusCode.Unauthorized } => "Tu sesión venció. Vuelve a iniciar sesión.",
-                HttpRequestException { StatusCode: HttpStatusCode.Forbidden } => "No tienes permiso para consultar las oraciones de este usuario.",
-                HttpRequestException => "No se pudo conectar con el servicio de textos. Inténtalo de nuevo.",
-                JsonException => "No se pudo interpretar el listado de oraciones.",
+                HttpRequestException { StatusCode: HttpStatusCode.Unauthorized } => I18n.T("Tu sesión venció. Vuelve a iniciar sesión."),
+                HttpRequestException { StatusCode: HttpStatusCode.Forbidden } => I18n.T("No tienes permiso para consultar las oraciones de este usuario."),
+                HttpRequestException http => ApiErrors.Describe(http),
+                JsonException => I18n.T("No se pudo interpretar el listado de oraciones."),
                 _ => ex.Message
             };
             if (ex is HttpRequestException { StatusCode: HttpStatusCode.Unauthorized }) { Session.Clear(); Navigation.NavigateTo("/auth/login", replace: true); }

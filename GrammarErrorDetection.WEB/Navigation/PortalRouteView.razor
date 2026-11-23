@@ -10,9 +10,9 @@
 else if (Session.Current is not null)
 {
     <LayoutView Layout="@typeof(MainLayout)">
-        <h1>Acceso no disponible</h1>
-        <p>Tu rol no tiene acceso a esta sección.</p>
-        <a href="/home" class="portal-button">Volver al inicio</a>
+        <h1>@L["Acceso no disponible"]</h1>
+        <p>@L["Tu rol no tiene acceso a esta sección."]</p>
+        <a href="/home" class="portal-button">@L["Volver al inicio"]</a>
     </LayoutView>
 }
 

@@ -37,19 +37,19 @@ public partial class UserList : IDisposable
             var target = await PointRegistrations.ResolveAsync(user.Id, classId, lifetime.Token);
             if (disposed || version != requestVersion || !CheckSession()) return;
             pointsRegistrationId = target.RegistrationId;
-            pointsResolvedCourseName = IsCourseList ? $"{Course!.ModuleName} · Paralelo {Course.Parallel}"
+            pointsResolvedCourseName = IsCourseList ? I18n.T("{0} · Paralelo {1}", Course!.ModuleName, Course.Parallel)
                 : user.CurrentCourse is not null ? CurrentCourse(user) : target.CourseName;
             pointsUser = user;
         }
-        catch (HttpRequestException ex) { if (!disposed && version == requestVersion) status = ex.StatusCode == HttpStatusCode.Forbidden ? "La API no permitió consultar las inscripciones de este usuario o curso." : HttpError(ex); }
-        catch (OperationCanceledException) { if (!disposed && version == requestVersion) status = "La consulta de la inscripción tardó demasiado. Inténtalo de nuevo."; }
-        catch (Exception ex) when (ex is InvalidOperationException or JsonException) { if (!disposed && version == requestVersion) status = ex is JsonException ? "No se pudo interpretar la inscripción." : ex.Message; }
+        catch (HttpRequestException ex) { if (!disposed && version == requestVersion) status = ex.StatusCode == HttpStatusCode.Forbidden ? I18n.T("La API no permitió consultar las inscripciones de este usuario o curso.") : HttpError(ex); }
+        catch (OperationCanceledException) { if (!disposed && version == requestVersion) status = I18n.T("La consulta de la inscripción tardó demasiado. Inténtalo de nuevo."); }
+        catch (Exception ex) when (ex is InvalidOperationException or JsonException) { if (!disposed && version == requestVersion) status = ex is JsonException ? I18n.T("No se pudo interpretar la inscripción.") : ex.Message; }
         finally { resolvingPoints = false; }
     }
     private void ClosePoints() { pointsUser = null; pointsRegistrationId = Guid.Empty; pointsResolvedCourseName = ""; }
     private void PointsSaved(GrammarErrorDetection.Models.Points.PointTransactionResponse transaction)
     {
-        status = $"Movimiento de {transaction.Amount} puntos registrado para {FullName(pointsUser!)}.";
+        status = I18n.T("Movimiento de {0} puntos registrado para {1}.", transaction.Amount, FullName(pointsUser!));
         ClosePoints();
     }
     private UserSearchResponse? gradingUser;
@@ -77,16 +77,16 @@ public partial class UserList : IDisposable
             var draft = new StudentGradeDraft();
             foreach (var group in evaluations.Where(item => item.Period is 1 or 2).GroupBy(item => item.Period))
             {
-                if (group.Count() != 1) throw new InvalidOperationException("Hay evaluaciones duplicadas para el mismo examen.");
+                if (group.Count() != 1) throw new InvalidOperationException(I18n.T("Hay evaluaciones duplicadas para el mismo examen."));
                 draft.Set(group.Single());
             }
             gradeDrafts[user.Id] = draft;
             gradingUser = user;
         }
         catch (HttpRequestException ex) { if (!disposed && version == requestVersion) gradesError = HttpError(ex); }
-        catch (OperationCanceledException) { if (!disposed && version == requestVersion) gradesError = "La consulta de notas se canceló. Inténtalo de nuevo."; }
+        catch (OperationCanceledException) { if (!disposed && version == requestVersion) gradesError = I18n.T("La consulta de notas se canceló. Inténtalo de nuevo."); }
         catch (Exception ex) when (ex is InvalidOperationException or JsonException)
-        { if (!disposed && version == requestVersion) gradesError = ex is InvalidOperationException ? ex.Message : "No se pudieron interpretar las notas."; }
+        { if (!disposed && version == requestVersion) gradesError = ex is InvalidOperationException ? ex.Message : I18n.T("No se pudieron interpretar las notas."); }
         finally { if (version == requestVersion) loadingGrades = false; }
     }
     private void CloseGrades() => gradingUser = null;
@@ -94,9 +94,9 @@ public partial class UserList : IDisposable
     {
         if (!CanRegisterGrades || gradingUser is null) return;
         gradeDrafts[gradingUser.Id] = draft;
-        status = $"Notas de {FullName(gradingUser)} guardadas.";
+        status = I18n.T("Notas de {0} guardadas.", FullName(gradingUser));
     }
-    private string ListTitle => IsCourseList ? "Estudiantes del curso" : "Listado de usuarios";
+    private string ListTitle => IsCourseList ? I18n.T("Estudiantes del curso") : I18n.T("Listado de usuarios");
     [Inject] private IUserService UserService { get; set; } = default!;
     [Inject] private AuthSessionState Session { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
@@ -114,8 +114,8 @@ public partial class UserList : IDisposable
     private List<string> validationErrors = [];
     private readonly CancellationTokenSource lifetime = new();
     private CancellationTokenSource? searchCancellation;
-    private string ResultRange => users.Count == 0 ? "0 resultados" : $"Mostrando {(page - 1) * loadedPageSize + 1}–{(page - 1) * loadedPageSize + users.Count}{(total is { } all ? $" de {all}" : "")}";
-    private string PageOf => total is { } all ? $" de {Math.Max(1, (all + loadedPageSize - 1) / loadedPageSize)}" : "";
+    private string ResultRange => users.Count == 0 ? "0 resultados" : I18n.T("Mostrando {0}–{1}", (page - 1) * loadedPageSize + 1, (page - 1) * loadedPageSize + users.Count) + (total is { } all ? I18n.T(" de {0}", all) : "");
+    private string PageOf => total is { } all ? I18n.T(" de {0}", Math.Max(1, (all + loadedPageSize - 1) / loadedPageSize)) : "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -136,7 +136,7 @@ public partial class UserList : IDisposable
             && ((Session.IsInRole("Coordinator") && !isTeacher) || (isTeacher && Course.TeacherId == Session.Current?.User?.Id));
         if ((IsCourseList && !courseAllowed) || (!IsCourseList && !Session.IsInRole("Coordinator")))
         {
-            error = IsCourseList ? "No tienes acceso a los estudiantes de este curso." : "El listado de usuarios está disponible para coordinadores.";
+            error = IsCourseList ? I18n.T("No tienes acceso a los estudiantes de este curso.") : I18n.T("El listado de usuarios está disponible para coordinadores.");
             return false;
         }
         return true;
@@ -181,12 +181,12 @@ public partial class UserList : IDisposable
             var response = await UserService.SearchAsync(new UserSearchRequest { PageNumber = requestedPage, PageSize = requestedSize, Filter = requestFilter }, cancellation.Token);
             if (disposed || version != requestVersion) return;
             if (response?.Data is null || response.Error is { ErrorCode: not 0 })
-                throw new InvalidOperationException("No se pudo obtener el listado de usuarios. Inténtalo de nuevo.");
+                throw new InvalidOperationException(I18n.T("No se pudo obtener el listado de usuarios. Inténtalo de nuevo."));
             // Count representa las filas de esta página en el backend actual, no el total.
             if (requestedPage > page && response.Data.Count == 0)
             {
                 hasNext = false;
-                status = "Has llegado al final del listado.";
+                status = I18n.T("Has llegado al final del listado.");
                 return;
             }
             users = response.Data;
@@ -198,7 +198,7 @@ public partial class UserList : IDisposable
         }
         catch (OperationCanceledException)
         {
-            if (!disposed && version == requestVersion && !cancellation.IsCancellationRequested) error = "La consulta tardó demasiado. Inténtalo de nuevo.";
+            if (!disposed && version == requestVersion && !cancellation.IsCancellationRequested) error = I18n.T("La consulta tardó demasiado. Inténtalo de nuevo.");
         }
         catch (HttpRequestException ex)
         {
@@ -206,7 +206,7 @@ public partial class UserList : IDisposable
         }
         catch (JsonException)
         {
-            if (!disposed && version == requestVersion) error = "No se pudo interpretar el listado recibido.";
+            if (!disposed && version == requestVersion) error = I18n.T("No se pudo interpretar el listado recibido.");
         }
         catch (InvalidOperationException ex)
         {
@@ -243,10 +243,10 @@ public partial class UserList : IDisposable
             modules = lists[1];
         }
         catch (HttpRequestException ex) { if (!disposed) catalogError = HttpError(ex); }
-        catch (OperationCanceledException) { if (!disposed) catalogError = "Los filtros de rol y módulo tardaron demasiado en cargar."; }
+        catch (OperationCanceledException) { if (!disposed) catalogError = I18n.T("Los filtros de rol y módulo tardaron demasiado en cargar."); }
         catch (Exception ex) when (ex is JsonException or InvalidOperationException)
         {
-            if (!disposed) catalogError = "No se pudieron cargar los filtros de rol y módulo. Puedes usar los demás filtros.";
+            if (!disposed) catalogError = I18n.T("No se pudieron cargar los filtros de rol y módulo. Puedes usar los demás filtros.");
         }
         finally { loadingCatalogs = false; }
     }
@@ -259,12 +259,12 @@ public partial class UserList : IDisposable
         {
             var response = await fetch(catalogPage, cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
-            if (response?.Data is null || response.Error is { ErrorCode: not 0 }) throw new InvalidOperationException("Catálogo no disponible.");
+            if (response?.Data is null || response.Error is { ErrorCode: not 0 }) throw new InvalidOperationException(I18n.T("Catálogo no disponible."));
             var added = 0;
             foreach (var item in response.Data.Where(item => item.Id != Guid.Empty))
                 if (result.TryAdd(item.Id, item)) added++;
             if (response.Data.Count < 100) break;
-            if (added == 0) throw new InvalidOperationException("El catálogo no avanzó a la siguiente página.");
+            if (added == 0) throw new InvalidOperationException(I18n.T("El catálogo no avanzó a la siguiente página."));
         }
         return result.Values.OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
     }
@@ -275,24 +275,24 @@ public partial class UserList : IDisposable
         {
             Session.Clear();
             CheckSession();
-            return "Tu sesión venció. Vuelve a iniciar sesión.";
+            return I18n.T("Tu sesión venció. Vuelve a iniciar sesión.");
         }
         return exception.StatusCode switch
         {
-            HttpStatusCode.Forbidden => "No tienes permiso para consultar estos datos.",
-            HttpStatusCode.BadRequest => "Revisa los filtros e inténtalo de nuevo.",
-            HttpStatusCode.TooManyRequests => "Se realizaron demasiadas consultas. Espera un momento e inténtalo de nuevo.",
-            _ => "No se pudo conectar con el servicio de usuarios. Inténtalo de nuevo."
+            HttpStatusCode.Forbidden => I18n.T("No tienes permiso para consultar estos datos."),
+            HttpStatusCode.BadRequest => I18n.T("Revisa los filtros e inténtalo de nuevo."),
+            HttpStatusCode.TooManyRequests => I18n.T("Se realizaron demasiadas consultas. Espera un momento e inténtalo de nuevo."),
+            _ => ApiErrors.Describe(exception)
         };
     }
 
     private static string FullName(UserSearchResponse user) => $"{user.FirstName} {user.LastName}".Trim();
     private static string Initials(UserSearchResponse user) => $"{user.FirstName?.FirstOrDefault()}{user.LastName?.FirstOrDefault()}".Replace("\0", "");
-    private static string PreviousCourse(UserSearchResponse user) => user.LastCourse?.ModuleName ?? "Sin curso anterior";
-    private static string CurrentCourse(UserSearchResponse user) => user.CurrentCourse is { } course ? $"{course.ModuleName} · Paralelo {course.Parallel ?? "—"}" : "Sin curso actual";
-    private static string Schedule(UserSearchResponse user) => user.CurrentCourse is { StartTime: { } start, EndTime: { } end } ? $"{start:HH:mm} – {end:HH:mm}" : "Sin horario asignado";
+    private static string PreviousCourse(UserSearchResponse user) => user.LastCourse?.ModuleName ?? I18n.T("Sin curso anterior");
+    private static string CurrentCourse(UserSearchResponse user) => user.CurrentCourse is { } course ? I18n.T("{0} · Paralelo {1}", course.ModuleName, course.Parallel ?? "—") : I18n.T("Sin curso actual");
+    private static string Schedule(UserSearchResponse user) => user.CurrentCourse is { StartTime: { } start, EndTime: { } end } ? $"{start:HH:mm} – {end:HH:mm}" : I18n.T("Sin horario asignado");
     private decimal? CourseGrade(UserSearchResponse user) => user.CurrentCourse?.ClassId == Course?.Id ? user.CurrentCourseFinalScore : null;
-    private string RegistrationStatus(UserSearchResponse user) => user.CurrentCourse?.ClassId == Course?.Id ? user.CurrentCourse?.RegistrationStatus ?? "No informado" : "No informado";
+    private string RegistrationStatus(UserSearchResponse user) => user.CurrentCourse?.ClassId == Course?.Id ? user.CurrentCourse?.RegistrationStatus ?? I18n.T("No informado") : I18n.T("No informado");
     private void ViewProfile(UserSearchResponse user)
     {
         if (CanManageUsers && CheckSession()) Navigation.NavigateTo($"/users/{user.Id:D}");
@@ -322,7 +322,7 @@ public partial class UserList : IDisposable
     {
         creatingUser = false;
         await RefreshAfterUpdateAsync(created.CredentialsSent
-            ? $"{created.FullName} fue creado como {UserCreateModal.RoleLabel(created.RoleName)}. Las credenciales se enviaron a {created.Email}."
+            ? I18n.T("{0} fue creado como {1}. Las credenciales se enviaron a {2}.", created.FullName, UserCreateModal.RoleLabel(created.RoleName), created.Email)
             : created.Message);
     }
 
@@ -336,32 +336,32 @@ public partial class UserList : IDisposable
             var response = await UserService.ResendCredentialsAsync(user.Id);
             if (response?.Data is not { } result || response.Error is { ErrorCode: not 0 })
             {
-                resendError = response?.Error?.ErrorMessage ?? "No se pudieron reenviar las credenciales.";
+                resendError = response?.Error?.ErrorMessage ?? I18n.T("No se pudieron reenviar las credenciales.");
                 return;
             }
             if (!result.CredentialsSent) { resendError = result.Message; return; }
             resendUser = null;
-            status = $"Se enviaron nuevas credenciales a {result.Email}.";
+            status = I18n.T("Se enviaron nuevas credenciales a {0}.", result.Email);
         }
         catch (HttpRequestException ex)
         {
-            resendError = ex.StatusCode == HttpStatusCode.Forbidden ? "No tienes permiso para reenviar credenciales a esta cuenta." : HttpError(ex);
+            resendError = ex.StatusCode == HttpStatusCode.Forbidden ? I18n.T("No tienes permiso para reenviar credenciales a esta cuenta.") : HttpError(ex);
         }
-        catch (OperationCanceledException) { resendError = "La solicitud tardó demasiado. Inténtalo de nuevo."; }
+        catch (OperationCanceledException) { resendError = I18n.T("La solicitud tardó demasiado. Inténtalo de nuevo."); }
         finally { resending = false; }
     }
 
     private async Task UserSavedAsync(UserUpdateResponse response)
     {
         editingUser = null;
-        await RefreshAfterUpdateAsync("Información del usuario actualizada.");
+        await RefreshAfterUpdateAsync(I18n.T("Información del usuario actualizada."));
     }
 
     private async Task RefreshAfterUpdateAsync(string message)
     {
         await LoadAsync(page);
         if (!disposed && error is null && users.Count == 0 && page > 1) await LoadAsync(page - 1);
-        if (!disposed) status = error is null ? message : $"{message} No se pudo refrescar el listado; pulsa Reintentar para consultarlo de nuevo.";
+        if (!disposed) status = error is null ? message : I18n.T("{0} No se pudo refrescar el listado; pulsa Reintentar para consultarlo de nuevo.", message);
     }
 
     private async Task ConfirmStatusAsync()
@@ -377,15 +377,15 @@ public partial class UserList : IDisposable
             if (disposed) return;
             if (response?.Data is null || response.Data.Id != user.Id || response.Data.Active != active || response.Error is { ErrorCode: not 0 })
             {
-                statusError = "No se pudo confirmar el cambio de estado. Inténtalo de nuevo.";
+                statusError = I18n.T("No se pudo confirmar el cambio de estado. Inténtalo de nuevo.");
                 return;
             }
             statusUser = null;
-            await RefreshAfterUpdateAsync(active ? "Usuario reactivado." : "Usuario desactivado.");
+            await RefreshAfterUpdateAsync(active ? I18n.T("Usuario reactivado.") : I18n.T("Usuario desactivado."));
         }
         catch (HttpRequestException ex) { if (!disposed) statusError = HttpError(ex); }
-        catch (OperationCanceledException) { if (!disposed) statusError = "El cambio de estado tardó demasiado. Inténtalo de nuevo."; }
-        catch (JsonException) { if (!disposed) statusError = "No se pudo interpretar la respuesta del cambio de estado."; }
+        catch (OperationCanceledException) { if (!disposed) statusError = I18n.T("El cambio de estado tardó demasiado. Inténtalo de nuevo."); }
+        catch (JsonException) { if (!disposed) statusError = I18n.T("No se pudo interpretar la respuesta del cambio de estado."); }
         finally { updatingStatus = false; }
     }
 

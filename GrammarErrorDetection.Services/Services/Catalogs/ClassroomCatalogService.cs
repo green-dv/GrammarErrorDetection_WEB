@@ -26,7 +26,7 @@ public sealed class ClassroomCatalogService(IApiClient apiClient) : IClassroomCa
             Validator.ValidateObject(filter, new ValidationContext(filter), validateAllProperties: true);
             if (filter.Name is not null) query.Add($"Filter.Name={Uri.EscapeDataString(filter.Name)}");
             if (filter.Capacity is { } capacity) query.Add($"Filter.Capacity={capacity.ToString(CultureInfo.InvariantCulture)}");
-            if (filter.Active is { } active) query.Add($"Filter.Active={(active ? "true" : "false")}");
+            if (filter.Active is { } active) query.Add(active ? "Filter.Active=true" : "Filter.Active=false");
         }
         return apiClient.GetAsync<ApiResponse<List<ClassroomItem>>>($"{Route}?{string.Join('&', query)}", cancellationToken);
     }

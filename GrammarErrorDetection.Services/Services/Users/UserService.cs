@@ -49,7 +49,7 @@ public sealed class UserService(IApiClient apiClient) : IUserService
     {
         ArgumentNullException.ThrowIfNull(request);
         if (request.Id == Guid.Empty) throw new ArgumentException("Selecciona un usuario válido.", nameof(request));
-        if (!request.HasChanges) throw new InvalidOperationException("No hay cambios para guardar.");
+        if (!request.HasChanges) throw new InvalidOperationException(I18n.T("No hay cambios para guardar."));
         return apiClient.PutAsync<UserUpdateRequest, ApiResponse<UserUpdateResponse>>("api/User", request, cancellationToken);
     }
 

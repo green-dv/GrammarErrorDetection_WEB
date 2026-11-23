@@ -23,14 +23,14 @@ public sealed class LoginFlowState : IDisposable
 
     public SendVerificationCodeRequest CreateSendCodeRequest()
     {
-        if (PendingEmail is null || password is null) throw new InvalidOperationException("Vuelve a iniciar sesión para solicitar el código.");
+        if (PendingEmail is null || password is null) throw new InvalidOperationException(I18n.T("Vuelve a iniciar sesión para solicitar el código."));
         return new SendVerificationCodeRequest { Email = PendingEmail, Password = password, Purpose = "login" };
     }
 
     public void BeginEmailVerification(AuthChallengeResponse challenge)
     {
         if (challenge.ChallengeId == Guid.Empty || challenge.ExpiresAt <= DateTimeOffset.UtcNow || !string.Equals(challenge.Email, PendingEmail, StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException("La API no devolvió un código de verificación válido. Inténtalo de nuevo.");
+            throw new InvalidOperationException(I18n.T("La API no devolvió un código de verificación válido. Inténtalo de nuevo."));
         Challenge = challenge;
         IsTotpSelected = false;
         password = null;
@@ -39,19 +39,19 @@ public sealed class LoginFlowState : IDisposable
 
     public void SelectTotp()
     {
-        if (!IsTotpEnabled || PendingEmail is null || password is null) throw new InvalidOperationException("Vuelve a iniciar sesión para usar el autenticador.");
+        if (!IsTotpEnabled || PendingEmail is null || password is null) throw new InvalidOperationException(I18n.T("Vuelve a iniciar sesión para usar el autenticador."));
         IsTotpSelected = true;
     }
 
     public VerifyLoginRequest CreateEmailVerificationRequest(string code)
     {
-        if (!HasPendingVerification || IsTotpSelected) throw new InvalidOperationException("El código venció. Vuelve a iniciar sesión.");
+        if (!HasPendingVerification || IsTotpSelected) throw new InvalidOperationException(I18n.T("El código venció. Vuelve a iniciar sesión."));
         return new VerifyLoginRequest { ChallengeId = Challenge!.ChallengeId, Code = code };
     }
 
     public VerifyTotpLoginRequest CreateTotpVerificationRequest(string code)
     {
-        if (!HasPendingVerification || !IsTotpSelected) throw new InvalidOperationException("Vuelve a iniciar sesión para verificar el código.");
+        if (!HasPendingVerification || !IsTotpSelected) throw new InvalidOperationException(I18n.T("Vuelve a iniciar sesión para verificar el código."));
         return new VerifyTotpLoginRequest { Email = PendingEmail!, Password = password!, Code = code };
     }
 

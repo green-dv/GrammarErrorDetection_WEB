@@ -9,7 +9,7 @@
     {
         @if (localUrl is null && localKind != MaterialPreviewKind.Download)
         {
-            <div class="material-viewer-fallback"><span>Preparando vista previa…</span></div>
+            <div class="material-viewer-fallback"><span>@L["Preparando vista previa…"]</span></div>
         }
         else
         {
@@ -25,8 +25,8 @@
     {
         <div class="material-viewer-fallback">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V3m-5 5 5-5 5 5M4 15v6h16v-6"/></svg>
-            <strong>Sin archivo</strong>
-            <span>Selecciona un archivo para revisarlo aquí antes de guardarlo.</span>
+            <strong>@L["Sin archivo"]</strong>
+            <span>@L["Selecciona un archivo para revisarlo aquí antes de guardarlo."]</span>
         </div>
     }
 </div>
@@ -68,10 +68,10 @@
         switch (kind)
         {
             case MaterialPreviewKind.Image when url is not null:
-                <img src="@url" alt="Vista previa de @label" />
+                <img src="@url" alt="@L["Vista previa de {0}", label]" />
                 break;
             case MaterialPreviewKind.Frame when url is not null:
-                <iframe src="@url" title="Vista previa de @label"></iframe>
+                <iframe src="@url" title="@L["Vista previa de {0}", label]"></iframe>
                 break;
             case MaterialPreviewKind.External:
                 <div class="material-viewer-fallback"><strong>Enlace externo</strong><span>Los enlaces externos no se previsualizan.</span></div>

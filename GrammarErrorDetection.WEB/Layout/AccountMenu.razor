@@ -9,15 +9,15 @@
     <div class="account-menu" @onkeydown="HandleKey">
         @if (open)
         {
-            <button type="button" class="account-dismiss" @onclick="Close" aria-label="Cerrar menú de cuenta"></button>
-            <nav id="account-options" class="account-options" aria-label="Cuenta">
-                <p>MI CUENTA</p>
-                <a href="/profile" @onclick="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Perfil</a>
-                <a href="/profile?tab=settings" @onclick="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/></svg>Configuración</a>
-                <button type="button" @onclick="SignOut"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H4v18h5m4-14 5 5-5 5m-5-5h13"/></svg>Cerrar sesión</button>
+            <button type="button" class="account-dismiss" @onclick="Close" aria-label="@L["Cerrar menú de cuenta"]"></button>
+            <nav id="account-options" class="account-options" aria-label="@L["Cuenta"]">
+                <p>@L["MI CUENTA"]</p>
+                <a href="/profile" @onclick="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>@L["Perfil"]</a>
+                <a href="/profile?tab=settings" @onclick="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/></svg>@L["Configuración"]</a>
+                <button type="button" @onclick="SignOut"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3H4v18h5m4-14 5 5-5 5m-5-5h13"/></svg>@L["Cerrar sesión"]</button>
             </nav>
         }
-        <button type="button" class="account-trigger" @onclick="() => open = !open" aria-label="Abrir cuenta de @user.Name" aria-expanded="@(open ? "true" : "false")" aria-controls="account-options" title="@user.Name">
+        <button type="button" class="account-trigger" @onclick="() => open = !open" aria-label="@L["Abrir cuenta de {0}", user.Name]" aria-expanded="@(open ? "true" : "false")" aria-controls="account-options" title="@user.Name">
             <span class="account-avatar">@Initials(user.Name)</span>
             @if (Expanded)
             {

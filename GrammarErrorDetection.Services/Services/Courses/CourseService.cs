@@ -25,7 +25,7 @@ public sealed class CourseService(IApiClient apiClient) : ICourseService
 
     public Task<ApiResponse<List<CourseRegistration>>?> GetRegistrationsAsync(Guid classId, int pageNumber, CancellationToken cancellationToken = default)
     {
-        if (classId == Guid.Empty) throw new ArgumentException("Selecciona un curso válido.");
+        if (classId == Guid.Empty) throw new ArgumentException(I18n.T("Selecciona un curso válido."));
         ArgumentOutOfRangeException.ThrowIfLessThan(pageNumber, 1);
         return apiClient.GetAsync<ApiResponse<List<CourseRegistration>>>($"api/Class/{classId:D}/registrations?PageNumber={pageNumber.ToString(CultureInfo.InvariantCulture)}&PageSize=100", cancellationToken);
     }
@@ -40,10 +40,10 @@ public sealed class CourseService(IApiClient apiClient) : ICourseService
     public Task<ApiResponse<List<EligibleStudent>>?> GetEligibleStudentsAsync(EligibleStudentSearchRequest request, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
-        if (request.ModuleNameId == Guid.Empty) throw new ArgumentException("Selecciona un módulo válido.");
+        if (request.ModuleNameId == Guid.Empty) throw new ArgumentException(I18n.T("Selecciona un módulo válido."));
         ArgumentOutOfRangeException.ThrowIfLessThan(request.PageNumber, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(request.PageSize, 1);
-        if (request.Year is < 1 or > 9999 || request.Bimester is < 1 or > 6) throw new ArgumentException("Selecciona un año y bimestre válidos.");
+        if (request.Year is < 1 or > 9999 || request.Bimester is < 1 or > 6) throw new ArgumentException(I18n.T("Selecciona un año y bimestre válidos."));
         var query = new List<string>
         {
             $"Filter.ModuleNameId={request.ModuleNameId:D}",

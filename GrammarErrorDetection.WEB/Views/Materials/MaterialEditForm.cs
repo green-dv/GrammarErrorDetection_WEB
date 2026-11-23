@@ -22,12 +22,12 @@ public sealed class MaterialEditForm
     public List<string> Validate(string apiBaseUrl, bool hasFile = false)
     {
         List<string> errors = [];
-        if (string.IsNullOrWhiteSpace(Name) || Name.Trim().Length > 255) errors.Add("El nombre debe tener entre 1 y 255 caracteres.");
-        if (!hasFile && MaterialPresentation.ResolveLink(FileLink, apiBaseUrl) is null) errors.Add("Selecciona un archivo o ingresa un enlace válido.");
-        if (!Guid.TryParse(ErrorClassificationId, out var category) || category == Guid.Empty) errors.Add("Selecciona o ingresa una clasificación válida.");
-        if (!Guid.TryParse(FileTypeId, out var type) || type == Guid.Empty) errors.Add("No se pudo determinar el tipo de material.");
-        if (UploadDate == default) errors.Add("Indica la fecha de subida.");
-        if (FileSize < 0) errors.Add("El tamaño del archivo no puede ser negativo.");
+        if (string.IsNullOrWhiteSpace(Name) || Name.Trim().Length > 255) errors.Add(I18n.T("El nombre debe tener entre 1 y 255 caracteres."));
+        if (!hasFile && MaterialPresentation.ResolveLink(FileLink, apiBaseUrl) is null) errors.Add(I18n.T("Selecciona un archivo o ingresa un enlace válido."));
+        if (!Guid.TryParse(ErrorClassificationId, out var category) || category == Guid.Empty) errors.Add(I18n.T("Selecciona o ingresa una clasificación válida."));
+        if (!Guid.TryParse(FileTypeId, out var type) || type == Guid.Empty) errors.Add(I18n.T("No se pudo determinar el tipo de material."));
+        if (UploadDate == default) errors.Add(I18n.T("Indica la fecha de subida."));
+        if (FileSize < 0) errors.Add(I18n.T("El tamaño del archivo no puede ser negativo."));
         return errors;
     }
 

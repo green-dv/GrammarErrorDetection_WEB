@@ -46,19 +46,19 @@ public partial class ProfileSettings : IDisposable
         {
             var response = await AuthService.SetupTotpAsync(lifetime.Token);
             if (lifetime.IsCancellationRequested || !IsOwn) return;
-            if (response?.Error is { ErrorCode: not 0 } || response?.Data is null) throw new InvalidOperationException("No se pudo preparar el autenticador. Inténtalo de nuevo.");
+            if (response?.Error is { ErrorCode: not 0 } || response?.Data is null) throw new InvalidOperationException(I18n.T("No se pudo preparar el autenticador. Inténtalo de nuevo."));
             var otpUri = response.Data.OtpAuthUri;
-            if (!Uri.TryCreate(otpUri, UriKind.Absolute, out var uri) || uri.Scheme != "otpauth" || uri.Host != "totp") throw new InvalidOperationException("La API no devolvió una configuración TOTP válida.");
+            if (!Uri.TryCreate(otpUri, UriKind.Absolute, out var uri) || uri.Scheme != "otpauth" || uri.Host != "totp") throw new InvalidOperationException(I18n.T("La API no devolvió una configuración TOTP válida."));
             manualKey = uri.Query.TrimStart('?').Split('&').Select(item => item.Split('=', 2)).Where(parts => parts.Length == 2 && parts[0] == "secret").Select(parts => Uri.UnescapeDataString(parts[1])).FirstOrDefault();
-            if (string.IsNullOrWhiteSpace(manualKey)) throw new InvalidOperationException("La configuración recibida no contiene la clave del autenticador.");
+            if (string.IsNullOrWhiteSpace(manualKey)) throw new InvalidOperationException(I18n.T("La configuración recibida no contiene la clave del autenticador."));
             using var data = QRCodeGenerator.GenerateQrCode(otpUri, QRCodeGenerator.ECCLevel.Q);
             using var renderer = new SvgQRCode(data);
             qrImage = "data:image/svg+xml;base64," + Convert.ToBase64String(Encoding.UTF8.GetBytes(renderer.GetGraphic(6)));
         }
         catch (HttpRequestException ex) { HandleHttpError(ex); }
-        catch (JsonException) { status = "No se pudo interpretar la configuración del autenticador."; }
+        catch (JsonException) { status = I18n.T("No se pudo interpretar la configuración del autenticador."); }
         catch (InvalidOperationException ex) { status = ex.Message; }
-        catch (OperationCanceledException) { if (!lifetime.IsCancellationRequested) status = "La solicitud tardó demasiado. Inténtalo de nuevo."; }
+        catch (OperationCanceledException) { if (!lifetime.IsCancellationRequested) status = I18n.T("La solicitud tardó demasiado. Inténtalo de nuevo."); }
         finally { loading = false; }
     }
 
@@ -80,7 +80,7 @@ public partial class ProfileSettings : IDisposable
             if (lifetime.IsCancellationRequested || !IsOwn) return;
             if (response?.Error is { ErrorCode: not 0 } || response?.Data != true)
             {
-                status = "El código no se pudo confirmar. Revisa el código actual de tu autenticador e inténtalo de nuevo.";
+                status = I18n.T("El código no se pudo confirmar. Revisa el código actual de tu autenticador e inténtalo de nuevo.");
                 return;
             }
             confirmed = true;
@@ -90,8 +90,8 @@ public partial class ProfileSettings : IDisposable
             Session.MarkTotpEnabled();
         }
         catch (HttpRequestException ex) { HandleHttpError(ex); }
-        catch (JsonException) { status = "No se pudo interpretar la confirmación del código."; }
-        catch (OperationCanceledException) { if (!lifetime.IsCancellationRequested) status = "La solicitud tardó demasiado. Inténtalo de nuevo."; }
+        catch (JsonException) { status = I18n.T("No se pudo interpretar la confirmación del código."); }
+        catch (OperationCanceledException) { if (!lifetime.IsCancellationRequested) status = I18n.T("La solicitud tardó demasiado. Inténtalo de nuevo."); }
         finally { confirming = false; }
     }
 
@@ -103,10 +103,10 @@ public partial class ProfileSettings : IDisposable
             Session.Clear();
             Navigation.NavigateTo("/auth/login", replace: true);
         }
-        else if (exception.StatusCode == HttpStatusCode.Forbidden) status = "Tu cuenta no tiene permiso para realizar esta operación.";
-        else if (exception.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.Conflict) status = "No se pudo completar la operación. Revisa el código o si TOTP ya está activado en tu cuenta.";
-        else if (exception.StatusCode == HttpStatusCode.TooManyRequests) status = "Demasiados intentos. Espera un momento e inténtalo de nuevo.";
-        else status = "No se pudo conectar con la API. Inténtalo de nuevo.";
+        else if (exception.StatusCode == HttpStatusCode.Forbidden) status = I18n.T("Tu cuenta no tiene permiso para realizar esta operación.");
+        else if (exception.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.Conflict) status = I18n.T("No se pudo completar la operación. Revisa el código o si TOTP ya está activado en tu cuenta.");
+        else if (exception.StatusCode == HttpStatusCode.TooManyRequests) status = I18n.T("Demasiados intentos. Espera un momento e inténtalo de nuevo.");
+        else status = ApiErrors.Describe(exception);
     }
 
     public void Dispose()

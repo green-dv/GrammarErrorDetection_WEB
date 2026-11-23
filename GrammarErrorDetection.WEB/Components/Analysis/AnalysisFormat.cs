@@ -25,12 +25,12 @@ public readonly record struct Segment(string Text, bool Marked);
 /// <summary>Ayudas de presentación del panel de análisis (errores gramaticales y vocabulario).</summary>
 public static class AnalysisFormat
 {
-    private static readonly CultureInfo Spanish = CultureInfo.GetCultureInfo("es-ES");
+    private static readonly CultureInfo Spanish = I18n.Culture;
 
     /// <summary>Nombre legible de una categoría de error del modelo: simple_present → "Simple present".</summary>
     public static string Category(string? name)
     {
-        if (string.IsNullOrWhiteSpace(name)) return "Sin clasificación";
+        if (string.IsNullOrWhiteSpace(name)) return I18n.T("Sin clasificación");
         var text = string.Join(' ', name.Replace('_', ' ').Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
         return char.ToUpper(text[0], CultureInfo.InvariantCulture) + text[1..];
     }
@@ -41,7 +41,7 @@ public static class AnalysisFormat
         if (string.IsNullOrWhiteSpace(correctedSentence)) return "";
         var correction = WebUtility.HtmlDecode(correctedSentence).Trim();
         var marker = correction.IndexOf("Corrección:", StringComparison.OrdinalIgnoreCase);
-        if (marker >= 0) correction = correction[(marker + "Corrección:".Length)..].Trim();
+        if (marker >= 0) correction = correction[(marker + $"Corrección:".Length)..].Trim();
         foreach (var ruleMarker in new[] { "Regla:", "Rule:" })
         {
             var rule = correction.IndexOf(ruleMarker, StringComparison.OrdinalIgnoreCase);
@@ -152,15 +152,15 @@ public static class AnalysisFormat
     /// <summary>Clases CSS de una marca: gramática, vocabulario o ambas (se distinguen por color y por trazo).</summary>
     public static string MarkLabel(MarkKind kind) => kind switch
     {
-        MarkKind.Grammar => "error de gramática",
-        MarkKind.Vocabulary => "error de vocabulario",
-        _ => "error de gramática y de vocabulario"
+        MarkKind.Grammar => I18n.T("error de gramática"),
+        MarkKind.Vocabulary => I18n.T("error de vocabulario"),
+        _ => I18n.T("error de gramática y de vocabulario")
     };
 
     public static string MarkClass(MarkKind kind) => kind switch
     {
-        MarkKind.Grammar => "an-mark an-mark--grammar",
-        MarkKind.Vocabulary => "an-mark an-mark--vocab",
-        _ => "an-mark an-mark--both"
+        MarkKind.Grammar => $"an-mark an-mark--grammar",
+        MarkKind.Vocabulary => $"an-mark an-mark--vocab",
+        _ => $"an-mark an-mark--both"
     };
 }

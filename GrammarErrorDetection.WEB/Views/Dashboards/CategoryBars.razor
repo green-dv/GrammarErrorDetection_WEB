@@ -3,7 +3,7 @@
 @* Barras horizontales de las categorías de error más frecuentes. *@
 @if (Categories.Count == 0)
 {
-    <p class="sd-empty">Sin errores registrados. ¡Buen trabajo!</p>
+    <p class="sd-empty">@L["Sin errores registrados. ¡Buen trabajo!"]</p>
 }
 else
 {
@@ -13,7 +13,7 @@ else
             <li @key="category.ErrorClassificationId">
                 <div class="sd-progress-head">
                     <span>@Label(category.ErrorClassificationName)</span>
-                    <span>@category.ErrorCount @(ShowPrevious ? $"(antes {category.PreviousErrorCount ?? 0})" : "") · @StudentDashboard.Percent(category.ErrorPercentage)</span>
+                    <span>@category.ErrorCount @(ShowPrevious ? I18n.T("(antes {0})", category.PreviousErrorCount ?? 0) : "") · @StudentDashboard.Percent(category.ErrorPercentage)</span>
                 </div>
                 <div class="sd-meter sd-meter-warm" aria-hidden="true"><span style="width:@StudentDashboard.Width(category.ErrorPercentage)"></span></div>
             </li>
@@ -29,6 +29,6 @@ else
     internal static string Label(string name)
     {
         var text = name.Replace('_', ' ').Trim();
-        return text.Length == 0 ? "Sin categoría" : char.ToUpperInvariant(text[0]) + text[1..];
+        return text.Length == 0 ? I18n.T("Sin categoría") : char.ToUpperInvariant(text[0]) + text[1..];
     }
 }

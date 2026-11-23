@@ -6,12 +6,12 @@
 @inject AuthSessionState Session
 @inject NavigationManager Navigation
 
-<PageTitle>Inicio | CETI La Paz</PageTitle>
+<PageTitle>@L["Inicio | CETI La Paz"]</PageTitle>
 
 @if (Session.Current is { User: not null })
 {
     <section class="users-page" aria-labelledby="home-title">
-        <h1 id="home-title" class="data-table-sr-only">Inicio</h1>
+        <h1 id="home-title" class="data-table-sr-only">@L["Inicio"]</h1>
         @if (Session.IsInRole("Student"))
         {
             <StudentDashboard />
@@ -26,8 +26,8 @@
             <TeacherDashboard />
         }
         <article class="data-table-card portal-welcome" aria-labelledby="home-links-title">
-            <h2 id="home-links-title">Accesos del portal</h2>
-            <nav class="portal-shortcuts" aria-label="Accesos del portal">
+            <h2 id="home-links-title">@L["Accesos del portal"]</h2>
+            <nav class="portal-shortcuts" aria-label="@L["Accesos del portal"]">
                 @foreach (var option in PortalNavigation.Options.Where(option => option.Path != "home" && PortalNavigation.CanAccess(option.Path, Session.Roles)))
                 {
                     <a class="portal-shortcut" href="@option.Path"><svg viewBox="0 0 24 24" aria-hidden="true">@((MarkupString)option.Icon)</svg><span>@option.Label</span></a>

@@ -37,23 +37,23 @@ public partial class GrammarDashboard : IAsyncDisposable
     private GrammarReportData? data;
     private bool IsPersonal => UserId.HasValue;
     private GrammarReportScope Scope => IsPersonal ? new(UserId: UserId) : new(ClassId: selectedClass);
-    private string ReportTitle => IsPersonal ? UserId == viewer ? "Mi desempeño gramatical" : "Desempeño gramatical del usuario" : "Desempeño gramatical del curso";
+    private string ReportTitle => IsPersonal ? UserId == viewer ? I18n.T("Mi desempeño gramatical") : I18n.T("Desempeño gramatical del usuario") : I18n.T("Desempeño gramatical del curso");
     private bool Allowed => viewer != Guid.Empty && Session.Current?.User?.Id == viewer && UserId != Guid.Empty && ClassId != Guid.Empty &&
         (Session.IsInRole("Student") || Session.IsInRole("Teacher") || Session.IsInRole("Coordinator")) &&
         (IsPersonal ? !ClassId.HasValue && (UserId == viewer || Session.IsInRole("Coordinator")) : Session.IsInRole("Teacher") || Session.IsInRole("Coordinator"));
-    private string SelectedCourseName => courseOptions.FirstOrDefault(course => course.ClassId == selectedClass)?.Name ?? CourseName ?? "Curso seleccionado";
+    private string SelectedCourseName => courseOptions.FirstOrDefault(course => course.ClassId == selectedClass)?.Name ?? CourseName ?? I18n.T("Curso seleccionado");
     private ReportCourseOption? SelectedCourse => courseOptions.FirstOrDefault(course => course.ClassId == selectedClass);
-    private string CurrentLabel => IsPersonal ? "Todos los cursos y prácticas personales" : "Curso actual";
-    private string PreviousLabel => Overall.PreviousClassIds.Length > 1 ? $"Historial de {Overall.PreviousClassIds.Length} cursos anteriores" : Overall.PreviousClassIds.Length == 1 || Overall.PreviousClassId.HasValue ? "Curso anterior" : Overall.StudentsWithPreviousClassCount > 0 ? "Historial anterior" : "Sin curso anterior registrado";
+    private string CurrentLabel => IsPersonal ? I18n.T("Todos los cursos y prácticas personales") : I18n.T("Curso actual");
+    private string PreviousLabel => Overall.PreviousClassIds.Length > 1 ? I18n.T("Historial de {0} cursos anteriores", Overall.PreviousClassIds.Length) : Overall.PreviousClassIds.Length == 1 || Overall.PreviousClassId.HasValue ? I18n.T("Curso anterior") : Overall.StudentsWithPreviousClassCount > 0 ? I18n.T("Historial anterior") : I18n.T("Sin curso anterior registrado");
     private GrammarReportComparison Overall => data!.Comparison.Single(row => row.Scope == "Overall");
     private IEnumerable<GrammarCategoryReport> FilteredCategories => data!.Categories.Where(row => string.IsNullOrEmpty(category) || row.ErrorClassificationId.ToString() == category);
     private IEnumerable<GrammarReportComparison> FilteredComparison => data!.Comparison.Where(row => row.Scope == "Category" && (string.IsNullOrEmpty(category) || row.ErrorClassificationId.ToString() == category)).OrderByDescending(row => row.CurrentErrorCount).ThenBy(row => row.ErrorClassificationId);
     private List<GrammarCategoryReport> ChartCategories => data!.Categories.OrderBy(row => row.ErrorClassificationId).ToList();
     private IEnumerable<CategoryChoice> CategoryOptions => data is null ? [] : data.Categories.Select(row => new CategoryChoice(row.ErrorClassificationId, row.ErrorClassificationName))
-        .Concat(data.Comparison.Where(row => row.Scope == "Category").Select(row => new CategoryChoice(row.ErrorClassificationId!.Value, row.ErrorClassificationName ?? "Categoría sin nombre")))
+        .Concat(data.Comparison.Where(row => row.Scope == "Category").Select(row => new CategoryChoice(row.ErrorClassificationId!.Value, row.ErrorClassificationName ?? I18n.T("Categoría sin nombre"))))
         .GroupBy(row => row.Id).Select(group => group.First()).OrderBy(row => row.Name, StringComparer.CurrentCultureIgnoreCase);
     private long MaxErrors => Math.Max(10, (long)Math.Ceiling((data?.Categories.Select(row => row.ErrorCount).DefaultIfEmpty(0).Max() ?? 0) / 10m) * 10);
-    private string RadarDescription => "Errores por categoría. " + string.Join(". ", data!.Categories.Select(row => $"{row.ErrorClassificationName}: {row.ErrorCount}"));
+    private string RadarDescription => I18n.T("Errores por categoría. ") + string.Join(". ", data!.Categories.Select(row => $"{row.ErrorClassificationName}: {row.ErrorCount}"));
     private string RadarValuePoints => string.Join(" ", ChartCategories.Select((row, index) =>
     {
         var point = RadarPoint(index, (double)row.ErrorCount / MaxErrors); return $"{Svg(point.X)},{Svg(point.Y)}";
@@ -106,13 +106,13 @@ public partial class GrammarDashboard : IAsyncDisposable
             var added = 0;
             var rows = Require(await Courses.SearchAsync(new() { PageNumber = number, PageSize = 100, Filter = new() { Id = ClassId?.ToString("D"), TeacherId = Session.IsInRole("Teacher") ? viewer.ToString("D") : null } }, token));
             if (rows.Any(row => row.Id == Guid.Empty || (ClassId.HasValue && row.Id != ClassId) || Session.IsInRole("Teacher") && row.TeacherId != viewer))
-                throw new InvalidOperationException("El listado recibido no corresponde al curso o docente solicitado.");
-            foreach (var row in rows) if (found.TryAdd(row.Id, new(row.Id, row.ModuleName ?? "Módulo sin nombre", row.Year, row.Bimester, row.Parallel))) added++;
+                throw new InvalidOperationException(I18n.T("El listado recibido no corresponde al curso o docente solicitado."));
+            foreach (var row in rows) if (found.TryAdd(row.Id, new(row.Id, row.ModuleName ?? I18n.T("Módulo sin nombre"), row.Year, row.Bimester, row.Parallel))) added++;
             token.ThrowIfCancellationRequested();
             if (rows.Count < 100) break;
-            if (added == 0) throw new InvalidOperationException("El listado de cursos no avanzó de página.");
+            if (added == 0) throw new InvalidOperationException(I18n.T("El listado de cursos no avanzó de página."));
         }
-        if (ClassId.HasValue && !found.ContainsKey(ClassId.Value)) throw new InvalidOperationException("El curso no está disponible para esta cuenta.");
+        if (ClassId.HasValue && !found.ContainsKey(ClassId.Value)) throw new InvalidOperationException(I18n.T("El curso no está disponible para esta cuenta."));
         return found.Values.OrderByDescending(row => row.Year).ThenByDescending(row => row.Bimester).ThenBy(row => row.Name).ToList();
     }
     private async Task LoadReportAsync()
@@ -166,24 +166,24 @@ public partial class GrammarDashboard : IAsyncDisposable
         if (ex is HttpRequestException { StatusCode: HttpStatusCode.Unauthorized }) { Session.Clear(); Navigation.NavigateTo("/auth/login", replace: true); return; }
         var message = ex switch
         {
-            HttpRequestException { StatusCode: HttpStatusCode.Forbidden } => "No tienes acceso al curso o estudiante solicitado.",
+            HttpRequestException { StatusCode: HttpStatusCode.Forbidden } => I18n.T("No tienes acceso al curso o estudiante solicitado."),
             HttpRequestException http => http.Message,
-            OperationCanceledException => "La consulta tardó demasiado. Inténtalo de nuevo.",
-            JsonException => "El servicio devolvió una respuesta que no se pudo interpretar.",
-            JSException => "No se pudo iniciar la descarga. Inténtalo de nuevo.",
+            OperationCanceledException => I18n.T("La consulta tardó demasiado. Inténtalo de nuevo."),
+            JsonException => I18n.T("El servicio devolvió una respuesta que no se pudo interpretar."),
+            JSException => I18n.T("No se pudo iniciar la descarga. Inténtalo de nuevo."),
             _ => ex.Message
         };
         if (download) exportError = message; else { error = message; data = null; }
     }
-    private static T Require<T>(ApiResponse<T>? response) where T : class => response?.Data is not null && response.Error is not { ErrorCode: not 0 } ? response.Data : throw new InvalidOperationException(response?.Error?.ErrorMessage ?? "No se pudo consultar el listado de cursos.");
+    private static T Require<T>(ApiResponse<T>? response) where T : class => response?.Data is not null && response.Error is not { ErrorCode: not 0 } ? response.Data : throw new InvalidOperationException(response?.Error?.ErrorMessage ?? I18n.T("No se pudo consultar el listado de cursos."));
     private void SelectCategory(Guid id) => category = category == id.ToString() ? "" : id.ToString();
     private void ClearCategory() => category = "";
     private string ComparisonDescription(GrammarReportComparison row) => row.ComparisonStatus switch
     {
-        "NoCurrentAnalysis" => "No hay textos analizados en el curso actual.",
-        "NoPreviousAnalysis" => "No hay textos analizados en el historial anterior.",
-        "NoAnalysisInEitherPeriod" => "No hay análisis disponibles en el curso actual ni en el historial anterior.",
-        _ => $"{Number(row.PreviousErrorsPerAnalyzedText)} antes y {Number(row.CurrentErrorsPerAnalyzedText)} ahora, por párrafo analizado."
+        "NoCurrentAnalysis" => I18n.T("No hay textos analizados en el curso actual."),
+        "NoPreviousAnalysis" => I18n.T("No hay textos analizados en el historial anterior."),
+        "NoAnalysisInEitherPeriod" => I18n.T("No hay análisis disponibles en el curso actual ni en el historial anterior."),
+        _ => I18n.T("{0} antes y {1} ahora, por párrafo analizado.", Number(row.PreviousErrorsPerAnalyzedText), Number(row.CurrentErrorsPerAnalyzedText))
     };
     private string Color(Guid id) => Colors[Math.Max(0, ChartCategories.FindIndex(row => row.ErrorClassificationId == id)) % Colors.Length];
     private static string Svg(double value) => value.ToString("0.##", CultureInfo.InvariantCulture);
@@ -198,6 +198,6 @@ public partial class GrammarDashboard : IAsyncDisposable
     private sealed record CategoryChoice(Guid Id, string Name);
     private sealed record ReportCourseOption(Guid ClassId, string Name, int Year, int Bimester, string? Parallel)
     {
-        public string Label => $"{Name} · {Year} / Bimestre {Bimester} · {Parallel ?? "—"}";
+        public string Label => I18n.T("{0} · {1} / Bimestre {2} · {3}", Name, Year, Bimester, Parallel ?? "—");
     }
 }

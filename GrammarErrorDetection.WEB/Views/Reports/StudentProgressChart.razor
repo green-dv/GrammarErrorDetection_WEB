@@ -17,11 +17,11 @@
 
 <article class="grammar-card student-progress">
     <header>
-        <div><h3>Evolución de las notas finales</h3><p>Cada color representa a un estudiante. Los módulos se muestran en orden cronológico.</p></div>
+        <div><h3>@L["Evolución de las notas finales"]</h3><p>@L["Cada color representa a un estudiante. Los módulos se muestran en orden cronológico."]</p></div>
         <label class="data-table-field">
-            <span>Estudiante</span>
+            <span>@L["Estudiante"]</span>
             <select @bind="selectedStudent" @bind:after="ClearPoint" disabled="@(loading || series.Count == 0)">
-                <option value="">Todos los estudiantes</option>
+                <option value="">@L["Todos los estudiantes"]</option>
                 @foreach (var student in series)
                 {
                     <option value="@student.Id">@student.Name</option>
@@ -31,11 +31,11 @@
     </header>
     @if (loading)
     {
-        <p class="grammar-footnote" role="status">Cargando historial de notas…</p>
+        <p class="grammar-footnote" role="status">@L["Cargando historial de notas…"]</p>
     }
     else if (error is not null)
     {
-        <div class="data-table-error" role="alert">@error <button type="button" class="data-table-text-button" @onclick="LoadAsync">Reintentar</button></div>
+        <div class="data-table-error" role="alert">@error <button type="button" class="data-table-text-button" @onclick="LoadAsync">@L["Reintentar"]</button></div>
     }
     else
     {
@@ -46,7 +46,7 @@
         var scores = visible.SelectMany(student => student.Attempts).Select(attempt => attempt.Score).OfType<decimal>().ToList();
         if (scores.Count == 0)
         {
-            <p class="grammar-footnote" role="status">No hay notas finales disponibles para esta selección.</p>
+            <p class="grammar-footnote" role="status">@L["No hay notas finales disponibles para esta selección."]</p>
         }
         else
         {
@@ -55,8 +55,8 @@
             var width = Math.Max(740, 128 * columns.Count + 80);
             var positions = columns.Select((course, index) => (course, x: columns.Count == 1 ? width / 2 : 80 + index * (width - 160d) / (columns.Count - 1)))
                 .ToDictionary(item => item.course, item => item.x);
-            <div class="data-table-scroll" tabindex="0" role="region" aria-label="Gráfica desplazable de notas finales">
-                <svg class="student-progress-chart" width="@width" height="276" viewBox="0 0 @width 276" role="group" aria-label="@($"Notas finales por módulo y estudiante. Escala de {axisMin} a 100.")">
+            <div class="data-table-scroll" tabindex="0" role="region" aria-label="@L["Gráfica desplazable de notas finales"]">
+                <svg class="student-progress-chart" width="@width" height="276" viewBox="0 0 @width 276" role="group" aria-label="@(I18n.T("Notas finales por módulo y estudiante. Escala de {0} a 100.", axisMin))">
                     @foreach (var tick in ticks)
                     {
                         var y = Coordinate(Y(tick, axisMin));
@@ -80,7 +80,7 @@
                         @foreach (var attempt in student.Attempts.Where(attempt => attempt.Score.HasValue))
                         {
                             var point = new ChartPoint(student.Name, attempt);
-                            <g class="student-progress-point" tabindex="0" aria-label="@($"{student.Name} · {attempt.Course.Name} · Nota final: {Score(attempt.Score)}")"
+                            <g class="student-progress-point" tabindex="0" aria-label="@(I18n.T("{0} · {1} · Nota final: {2}", student.Name, attempt.Course.Name, Score(attempt.Score)))"
                                @onmouseenter="() => ShowPointAsync(point)" @onmouseleave="() => HidePoint(point)"
                                @onfocus="() => ShowPointAsync(point)" @onblur="() => HidePoint(point)">
                                 <circle cx="@Coordinate(positions[attempt.Course])" cy="@Coordinate(Y(attempt.Score!.Value, axisMin))" r="9" fill="transparent" />
@@ -96,9 +96,9 @@
                                        y="@Coordinate(Math.Clamp(pointY - 40, 4, 166))" width="194" height="108">
                             <div xmlns="http://www.w3.org/1999/xhtml" class="student-progress-tooltip-box" role="tooltip">
                                 <strong>@active.Name</strong>
-                                <div>Examen 1 <b>@(first is null ? "—" : Score(first))</b></div>
-                                <div>Examen 2 <b>@(second is null ? "—" : Score(second))</b></div>
-                                <div>Total <b>@Score(active.Attempt.Score)</b></div>
+                                <div>@L["Examen 1"] <b>@(first is null ? "—" : Score(first))</b></div>
+                                <div>@L["Examen 2"] <b>@(second is null ? "—" : Score(second))</b></div>
+                                <div>@L["Total"] <b>@Score(active.Attempt.Score)</b></div>
                             </div>
                         </foreignObject>
                     }
@@ -109,7 +109,7 @@
                     }
                 </svg>
             </div>
-            <ul class="student-progress-legend" aria-label="Series de estudiantes">
+            <ul class="student-progress-legend" aria-label="@L["Series de estudiantes"]">
                 @foreach (var student in visible)
                 {
                     <li><span class="grammar-dot" style="background:@student.Color"></span>@student.Name</li>
@@ -118,18 +118,18 @@
         }
         @if (visible.Count > 0)
         {
-            <p class="grammar-footnote">Las notas finales pendientes dejan un hueco en la línea.</p>
+            <p class="grammar-footnote">@L["Las notas finales pendientes dejan un hueco en la línea."]</p>
             <details class="student-progress-details">
-                <summary>Ver notas por estudiante y módulo</summary>
+                <summary>@L["Ver notas por estudiante y módulo"]</summary>
                 <div class="data-table-scroll">
                     <table class="data-table data-table-cards">
-                        <thead><tr><th scope="col">Estudiante</th><th scope="col">Módulo</th><th scope="col">Periodo</th><th scope="col">Nota final</th></tr></thead>
+                        <thead><tr><th scope="col">@L["Estudiante"]</th><th scope="col">@L["Módulo"]</th><th scope="col">@L["Periodo"]</th><th scope="col">@L["Nota final"]</th></tr></thead>
                         <tbody>
                             @foreach (var student in visible)
                             {
                                 @foreach (var attempt in student.Attempts.OrderBy(attempt => columns.IndexOf(attempt.Course)))
                                 {
-                                    <tr><th data-label="Estudiante" scope="row">@student.Name</th><td data-label="Módulo">@attempt.Course.Name</td><td data-label="Periodo">@attempt.Course.Period</td><td data-label="Nota final">@Score(attempt.Score)</td></tr>
+                                    <tr><th data-label="@L["Estudiante"]" scope="row">@student.Name</th><td data-label="@L["Módulo"]">@attempt.Course.Name</td><td data-label="@L["Periodo"]">@attempt.Course.Period</td><td data-label="@L["Nota final"]">@Score(attempt.Score)</td></tr>
                                 }
                             }
                         </tbody>
@@ -214,8 +214,8 @@
         {
             if (!disposed)
                 error = ex is HttpRequestException { StatusCode: HttpStatusCode.Forbidden }
-                    ? "No tienes permiso para consultar las notas de este curso."
-                    : "No se pudo cargar la evolución de las notas.";
+                    ? I18n.T("No tienes permiso para consultar las notas de este curso.")
+                    : I18n.T("No se pudo cargar la evolución de las notas.");
         }
         finally { loading = false; }
     }
@@ -229,17 +229,17 @@
             var response = await Courses.GetRegistrationsAsync(ClassId, page, token);
             token.ThrowIfCancellationRequested();
             if (response?.Data is not { } rows || response.Error is { ErrorCode: not 0 })
-                throw new InvalidOperationException("No se pudieron consultar las inscripciones del curso.");
+                throw new InvalidOperationException(I18n.T("No se pudieron consultar las inscripciones del curso."));
             var previousCount = seen.Count;
             foreach (var row in rows)
             {
                 if (row.ClassId != ClassId || row.Id == Guid.Empty || row.UserId == Guid.Empty)
-                    throw new InvalidOperationException("La API devolvió una inscripción ajena al curso.");
+                    throw new InvalidOperationException(I18n.T("La API devolvió una inscripción ajena al curso."));
                 if (seen.Add(row.Id) && row.Active && !registrations.TryAdd(row.UserId, row.Id))
-                    throw new InvalidOperationException("El estudiante tiene más de una inscripción activa en el curso.");
+                    throw new InvalidOperationException(I18n.T("El estudiante tiene más de una inscripción activa en el curso."));
             }
             if (rows.Count < 100) return registrations;
-            if (seen.Count == previousCount) throw new InvalidOperationException("El listado de inscripciones no avanzó de página.");
+            if (seen.Count == previousCount) throw new InvalidOperationException(I18n.T("El listado de inscripciones no avanzó de página."));
         }
     }
 
@@ -256,7 +256,7 @@
             }, token);
             token.ThrowIfCancellationRequested();
             if (response?.Data is not { } rows || response.Error is { ErrorCode: not 0 })
-                throw new InvalidOperationException("No se pudo consultar la lista de estudiantes.");
+                throw new InvalidOperationException(I18n.T("No se pudo consultar la lista de estudiantes."));
             var added = 0;
             foreach (var row in rows)
             {
@@ -266,7 +266,7 @@
                     students.Add(row.Id, row);
             }
             if (rows.Count < pageSize) return students;
-            if (added == 0) throw new InvalidOperationException("El listado de estudiantes no avanzó de página.");
+            if (added == 0) throw new InvalidOperationException(I18n.T("El listado de estudiantes no avanzó de página."));
         }
     }
 
@@ -312,7 +312,7 @@
 
     private static string Coordinate(double value) => value.ToString("0.##", CultureInfo.InvariantCulture);
     private static double Y(decimal score, int minimum) => (double)(212 - (score - minimum) * 190 / (100 - minimum));
-    private static string Score(decimal? score) => score?.ToString("0.##", CultureInfo.GetCultureInfo("es-BO")) ?? "Sin nota final";
+    private static string Score(decimal? score) => score?.ToString("0.##", I18n.BoliviaCulture) ?? I18n.T("Sin nota final");
     private static string ShortName(string name) => name.Length > 20 ? name[..19] + "…" : name;
 
     public void Dispose()

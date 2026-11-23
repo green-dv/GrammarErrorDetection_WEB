@@ -26,7 +26,7 @@ public sealed class UserLevelCatalogService(IApiClient apiClient) : IUserLevelCa
         {
             Validator.ValidateObject(filter, new ValidationContext(filter), validateAllProperties: true);
             if (filter.Name is not null) query.Add($"Filter.Name={Uri.EscapeDataString(filter.Name)}");
-            if (filter.Active is { } active) query.Add($"Filter.Active={(active ? "true" : "false")}");
+            if (filter.Active is { } active) query.Add(active ? "Filter.Active=true" : "Filter.Active=false");
         }
         return apiClient.GetAsync<ApiResponse<List<UserLevelItem>>>($"{Route}?{string.Join('&', query)}", cancellationToken);
     }
@@ -71,7 +71,7 @@ public sealed class ConditionTypeCatalogService(IApiClient apiClient) : IConditi
             Validator.ValidateObject(filter, new ValidationContext(filter), validateAllProperties: true);
             if (filter.Code is not null) query.Add($"Filter.Code={Uri.EscapeDataString(filter.Code)}");
             if (filter.Name is not null) query.Add($"Filter.Name={Uri.EscapeDataString(filter.Name)}");
-            if (filter.Active is { } active) query.Add($"Filter.Active={(active ? "true" : "false")}");
+            if (filter.Active is { } active) query.Add(active ? "Filter.Active=true" : "Filter.Active=false");
         }
         return apiClient.GetAsync<ApiResponse<List<ConditionTypeItem>>>($"{Route}?{string.Join('&', query)}", cancellationToken);
     }

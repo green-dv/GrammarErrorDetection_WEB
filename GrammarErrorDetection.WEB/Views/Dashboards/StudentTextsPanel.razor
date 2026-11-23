@@ -6,12 +6,12 @@
 @* Historial liviano de textos (Text_History_List), paginado en el servidor. *@
 <div class="sd-card" aria-busy="@(loading ? "true" : "false")">
     <div class="sd-card-heading">
-        <h4>Textos enviados</h4>
+        <h4>@L["Textos enviados"]</h4>
         @if (results is not null) { <span class="sd-muted">@results.TotalCount en total</span> }
     </div>
-    @if (error is not null) { <div class="data-table-error" role="alert">@error <button type="button" class="data-table-text-button" @onclick="() => LoadAsync(pageNumber)">Reintentar</button></div> }
-    else if (results is null) { <p class="data-table-message" role="status">Cargando textos…</p> }
-    else if (results.Items.Count == 0) { <p class="sd-empty">Aún no enviaste textos. <a href="process">Analiza tu primer párrafo</a>.</p> }
+    @if (error is not null) { <div class="data-table-error" role="alert">@error <button type="button" class="data-table-text-button" @onclick="() => LoadAsync(pageNumber)">@L["Reintentar"]</button></div> }
+    else if (results is null) { <p class="data-table-message" role="status">@L["Cargando textos…"]</p> }
+    else if (results.Items.Count == 0) { <p class="sd-empty">@L["Aún no enviaste textos."] <a href="process">@L["Analiza tu primer párrafo"]</a>.</p> }
     else
     {
         <ul class="sd-text-list">
@@ -26,23 +26,23 @@
                         }
                         else if (text.ErrorCount == 0)
                         {
-                            <span class="sd-badge is-good">Sin errores</span>
+                            <span class="sd-badge is-good">@L["Sin errores"]</span>
                         }
                         else
                         {
                             <span class="sd-badge is-warn">@text.ErrorCount @(text.ErrorCount == 1 ? "error" : "errores")</span>
                         }
                     </div>
-                    <p>@text.Preview@(text.Preview.Length >= 140 ? "…" : "")</p>
-                    <small class="sd-muted">@(text.ModuleName ?? "Práctica personal") · @text.WordCount palabras · @text.SentenceCount oraciones · precisión @StudentDashboard.Percent(text.AccuracyPercentage)</small>
+                    <p>@text.Preview@(text.Preview.Length >= 140 ? L["…"] : "")</p>
+                    <small class="sd-muted">@(text.ModuleName ?? L["Práctica personal"]) · @text.WordCount palabras · @text.SentenceCount oraciones · precisión @StudentDashboard.Percent(text.AccuracyPercentage)</small>
                 </li>
             }
         </ul>
         @if (Pages > 1)
         {
-            <nav class="sd-pager" aria-label="Páginas de textos">
-                <button type="button" class="data-table-button" disabled="@(loading || pageNumber == 1)" @onclick="() => LoadAsync(pageNumber - 1)">Anterior</button>
-                <span>Página @pageNumber de @Pages</span>
+            <nav class="sd-pager" aria-label="@L["Páginas de textos"]">
+                <button type="button" class="data-table-button" disabled="@(loading || pageNumber == 1)" @onclick="() => LoadAsync(pageNumber - 1)">@L["Anterior"]</button>
+                <span>@L["Página {0} de {1}", pageNumber, Pages]</span>
                 <button type="button" class="data-table-button" disabled="@(loading || pageNumber >= Pages)" @onclick="() => LoadAsync(pageNumber + 1)">Siguiente</button>
             </nav>
         }
@@ -81,7 +81,7 @@
             pageNumber = number;
         }
         catch (OperationCanceledException) { }
-        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException) { error = "No se pudo cargar tu historial de textos."; }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException) { error = I18n.T("No se pudo cargar tu historial de textos."); }
         finally { loading = false; }
     }
 

@@ -41,7 +41,7 @@ public partial class MemberProfile : IDisposable
     }
     private long? PageAwardPoints => medals.Where(item => item.IsObtained).Any(item => item.AwardPoints is null)
         ? null : medals.Where(item => item.IsObtained).Sum(item => (long)(item.AwardPoints ?? 0));
-    private string Name => member is null ? (IsOwn ? Session.Current?.User?.Name ?? "Mi perfil" : "Perfil de usuario") : $"{member.FirstName} {member.LastName}".Trim();
+    private string Name => member is null ? (IsOwn ? Session.Current?.User?.Name ?? I18n.T("Mi perfil") : I18n.T("Perfil de usuario")) : $"{member.FirstName} {member.LastName}".Trim();
     private string Email => member?.Email ?? (IsOwn ? Session.Current?.User?.Email ?? "—" : "—");
     private static string Initials(string name) => string.Concat(name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(p => p[0])).ToUpperInvariant();
 
@@ -73,7 +73,7 @@ public partial class MemberProfile : IDisposable
             var found = Require(await Users.GetAsync(profileId, token));
             token.ThrowIfCancellationRequested();
             if (!IsCurrent(current, viewerId)) return;
-            if (found.Id != profileId) throw new InvalidOperationException("La información recibida no corresponde al perfil solicitado.");
+            if (found.Id != profileId) throw new InvalidOperationException(I18n.T("La información recibida no corresponde al perfil solicitado."));
             member = found;
             if (found.CurrentCourse is { } course)
             {
@@ -90,10 +90,10 @@ public partial class MemberProfile : IDisposable
                 }
             }
         }
-        catch (OperationCanceledException) { if (IsCurrent(current, viewerId) && !token.IsCancellationRequested) infoError = "La consulta tardó demasiado."; }
+        catch (OperationCanceledException) { if (IsCurrent(current, viewerId) && !token.IsCancellationRequested) infoError = I18n.T("La consulta tardó demasiado."); }
         catch (HttpRequestException ex) { if (IsCurrent(current, viewerId)) infoError = HttpError(ex); }
         catch (Exception ex) when (ex is JsonException or InvalidOperationException)
-        { if (IsCurrent(current, viewerId)) infoError = ex is JsonException ? "No se pudo interpretar la información recibida." : ex.Message; }
+        { if (IsCurrent(current, viewerId)) infoError = ex is JsonException ? I18n.T("No se pudo interpretar la información recibida.") : ex.Message; }
         finally { if (current == version) loadingInfo = false; }
     }
 
@@ -109,23 +109,23 @@ public partial class MemberProfile : IDisposable
             var rows = Require(await Gamification.SearchBestUserAchievementsAsync(new() { UserId = UserId, PageNumber = number, PageSize = PageSize }, token));
             token.ThrowIfCancellationRequested();
             if (!IsCurrent(current, viewerId)) return;
-            if (number > page && rows.Count == 0) { hasNext = false; pageMessage = "Has llegado al final de las medallas."; return; }
+            if (number > page && rows.Count == 0) { hasNext = false; pageMessage = I18n.T("Has llegado al final de las medallas."); return; }
             medals = rows; page = number; hasNext = rows.Count == PageSize;
         }
-        catch (OperationCanceledException) { if (IsCurrent(current, viewerId) && !token.IsCancellationRequested) medalsError = "La consulta de medallas tardó demasiado."; }
+        catch (OperationCanceledException) { if (IsCurrent(current, viewerId) && !token.IsCancellationRequested) medalsError = I18n.T("La consulta de medallas tardó demasiado."); }
         catch (HttpRequestException ex) { if (IsCurrent(current, viewerId)) medalsError = HttpError(ex); }
         catch (Exception ex) when (ex is JsonException or InvalidOperationException)
-        { if (IsCurrent(current, viewerId)) medalsError = "No se pudieron cargar las medallas."; }
+        { if (IsCurrent(current, viewerId)) medalsError = I18n.T("No se pudieron cargar las medallas."); }
         finally { if (current == version) { loadingMedals = false; if (medalsError is not null) { medals = []; hasNext = false; } } }
     }
     private static T Require<T>(ApiResponse<T>? response) where T : class
         => response is { Data: not null } && response.Error is not { ErrorCode: not 0 }
-            ? response.Data : throw new InvalidOperationException(response?.Error?.ErrorMessage ?? "No se pudo obtener la información.");
+            ? response.Data : throw new InvalidOperationException(response?.Error?.ErrorMessage ?? I18n.T("No se pudo obtener la información."));
 
     private string HttpError(HttpRequestException exception)
     {
-        if (exception.StatusCode == HttpStatusCode.Unauthorized) { Session.Clear(); Navigation.NavigateTo("/auth/login", replace: true); return "La sesión expiró."; }
-        return exception.StatusCode == HttpStatusCode.Forbidden ? "No tienes permiso para consultar esta información." : "No se pudo conectar con el servidor. Intenta de nuevo.";
+        if (exception.StatusCode == HttpStatusCode.Unauthorized) { Session.Clear(); Navigation.NavigateTo("/auth/login", replace: true); return I18n.T("La sesión expiró."); }
+        return exception.StatusCode == HttpStatusCode.Forbidden ? I18n.T("No tienes permiso para consultar esta información.") : ApiErrors.Describe(exception);
     }
     private static string? Icon(UserAchievementBestResponse item)
     {

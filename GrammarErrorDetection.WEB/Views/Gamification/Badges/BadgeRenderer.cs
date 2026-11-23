@@ -13,22 +13,22 @@ public static partial class BadgeRenderer
     public static List<string> Validate(BadgeDesign design)
     {
         var errors = new List<string>();
-        if (!BadgeCatalog.Centers.Any(a => a.Id == design.CenterId)) errors.Add("Selecciona un centro de badge.");
-        if (design.IconId is not null && !BadgeCatalog.Icons.Any(a => a.Id == design.IconId)) errors.Add("Selecciona un elemento central válido.");
-        if (design.TopId is not null && !BadgeCatalog.Tops.Any(a => a.Id == design.TopId)) errors.Add("Selecciona un elemento superior válido.");
-        if (!HexColor().IsMatch(design.BaseColor ?? "")) errors.Add("Selecciona un color válido.");
+        if (!BadgeCatalog.Centers.Any(a => a.Id == design.CenterId)) errors.Add(I18n.T("Selecciona un centro de badge."));
+        if (design.IconId is not null && !BadgeCatalog.Icons.Any(a => a.Id == design.IconId)) errors.Add(I18n.T("Selecciona un elemento central válido."));
+        if (design.TopId is not null && !BadgeCatalog.Tops.Any(a => a.Id == design.TopId)) errors.Add(I18n.T("Selecciona un elemento superior válido."));
+        if (!HexColor().IsMatch(design.BaseColor ?? "")) errors.Add(I18n.T("Selecciona un color válido."));
         if (design.ShowRibbon && (string.IsNullOrWhiteSpace(design.RibbonText) || design.RibbonText.Length > RibbonTextLimit))
-            errors.Add($"Escribe un texto para la cinta de 1 a {RibbonTextLimit} caracteres.");
+            errors.Add(I18n.T("Escribe un texto para la cinta de 1 a {0} caracteres.", RibbonTextLimit));
         if (design.ShowRibbon)
         {
             try { XmlConvert.VerifyXmlChars(design.RibbonText); }
-            catch (XmlException) { errors.Add("El texto de la cinta contiene caracteres no válidos."); }
+            catch (XmlException) { errors.Add(I18n.T("El texto de la cinta contiene caracteres no válidos.")); }
         }
         return errors;
     }
     public static string Render(BadgeDesign design, IReadOnlyDictionary<string, string> images)
         => RenderCore(design, asset => images.TryGetValue(asset.Path, out var data) && data.StartsWith("data:image/png;base64,", StringComparison.Ordinal)
-            ? data : throw new InvalidOperationException("No se cargó una de las piezas del badge."));
+            ? data : throw new InvalidOperationException(I18n.T("No se cargó una de las piezas del badge.")));
 
     // Referencias locales pequeñas: al escribir no se vuelve a codificar ningún PNG.
     public static string RenderPreview(BadgeDesign design) => RenderCore(design, asset => asset.Path);
@@ -43,7 +43,7 @@ public static partial class BadgeRenderer
     public static string RibbonFontSize(string text) => Math.Min(25m, 280m / Math.Max(1, text.Length)).ToString("0.##", CultureInfo.InvariantCulture);
     public static BadgeImageBounds StarBounds(BadgeAsset asset)
     {
-        if (asset.StarWidth <= 0 || asset.SourceWidth <= 0 || asset.SourceHeight <= 0) throw new ArgumentException("Geometría de estrellas no válida.");
+        if (asset.StarWidth <= 0 || asset.SourceWidth <= 0 || asset.SourceHeight <= 0) throw new ArgumentException(I18n.T("Geometría de estrellas no válida."));
         const decimal starSize = 56;
         var width = asset.SourceWidth * starSize / asset.StarWidth;
         var height = asset.SourceHeight * starSize / asset.StarWidth;
@@ -52,7 +52,7 @@ public static partial class BadgeRenderer
     private static string RenderCore(BadgeDesign design, Func<BadgeAsset, string> source)
     {
         var center = BadgeCatalog.Centers.Single(a => a.Id == design.CenterId);
-        if (!HexColor().IsMatch(design.BaseColor ?? "")) throw new ArgumentException("Color no válido.");
+        if (!HexColor().IsMatch(design.BaseColor ?? "")) throw new ArgumentException(I18n.T("Color no válido."));
         var channels = new[] { 1, 3, 5 }.Select(start =>
             (int.Parse(design.BaseColor!.Substring(start, 2), NumberStyles.HexNumber, CultureInfo.InvariantCulture) / 255m).ToString("0.######", CultureInfo.InvariantCulture)).ToArray();
         var matrix = $"{channels[0]} 0 0 0 0 0 {channels[1]} 0 0 0 0 0 {channels[2]} 0 0 0 0 0 1 0";
@@ -91,7 +91,7 @@ public static partial class BadgeRenderer
     private static XElement Place(BadgeAsset asset, Func<BadgeAsset, string> source, decimal x, decimal y, decimal width, decimal height)
     {
         return new XElement(Svg + "image", new XAttribute("x", x), new XAttribute("y", y), new XAttribute("width", width),
-            new XAttribute("height", height), new XAttribute("preserveAspectRatio", "xMidYMid meet"), new XAttribute("href", source(asset)));
+            new XAttribute("height", height), new XAttribute("preserveAspectRatio", $"xMidYMid meet"), new XAttribute("href", source(asset)));
     }
     [GeneratedRegex("^#[0-9a-fA-F]{6}$", RegexOptions.CultureInvariant)]
     private static partial Regex HexColor();

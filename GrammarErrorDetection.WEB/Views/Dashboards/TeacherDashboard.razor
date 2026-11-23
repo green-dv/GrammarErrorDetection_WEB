@@ -7,27 +7,27 @@
 @* Dashboard del docente: resumen de sus cursos (Dashboard_Teacher) filtrable por curso y estudiantes en riesgo paginados. *@
 <section class="student-dashboard sh-dashboard @(loading && summary is not null ? "is-refreshing" : "")" aria-labelledby="td-name" aria-busy="@(loading ? "true" : "false")">
     <header class="sh-identity">
-        <div class="sh-avatar" style="--level:@StudentDashboard.Number(summary?.Kpis?.CoveragePercentage)" title="Cobertura: estudiantes que analizaron textos">
+        <div class="sh-avatar" style="--level:@StudentDashboard.Number(summary?.Kpis?.CoveragePercentage)" title="@L["Cobertura: estudiantes que analizaron textos"]">
             <span aria-hidden="true">@Initials</span>
         </div>
         <div class="sh-who">
-            <h2 id="td-name">@(summary?.Kpis is { } who && who.LastName.Length > 0 ? $"Hola, prof. {who.LastName.Split(' ')[0]}" : "Tus clases")</h2>
-            <p>Notas y errores de tus clases@(summary?.Kpis is { } scope ? $": {scope.EnrolledStudents} estudiantes en {scope.CourseCount} {(scope.CourseCount == 1 ? "clase" : "clases")}" : "").</p>
+            <h2 id="td-name">@(summary?.Kpis is { } who && who.LastName.Length > 0 ? I18n.T("Hola, prof. {0}", who.LastName.Split(' ')[0]) : L["Tus clases"])</h2>
+            <p>@L["Notas y errores de tus clases"]@(summary?.Kpis is { } scope ? I18n.T(scope.CourseCount == 1 ? ": {0} estudiantes en {1} clase" : ": {0} estudiantes en {1} clases", scope.EnrolledStudents, scope.CourseCount) : "").</p>
         </div>
         <div class="sh-identity-actions">
             <label class="sh-course">
-                <span class="data-table-sr-only">Curso</span>
+                <span class="data-table-sr-only">@L["Curso"]</span>
                 <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4m8-4v4" /></svg>
                 <select value="@(classId?.ToString() ?? "")" disabled="@(loading || allCourses.Count == 0)" @onchange="ChangeCourseAsync">
-                    <option value="">Todos mis cursos</option>
+                    <option value="">@L["Todos mis cursos"]</option>
                     @foreach (var course in allCourses) { <option value="@course.ClassId">@CourseLabel(course)</option> }
                 </select>
             </label>
         </div>
     </header>
 
-    @if (loading && summary is null) { <p class="data-table-message" role="status">Cargando tus cursos…</p> }
-    else if (error is not null && summary is null) { <div class="data-table-error" role="alert">@error <button type="button" class="data-table-text-button" @onclick="LoadAsync">Reintentar</button></div> }
+    @if (loading && summary is null) { <p class="data-table-message" role="status">@L["Cargando tus cursos…"]</p> }
+    else if (error is not null && summary is null) { <div class="data-table-error" role="alert">@error <button type="button" class="data-table-text-button" @onclick="LoadAsync">@L["Reintentar"]</button></div> }
     else if (summary?.Kpis is { } kpis)
     {
         @if (error is not null) { <div class="data-table-error" role="alert">@error</div> }
@@ -37,27 +37,27 @@
         <div class="sh-kpis" id="td-sec-grades">
             <article class="sh-kpi" style="--tone:var(--sh-blue);--tone-soft:var(--sh-blue-soft)">
                 <span class="sh-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 21V9l8-6 8 6v12" /><path d="M9 21v-6h6v6" /></svg></span>
-                <div><strong>@(kpis.AverageFinalScore?.ToString("0.#", StudentDashboard.Culture) ?? "—")</strong><span>Nota final promedio</span></div>
+                <div><strong>@(kpis.AverageFinalScore?.ToString("0.#", StudentDashboard.Culture) ?? "—")</strong><span>@L["Nota final promedio"]</span></div>
                 <span class="sh-chip @(kpis.PassRatePercentage is < 70 ? "is-alert" : "")">Aprobación @StudentDashboard.Percent(kpis.PassRatePercentage)</span>
             </article>
             <article class="sh-kpi" style="--tone:var(--sh-green);--tone-soft:var(--sh-green-soft)">
                 <span class="sh-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.5" /></svg></span>
-                <div><strong>@StudentDashboard.Percent(kpis.AccuracyPercentage)</strong><span>Precisión del grupo</span></div>
+                <div><strong>@StudentDashboard.Percent(kpis.AccuracyPercentage)</strong><span>@L["Precisión del grupo"]</span></div>
                 <Trend Now="kpis.AccuracyLast30" Before="kpis.AccuracyPrevious30" Points="true" />
             </article>
             <article class="sh-kpi" style="--tone:var(--sh-red);--tone-soft:var(--sh-red-soft)">
                 <span class="sh-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" /><path d="m9 9 6 6m0-6-6 6" /></svg></span>
-                <div><strong>@(kpis.ErrorsPerText?.ToString("0.##", StudentDashboard.Culture) ?? "—")</strong><span>Errores por texto</span></div>
+                <div><strong>@(kpis.ErrorsPerText?.ToString("0.##", StudentDashboard.Culture) ?? "—")</strong><span>@L["Errores por texto"]</span></div>
                 <span class="sh-chip">@kpis.GradedStudents de @kpis.EnrolledStudents con nota</span>
             </article>
             <article class="sh-kpi" style="--tone:var(--sh-amber);--tone-soft:var(--sh-amber-soft)">
                 <span class="sh-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 2h9l5 5v15H6Z" /><path d="M14 2v6h6M9 13h7M9 17h5" /></svg></span>
-                <div><strong>@kpis.AnalyzedTexts.ToString("N0", StudentDashboard.Culture)</strong><span>Textos · cobertura @StudentDashboard.Percent(kpis.CoveragePercentage)</span></div>
+                <div><strong>@kpis.AnalyzedTexts.ToString("N0", StudentDashboard.Culture)</strong><span>@L["Textos · cobertura {0}", StudentDashboard.Percent(kpis.CoveragePercentage)]</span></div>
                 <Trend Now="kpis.TextsLast30" Before="kpis.TextsPrevious30" />
             </article>
             <article class="sh-kpi" style="--tone:var(--sh-flame);--tone-soft:var(--sh-flame-soft)">
                 <span class="sh-kpi-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 2 21h20ZM12 10v5m0 3v.01" /></svg></span>
-                <div><strong>@kpis.AtRiskStudents</strong><span>En riesgo</span></div>
+                <div><strong>@kpis.AtRiskStudents</strong><span>@L["En riesgo"]</span></div>
                 <span class="sh-chip @(kpis.AtRiskStudents > 0 ? "is-alert" : "")">@RiskShare(kpis) de tus estudiantes</span>
             </article>
         </div>
@@ -65,10 +65,10 @@
         <div class="sh-row cd-row-top">
             <section class="sh-card" id="td-sec-courses" aria-labelledby="td-courses-title">
                 <header class="sh-card-head">
-                    <h3 id="td-courses-title">Desempeño de tus cursos</h3>
-                    <ul class="sh-legend" aria-hidden="true"><li class="is-me">Nota final promedio</li><li class="is-course">Precisión</li></ul>
+                    <h3 id="td-courses-title">@L["Desempeño de tus cursos"]</h3>
+                    <ul class="sh-legend" aria-hidden="true"><li class="is-me">@L["Nota final promedio"]</li><li class="is-course">@L["Precisión"]</li></ul>
                 </header>
-                @if (summary.Courses.Count == 0) { <p class="sh-empty">No tienes cursos activos.</p> }
+                @if (summary.Courses.Count == 0) { <p class="sh-empty">@L["No tienes cursos activos."]</p> }
                 else
                 {
                     <div class="td-chart">
@@ -77,7 +77,7 @@
                             @foreach (var course in summary.Courses)
                             {
                                 <a class="sh-bar-group td-course" href="@ReportLink(course)" @key="course.ClassId"
-                                   aria-label="@($"{CourseLabel(course)}: nota final promedio {course.FinalAverage?.ToString("0.#", StudentDashboard.Culture) ?? "sin notas"}, aprobación {StudentDashboard.Percent(course.PassRatePercentage)}, precisión {StudentDashboard.Percent(course.AccuracyPercentage)}, {course.ErrorsPerText?.ToString("0.#", StudentDashboard.Culture) ?? "sin"} errores por texto. Abrir reporte")">
+                                   aria-label="@(I18n.T("{0}: nota final promedio {1}, aprobación {2}, precisión {3}, {4} errores por texto. Abrir reporte", CourseLabel(course), course.FinalAverage?.ToString("0.#", StudentDashboard.Culture) ?? "sin notas", StudentDashboard.Percent(course.PassRatePercentage), StudentDashboard.Percent(course.AccuracyPercentage), course.ErrorsPerText?.ToString("0.#", StudentDashboard.Culture) ?? "sin"))">
                                     <div class="sh-bar-pair">
                                         <span class="sh-bar is-me @(course.FinalAverage is < 70 ? "is-fail" : "")" style="--v:@StudentDashboard.Width(course.FinalAverage)"><b>@(course.FinalAverage?.ToString("0", StudentDashboard.Culture) ?? "—")</b></span>
                                         <span class="sh-bar is-course" style="--v:@StudentDashboard.Width(course.AccuracyPercentage)"><b>@Short(course.AccuracyPercentage)</b></span>
@@ -87,13 +87,13 @@
                             }
                         </div>
                     </div>
-                    <p class="sh-note">Nota final sobre 100 (en rojo, menor a 70) y precisión de los textos. Toca un curso para abrir su reporte gramatical.</p>
+                    <p class="sh-note">@L["Nota final sobre 100 (en rojo, menor a 70) y precisión de los textos. Toca un curso para abrir su reporte gramatical."]</p>
                 }
             </section>
 
             <section class="sh-card" id="td-sec-errors" aria-labelledby="td-donut-title">
-                <header class="sh-card-head"><h3 id="td-donut-title">Categorías de error más frecuentes</h3></header>
-                @if (slices.Count == 0) { <p class="sh-empty">Aún no hay errores registrados en tus cursos.</p> }
+                <header class="sh-card-head"><h3 id="td-donut-title">@L["Categorías de error más frecuentes"]</h3></header>
+                @if (slices.Count == 0) { <p class="sh-empty">@L["Aún no hay errores registrados en tus cursos."]</p> }
                 else
                 {
                     var top = slices[0];
@@ -114,19 +114,19 @@
 
         </div>
 
-        <ModulePerformanceTable AnchorId="td-sec-modules" Items="summary.ModulePerformance" Title="Rendimiento por tipo de módulo"
-                                Subtitle="Todos los cursos que has dictado, no solo los actuales: notas y errores de cada módulo."
-                                Empty="Aún no has dictado cursos." />
+        <ModulePerformanceTable AnchorId="td-sec-modules" Items="summary.ModulePerformance" Title="@L["Rendimiento por tipo de módulo"]"
+                                Subtitle="@L["Todos los cursos que has dictado, no solo los actuales: notas y errores de cada módulo."]"
+                                Empty="@L["Aún no has dictado cursos."]" />
 
         <div class="sh-row td-row-bottom">
             <TeacherAtRiskCard AnchorId="td-sec-risk" ClassId="classId" NoTextsCount="kpis.AtRiskNoTexts" LowScoreCount="kpis.AtRiskLowScore" ShowCourse="classId is null" />
 
             <section class="sh-card" id="td-sec-trend" aria-labelledby="td-trend-title">
                 <header class="sh-card-head">
-                    <h3 id="td-trend-title">Resumen general de tus clases</h3>
-                    <a class="sh-link" href="reports">Ver reportes</a>
+                    <h3 id="td-trend-title">@L["Resumen general de tus clases"]</h3>
+                    <a class="sh-link" href="reports">@L["Ver reportes"]</a>
                 </header>
-                <ul class="sh-legend td-line-legend" aria-hidden="true"><li class="is-me">Precisión</li><li class="is-course">Estudiantes activos</li></ul>
+                <ul class="sh-legend td-line-legend" aria-hidden="true"><li class="is-me">@L["Precisión"]</li><li class="is-course">@L["Estudiantes activos"]</li></ul>
                 <div class="td-line-scroll">
                 <svg class="td-line" viewBox="0 0 @W @H" role="img" aria-label="@TrendLabel()" preserveAspectRatio="none">
                     @foreach (var tick in new[] { 0, 25, 50, 75, 100 })
@@ -142,11 +142,11 @@
                         <g class="@(i % 2 == 1 ? "td-alt" : "")"><text x="@X(i)" y="@(H - 6)" class="td-tick" text-anchor="middle">@week.WeekStart.ToString("dd/MM", StudentDashboard.Culture)</text></g>
                         @if (ActivePercent(week) is { } active)
                         {
-                            <circle cx="@X(i)" cy="@Y(active)" r="3.5" class="td-dot is-course"><title>@($"Semana del {week.WeekStart:dd/MM}: {week.ActiveStudents} estudiantes activos ({active:0} %)")</title></circle>
+                            <circle cx="@X(i)" cy="@Y(active)" r="3.5" class="td-dot is-course"><title>@(I18n.T("Semana del {0:dd/MM}: {1} estudiantes activos ({2:0} %)", week.WeekStart, week.ActiveStudents, active))</title></circle>
                         }
                         @if (week.AccuracyPercentage is { } accuracy)
                         {
-                            <circle cx="@X(i)" cy="@Y(accuracy)" r="4.5" class="td-dot is-me"><title>@($"Semana del {week.WeekStart:dd/MM}: precisión {accuracy:0.#} %, {week.AnalyzedTexts} textos")</title></circle>
+                            <circle cx="@X(i)" cy="@Y(accuracy)" r="4.5" class="td-dot is-me"><title>@(I18n.T("Semana del {0:dd/MM}: precisión {1:0.#} %, {2} textos", week.WeekStart, accuracy, week.AnalyzedTexts))</title></circle>
                             @if (i == LastAccuracyIndex)
                             {
                                 <g class="td-callout"><rect x="@Inv(XN(i) - 22)" y="@Inv(YN(accuracy) - 30)" width="44" height="20" rx="6" /><text x="@X(i)" y="@Inv(YN(accuracy) - 16)" text-anchor="middle">@accuracy.ToString("0", StudentDashboard.Culture)%</text></g>
@@ -155,17 +155,17 @@
                     }
                 </svg>
                 </div>
-                <p class="sh-note">Últimas 8 semanas. Las semanas sin textos no tienen precisión.</p>
+                <p class="sh-note">@L["Últimas 8 semanas. Las semanas sin textos no tienen precisión."]</p>
             </section>
         </div>
 
         <div class="sh-row td-row-materials">
             <section class="sh-card" id="td-sec-materials" aria-labelledby="td-materials-title">
                 <header class="sh-card-head">
-                    <h3 id="td-materials-title">Uso de materiales</h3>
-                    <a class="sh-link" href="materials">Ver todos</a>
+                    <h3 id="td-materials-title">@L["Uso de materiales"]</h3>
+                    <a class="sh-link" href="materials">@L["Ver todos"]</a>
                 </header>
-                @if (summary.MaterialUsage.Count == 0) { <p class="sh-empty">Todavía no subiste material de apoyo. <a class="sh-link" href="materials">Subir material</a></p> }
+                @if (summary.MaterialUsage.Count == 0) { <p class="sh-empty">@L["Todavía no subiste material de apoyo."] <a class="sh-link" href="materials">@L["Subir material"]</a></p> }
                 else
                 {
                     <ul class="td-materials">
@@ -179,11 +179,11 @@
                                 </div>
                                 @if (material.HelpfulVotes + material.NotHelpfulVotes > 0)
                                 {
-                                    <span class="sh-trend @(material.HelpfulVotes >= material.NotHelpfulVotes ? "is-good" : "is-bad")" title="Votos de utilidad">
+                                    <span class="sh-trend @(material.HelpfulVotes >= material.NotHelpfulVotes ? "is-good" : "is-bad")" title="@L["Votos de utilidad"]">
                                         @((100 * material.HelpfulVotes / (material.HelpfulVotes + material.NotHelpfulVotes)).ToString(StudentDashboard.Culture)) % útil
                                     </span>
                                 }
-                                else { <span class="sh-muted">Sin votos</span> }
+                                else { <span class="sh-muted">@L["Sin votos"]</span> }
                             </li>
                         }
                     </ul>
@@ -198,7 +198,7 @@
     private const int W = 520, H = 230, Pad = 36, Top = 14, Bottom = 30;
     private static readonly (string, string)[] TeacherSections =
         [("td-sec-grades", "Notas"), ("td-sec-courses", "Cursos"), ("td-sec-errors", "Errores"), ("td-sec-modules", "Módulos"),
-         ("td-sec-risk", "Riesgo"), ("td-sec-trend", "Tendencia"), ("td-sec-materials", "Materiales")];
+         ("td-sec-risk", I18n.T("Riesgo")), ("td-sec-trend", I18n.T("Tendencia")), ("td-sec-materials", I18n.T("Materiales"))];
     private readonly CancellationTokenSource lifetime = new();
     private TeacherDashboardResponse? summary;
     // Cursos del resumen sin filtro: alimentan el selector aunque luego se elija uno.
@@ -233,7 +233,7 @@
         catch (OperationCanceledException) { }
         catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException)
         {
-            error = summary is null ? "No se pudo cargar el resumen de tus cursos." : "No se pudo cambiar de curso. Se muestran los datos anteriores.";
+            error = summary is null ? I18n.T("No se pudo cargar el resumen de tus cursos.") : I18n.T("No se pudo cambiar de curso. Se muestran los datos anteriores.");
         }
         finally { loading = false; }
     }
@@ -291,8 +291,8 @@
         return string.Join(" ", parts);
     }
 
-    private string TrendLabel() => "Por semana: " + string.Join("; ", Weeks.Select(w =>
-        $"{w.WeekStart:dd/MM} precisión {(w.AccuracyPercentage is { } a ? a.ToString("0", StudentDashboard.Culture) + " %" : "sin textos")}, {w.ActiveStudents} estudiantes activos"));
+    private string TrendLabel() => I18n.T("Por semana: ") + string.Join("; ", Weeks.Select(w =>
+        I18n.T("{0:dd/MM} precisión {1}, {2} estudiantes activos", w.WeekStart, w.AccuracyPercentage is { } a ? a.ToString("0", StudentDashboard.Culture) + " %" : I18n.T("sin textos"), w.ActiveStudents)));
 
     private static string Inv(decimal value) => value.ToString("0.##", CultureInfo.InvariantCulture);
 

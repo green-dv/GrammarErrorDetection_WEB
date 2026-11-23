@@ -2,46 +2,46 @@
 
 <section class="users-page courses-page" aria-labelledby="teacher-profile-courses-title">
     <div class="data-table-card">
-        <header class="data-table-heading"><div><h2 id="teacher-profile-courses-title">Mis cursos como docente</h2><p>Cursos asignados a tu cuenta, incluidos los de periodos anteriores.</p></div></header>
+        <header class="data-table-heading"><div><h2 id="teacher-profile-courses-title">@(IsOwn ? L["Mis cursos como docente"] : L["Cursos como docente"])</h2><p>@(IsOwn ? L["Cursos asignados a tu cuenta, incluidos los de periodos anteriores."] : L["Cursos que dicta este docente, incluidos los de periodos anteriores."])</p></div></header>
         @if (!Allowed)
         {
-            <p class="portal-empty">No tienes permiso para consultar estos cursos.</p>
+            <p class="portal-empty">@L["No tienes permiso para consultar estos cursos."]</p>
         }
         else
         {
             @if (error is not null)
             {
-                <div class="data-table-error" role="alert">@error <button type="button" class="data-table-text-button" disabled="@loading" @onclick="RetryAsync">Reintentar</button></div>
+                <div class="data-table-error" role="alert">@error <button type="button" class="data-table-text-button" disabled="@loading" @onclick="RetryAsync">@L["Reintentar"]</button></div>
             }
-            <p class="data-table-summary" role="status">@(loading ? "Cargando tus cursos…" : error is not null ? "Consulta no disponible" : $"{total ?? courses.Count} cursos {(total is null ? "en esta página" : "en total")}")</p>
-            <ListPager Top="true" Label="Paginación de cursos impartidos" @bind-PageSize="pageSize" @bind-PageSize:after="ChangeSizeAsync" PageSizes="5,20,50" PageSizeLabel="Filas por página" PageSizeDisabled="@loading" Page="page" PageOf="@PageOf" PreviousDisabled="@(loading || page <= 1)" NextDisabled="@(loading || !hasNext)" OnPrevious="PreviousAsync" OnNext="NextAsync" />
-            <div class="data-table-scroll" role="region" aria-label="Cursos impartidos como docente" aria-busy="@loading.ToString().ToLowerInvariant()" tabindex="0">
+            <p class="data-table-summary" role="status">@(loading ? L["Cargando tus cursos…"] : error is not null ? L["Consulta no disponible"] : I18n.T(total is null ? "{0} cursos en esta página" : "{0} cursos en total", total ?? courses.Count))</p>
+            <ListPager Top="true" Label="@L["Paginación de cursos impartidos"]" @bind-PageSize="pageSize" @bind-PageSize:after="ChangeSizeAsync" PageSizes="5,20,50" PageSizeLabel="@L["Filas por página"]" PageSizeDisabled="@loading" Page="page" PageOf="@PageOf" PreviousDisabled="@(loading || page <= 1)" NextDisabled="@(loading || !hasNext)" OnPrevious="PreviousAsync" OnNext="NextAsync" />
+            <div class="data-table-scroll" role="region" aria-label="@L["Cursos impartidos como docente"]" aria-busy="@loading.ToString().ToLowerInvariant()" tabindex="0">
                 <table class="data-table courses-table data-table-cards">
-                    <caption class="data-table-sr-only">Módulo, paralelo, periodo, horario, aula, cantidad de estudiantes y promedios del grupo.</caption>
-                    <thead><tr><th scope="col">Módulo / paralelo</th><th scope="col">Periodo</th><th scope="col">Horario</th><th scope="col">Aula</th><th scope="col">Estudiantes</th><th scope="col">Promedio examen 1</th><th scope="col">Promedio examen 2</th><th scope="col">Acciones</th></tr></thead>
+                    <caption class="data-table-sr-only">@L["Módulo, paralelo, periodo, horario, aula, cantidad de estudiantes y promedios del grupo."]</caption>
+                    <thead><tr><th scope="col">@L["Módulo / paralelo"]</th><th scope="col">@L["Periodo"]</th><th scope="col">@L["Horario"]</th><th scope="col">@L["Aula"]</th><th scope="col">@L["Estudiantes"]</th><th scope="col">@L["Promedio examen 1"]</th><th scope="col">@L["Promedio examen 2"]</th><th scope="col">@L["Acciones"]</th></tr></thead>
                     <tbody>
-                        @if (loading) { <tr><td colspan="8" class="data-table-empty">Cargando tus cursos…</td></tr> }
+                        @if (loading) { <tr><td colspan="8" class="data-table-empty">@L["Cargando tus cursos…"]</td></tr> }
                         else
                         {
                             @foreach (var course in courses)
                             {
                                 <tr @key="course.Id">
-                                    <th data-label="Módulo / paralelo" scope="row"><span class="data-table-primary">@Text(course.ModuleName, "Módulo sin informar")</span><span class="data-table-secondary">Paralelo @Text(course.Parallel, "—") <StatusPill Active="course.Active" On="Activo" Off="Inactivo" /></span></th>
-                                    <td data-label="Periodo"><span class="data-table-primary">@course.Year · Bimestre @course.Bimester</span><span class="data-table-secondary">@(course.StartDate?.ToString("dd/MM/yyyy") ?? "—") – @(course.EndDate?.ToString("dd/MM/yyyy") ?? "—")</span></td>
-                                    <td data-label="Horario">@Hour(course.StartTime) – @Hour(course.EndTime)</td>
-                                    <td data-label="Aula">@Text(course.ClassroomName, "Sin aula informada")</td>
-                                    <td data-label="Estudiantes">@(course.StudentCount?.ToString() ?? "—")</td>
-                                    <td data-label="Promedio examen 1">@if (course.Exam1Average is { } first) { <span class="data-table-grade">@first.ToString("0.##")</span><span class="data-table-grade-scale"> / 100</span> } else { <span class="data-table-secondary">Pendiente</span> }</td>
-                                    <td data-label="Promedio examen 2">@if (course.Exam2Average is { } second) { <span class="data-table-grade">@second.ToString("0.##")</span><span class="data-table-grade-scale"> / 100</span> } else { <span class="data-table-secondary">Pendiente</span> }</td>
-                                    <td data-label=""><a class="data-table-text-button" href="@($"/courses/{course.Id:D}")" aria-label="Ver estudiantes de @course.ModuleName paralelo @course.Parallel">Ver estudiantes</a><br /><a class="data-table-text-button" href="@($"/courses/{course.Id:D}/grammar-report?courseName={Uri.EscapeDataString(course.ModuleName ?? "Curso seleccionado")}")">Reporte gramatical</a></td>
+                                    <th data-label="@L["Módulo / paralelo"]" scope="row"><span class="data-table-primary">@Text(course.ModuleName, "Módulo sin informar")</span><span class="data-table-secondary">Paralelo @Text(course.Parallel, "—") <StatusPill Active="course.Active" On="Activo" Off="Inactivo" /></span></th>
+                                    <td data-label="@L["Periodo"]"><span class="data-table-primary">@course.Year · Bimestre @course.Bimester</span><span class="data-table-secondary">@(course.StartDate?.ToString("dd/MM/yyyy") ?? "—") – @(course.EndDate?.ToString("dd/MM/yyyy") ?? "—")</span></td>
+                                    <td data-label="@L["Horario"]">@Hour(course.StartTime) – @Hour(course.EndTime)</td>
+                                    <td data-label="@L["Aula"]">@Text(course.ClassroomName, "Sin aula informada")</td>
+                                    <td data-label="@L["Estudiantes"]">@(course.StudentCount?.ToString() ?? "—")</td>
+                                    <td data-label="@L["Promedio examen 1"]">@if (course.Exam1Average is { } first) { <span class="data-table-grade">@first.ToString("0.##")</span><span class="data-table-grade-scale"> / 100</span> } else { <span class="data-table-secondary">@L["Pendiente"]</span> }</td>
+                                    <td data-label="@L["Promedio examen 2"]">@if (course.Exam2Average is { } second) { <span class="data-table-grade">@second.ToString("0.##")</span><span class="data-table-grade-scale"> / 100</span> } else { <span class="data-table-secondary">@L["Pendiente"]</span> }</td>
+                                    <td data-label=""><a class="data-table-text-button" href="@($"/courses/{course.Id:D}")" aria-label="@L["Ver estudiantes de {0} paralelo {1}", course.ModuleName, course.Parallel]">@L["Ver estudiantes"]</a><br /><a class="data-table-text-button" href="@($"/courses/{course.Id:D}/grammar-report?courseName={Uri.EscapeDataString(course.ModuleName ?? L["Curso seleccionado"])}")">@L["Reporte gramatical"]</a></td>
                                 </tr>
                             }
-                            @if (courses.Count == 0 && error is null) { <tr><td colspan="8" class="data-table-empty">No tienes cursos asignados en esta página.</td></tr> }
+                            @if (courses.Count == 0 && error is null) { <tr><td colspan="8" class="data-table-empty">@(IsOwn ? L["No tienes cursos asignados en esta página."] : L["Este docente no tiene cursos asignados en esta página."])</td></tr> }
                         }
                     </tbody>
                 </table>
             </div>
-            <ListPager Label="Paginación de cursos impartidos" @bind-PageSize="pageSize" @bind-PageSize:after="ChangeSizeAsync" PageSizes="5,20,50" PageSizeLabel="Filas por página" PageSizeDisabled="@loading" Page="page" PageOf="@PageOf" PreviousDisabled="@(loading || page <= 1)" NextDisabled="@(loading || !hasNext)" OnPrevious="PreviousAsync" OnNext="NextAsync" Note="Promedios del grupo · escala de 0 a 100." />
+            <ListPager Label="@L["Paginación de cursos impartidos"]" @bind-PageSize="pageSize" @bind-PageSize:after="ChangeSizeAsync" PageSizes="5,20,50" PageSizeLabel="@L["Filas por página"]" PageSizeDisabled="@loading" Page="page" PageOf="@PageOf" PreviousDisabled="@(loading || page <= 1)" NextDisabled="@(loading || !hasNext)" OnPrevious="PreviousAsync" OnNext="NextAsync" Note="@L["Promedios del grupo · escala de 0 a 100."]" />
         }
     </div>
 </section>

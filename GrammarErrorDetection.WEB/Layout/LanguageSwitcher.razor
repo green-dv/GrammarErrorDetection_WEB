@@ -1,0 +1,19 @@
+@inject IJSRuntime JS
+@inject HttpClient Http
+
+<div class="language-switcher" role="group" aria-label="@L["Idioma"]">
+    @foreach (var lang in I18n.Supported)
+    {
+        var current = lang == L.Language;
+        <button type="button" class="language-option @(current ? "is-active" : "")" lang="@lang" aria-pressed="@(current ? "true" : "false")"
+                title="@(lang == I18n.English ? L["English"] : L["Español"])" @onclick="() => ChangeAsync(lang)">@lang.ToUpperInvariant()</button>
+    }
+</div>
+
+@code {
+    private async Task ChangeAsync(string lang)
+    {
+        if (lang == L.Language) return;
+        await LanguageStorage.ChangeAsync(JS, Http, lang);
+    }
+}
