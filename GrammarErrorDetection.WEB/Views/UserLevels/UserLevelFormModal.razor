@@ -113,7 +113,7 @@
                 HttpStatusCode.NotFound => I18n.T("El nivel ya no existe. Actualiza el listado."),
                 HttpStatusCode.Forbidden => I18n.T("Solo un coordinador puede gestionar niveles."),
                 HttpStatusCode.BadRequest => I18n.T("Revisa los datos: los puntos mínimos deben aumentar con el número de nivel y siempre debe haber un nivel activo con 0 puntos."),
-                _ => I18n.T("No se pudo guardar el nivel. Inténtalo de nuevo.")
+                _ => ApiErrors.Describe(ex)
             };
         }
         catch (OperationCanceledException) { if (!disposed) error = I18n.T("El guardado tardó demasiado. Inténtalo de nuevo."); }

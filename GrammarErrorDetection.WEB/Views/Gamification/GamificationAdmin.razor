@@ -53,7 +53,7 @@
                             <article class="collection-achievement achievement-catalog-card" @key="item.Id" aria-label="@item.Name">
                                 <div class="collection-achievement-image">
                                     @if (SafeIcon(item.IconLink) is { } icon) { <img src="@icon" alt="@L["Imagen del logro {0}", item.Name]" loading="lazy" /> }
-                                    else { <span aria-hidden="true">✦</span> }
+                                    else { <span aria-hidden="true"><svg class="achievement-default-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8m-4-4v4M7 4h10v5a5 5 0 0 1-10 0ZM7 6H4v2a3 3 0 0 0 3 3m10-5h3v2a3 3 0 0 1-3 3"/></svg></span> }
                                     @if (item.TierOrder is { } tier) { <span class="collection-tier">@L["Nivel {0}", tier]</span> }
                                 </div>
                                 <div class="collection-achievement-content">

@@ -102,3 +102,9 @@
 .nlp-history-error p { margin: 0 0 8px; }
 .nlp-upload-error { margin: 16px 0 0; color: #a33740; font-size: calc(13px * var(--ui-scale, 1)); line-height: 1.6; }
 .nlp-history-entry:disabled { opacity: .65; cursor: default; }
+.nlp-ocr-review { margin: 12px 0 0; padding: 10px 14px; border: 1px solid var(--t-line, #d6dde7); border-left: 4px solid #d6a744; border-radius: 10px; background: var(--t-subtle, #f5f7fa); color: var(--t-text, #1f2d3d); font-size: calc(13px * var(--ui-scale, 1)); line-height: 1.6; }
+.nlp-ocr-review ul { margin: 6px 0 0; padding-left: 18px; }
+.nlp-ocr-review li { overflow-wrap: anywhere; font-style: italic; }
+.nlp-photo-preview-image { display: block; width: 100%; max-height: 60vh; object-fit: contain; border-radius: 10px; background: var(--t-subtle, #f5f7fa); }
+.nlp-photo-preview-meta { margin: 10px 0 0; color: var(--color-muted); font-size: calc(12px * var(--ui-scale, 1)); overflow-wrap: anywhere; }
+.nlp-photo-preview-missing { padding: 28px 12px; text-align: center; color: var(--color-muted); background: var(--t-subtle, #f5f7fa); border-radius: 10px; }

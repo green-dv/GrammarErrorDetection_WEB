@@ -191,7 +191,7 @@ public partial class RecommendedMaterials : IDisposable
                 HttpStatusCode.Forbidden => I18n.T("No tienes permiso para ver las recomendaciones de este estudiante."),
                 HttpStatusCode.BadRequest => I18n.T("No se pudieron calcular las recomendaciones para la selección actual."),
                 HttpStatusCode.NotFound or HttpStatusCode.MethodNotAllowed => I18n.T("La API en ejecución todavía no ofrece recomendaciones de material."),
-                _ => I18n.T("No se pudo consultar el material recomendado. Inténtalo de nuevo.")
+                _ => ApiErrors.Describe(http)
             };
         }
         return exception switch

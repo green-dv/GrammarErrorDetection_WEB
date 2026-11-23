@@ -37,7 +37,7 @@ public partial class AchievementDetail : IDisposable
         catch (HttpRequestException ex)
         {
             if (ex.StatusCode == HttpStatusCode.Unauthorized) { Session.Clear(); Navigation.NavigateTo("/auth/login", replace: true); }
-            if (!disposed) error = ex.StatusCode == HttpStatusCode.Forbidden ? I18n.T("No tienes permiso para consultar este logro.") : I18n.T("No se pudo consultar el servidor.");
+            if (!disposed) error = ex.StatusCode == HttpStatusCode.Forbidden ? I18n.T("No tienes permiso para consultar este logro.") : ApiErrors.Describe(ex);
         }
         catch (Exception ex) when (ex is InvalidOperationException or JsonException or ArgumentException)
         { if (!disposed) error = ex is InvalidOperationException ? ex.Message : I18n.T("No se pudo interpretar el logro."); }

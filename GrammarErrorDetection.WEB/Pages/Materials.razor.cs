@@ -497,7 +497,7 @@ public partial class Materials : IDisposable
                 HttpStatusCode.MethodNotAllowed => I18n.T("La API en ejecución no tiene habilitada esta operación. Reinicia la API con la versión que incluye la subida de archivos."),
                 HttpStatusCode.BadRequest or HttpStatusCode.UnprocessableEntity => I18n.T("Revisa el nombre, enlace, clasificación y tipo de archivo e inténtalo de nuevo."),
                 HttpStatusCode.TooManyRequests => I18n.T("Hay demasiadas solicitudes. Espera un momento antes de reintentar."),
-                _ => mutation ? I18n.T("No se pudo confirmar el guardado. Revisa el listado antes de reintentar.") : I18n.T("No se pudo consultar el material de apoyo. Inténtalo de nuevo.")
+                _ => mutation ? ApiErrors.WithAdvice(http, "Revisa el listado antes de reintentar.") : ApiErrors.Describe(http)
             };
         }
         if (exception is InvalidOperationException or ArgumentException) return exception.Message;

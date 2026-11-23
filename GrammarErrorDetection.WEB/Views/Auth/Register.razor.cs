@@ -77,9 +77,9 @@ public partial class Register : IDisposable
         {
             status = I18n.T("Demasiados intentos. Espera un momento e inténtalo de nuevo.");
         }
-        catch (HttpRequestException)
+        catch (HttpRequestException ex)
         {
-            status = I18n.T("No se pudo conectar con la API. Inténtalo de nuevo.");
+            status = ApiErrors.Describe(ex);
         }
         catch (OperationCanceledException)
         {

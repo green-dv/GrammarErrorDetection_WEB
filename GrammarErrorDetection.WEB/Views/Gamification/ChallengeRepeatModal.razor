@@ -60,7 +60,7 @@
                 HttpStatusCode.BadRequest => I18n.T("No se pudo repetir: solo se repiten desafíos publicados o cerrados y la fecha de fin debe ser posterior al inicio."),
                 HttpStatusCode.NotFound => I18n.T("El desafío ya no existe. Actualiza el listado."),
                 HttpStatusCode.Forbidden => I18n.T("No tienes permiso para repetir desafíos."),
-                _ => I18n.T("No se pudo confirmar la nueva ronda. Cierra y revisa el listado antes de volver a intentarlo.")
+                _ => ApiErrors.WithAdvice(ex, "Cierra y revisa el listado antes de volver a intentarlo.")
             };
         }
         catch (InvalidOperationException ex) { error = ex.Message; }

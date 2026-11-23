@@ -87,7 +87,7 @@ public partial class AchievementCollections : IDisposable
             if (!disposed)
             {
                 if (ex.StatusCode == HttpStatusCode.Unauthorized) { Session.Clear(); Navigation.NavigateTo("/auth/login", replace: true); }
-                error = ex.StatusCode == HttpStatusCode.Forbidden ? I18n.T("No tienes permiso para consultar las colecciones.") : I18n.T("No se pudo consultar el servidor. Intenta de nuevo.");
+                error = ex.StatusCode == HttpStatusCode.Forbidden ? I18n.T("No tienes permiso para consultar las colecciones.") : ApiErrors.Describe(ex);
             }
         }
         catch (Exception ex) when (ex is InvalidOperationException or JsonException or ArgumentException)

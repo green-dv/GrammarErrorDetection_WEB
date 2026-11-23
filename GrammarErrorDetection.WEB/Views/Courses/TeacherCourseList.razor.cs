@@ -74,7 +74,7 @@ public partial class TeacherCourseList : IDisposable
             {
                 Session.Clear(); Navigation.NavigateTo("/auth/login", replace: true);
             }
-            else error = ex.StatusCode == HttpStatusCode.Forbidden ? I18n.T("No tienes permiso para consultar estos cursos.") : I18n.T("No se pudo conectar con el servicio de cursos. Inténtalo de nuevo.");
+            else error = ex.StatusCode == HttpStatusCode.Forbidden ? I18n.T("No tienes permiso para consultar estos cursos.") : ApiErrors.Describe(ex);
         }
         catch (OperationCanceledException) { if (!disposed && Allowed && !token.IsCancellationRequested) error = I18n.T("La consulta tardó demasiado. Inténtalo de nuevo."); }
         catch (JsonException) { if (!disposed && Allowed) error = I18n.T("No se pudo interpretar el listado de cursos."); }

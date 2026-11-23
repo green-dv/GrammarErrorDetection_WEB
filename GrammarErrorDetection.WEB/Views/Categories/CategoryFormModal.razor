@@ -110,7 +110,7 @@
                 HttpStatusCode.NotFound => I18n.T("La categoría ya no existe. Actualiza el listado."),
                 HttpStatusCode.Forbidden => I18n.T("Solo un coordinador puede gestionar categorías."),
                 HttpStatusCode.BadRequest => I18n.T("Revisa los datos: el nombre no puede estar vacío ni superar 100 caracteres."),
-                _ => I18n.T("No se pudo guardar la categoría. Inténtalo de nuevo.")
+                _ => ApiErrors.Describe(ex)
             };
         }
         catch (OperationCanceledException) { if (!disposed) error = I18n.T("El guardado tardó demasiado. Inténtalo de nuevo."); }

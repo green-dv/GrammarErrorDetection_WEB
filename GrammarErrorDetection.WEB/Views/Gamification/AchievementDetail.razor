@@ -13,7 +13,7 @@
         else if (achievement is not null && error is null)
         {
             <article class="gamification-detail">
-                <div class="gamification-detail-image">@if (GamificationAdmin.SafeIcon(achievement.IconLink) is { } icon) { <img src="@icon" alt="@L["Imagen del logro {0}", achievement.Name]" /> } else { <span role="img" aria-label="@L["Logro sin imagen"]">✦</span> }</div>
+                <div class="gamification-detail-image">@if (GamificationAdmin.SafeIcon(achievement.IconLink) is { } icon) { <img src="@icon" alt="@L["Imagen del logro {0}", achievement.Name]" /> } else { <span role="img" aria-label="@L["Logro sin imagen"]"><svg class="achievement-default-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8m-4-4v4M7 4h10v5a5 5 0 0 1-10 0ZM7 6H4v2a3 3 0 0 0 3 3m10-5h3v2a3 3 0 0 1-3 3"/></svg></span> }</div>
                 <div class="gamification-detail-content">
                     <div class="collection-achievement-state"><span class="data-table-chip">@(achievement.Active ? L["Activo"] : L["Inactivo"])</span>@if (achievement.IsSecret) { <span class="data-table-chip">@L["Secreto"]</span> }@if (achievement.TierOrder is { } tier) { <span class="data-table-chip">@L["Nivel {0}", tier]</span> }</div>
                     <h2>@achievement.Name</h2><p class="gamification-detail-description">@achievement.Description</p>

@@ -347,7 +347,7 @@ public partial class StudyPlan : IDisposable
                 HttpStatusCode.Forbidden => I18n.T("No tienes acceso a las recomendaciones de este curso."),
                 HttpStatusCode.BadRequest => I18n.T("No se pudieron calcular las recomendaciones para el curso seleccionado."),
                 HttpStatusCode.NotFound or HttpStatusCode.MethodNotAllowed => I18n.T("La API en ejecución todavía no ofrece recomendaciones de material."),
-                _ => I18n.T("No se pudo consultar tu plan de estudio. Inténtalo de nuevo.")
+                _ => ApiErrors.Describe(http)
             };
         }
         return exception switch

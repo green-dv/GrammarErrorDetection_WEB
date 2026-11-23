@@ -54,7 +54,7 @@ public partial class CourseStudents : IDisposable
                 HttpStatusCode.Unauthorized => I18n.T("Tu sesión venció. Vuelve a iniciar sesión."),
                 HttpStatusCode.Forbidden => I18n.T("No tienes permiso para consultar el curso."),
                 HttpStatusCode.NotFound => I18n.T("No se encontró el curso."),
-                _ => I18n.T("No se pudo cargar el curso. Inténtalo de nuevo.")
+                _ => ApiErrors.Describe(ex)
             };
         }
         catch (OperationCanceledException) { if (!disposed) error = I18n.T("La consulta tardó demasiado. Inténtalo de nuevo."); }

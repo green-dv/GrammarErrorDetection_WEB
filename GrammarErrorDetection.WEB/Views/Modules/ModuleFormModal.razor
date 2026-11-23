@@ -150,7 +150,7 @@
                 HttpStatusCode.NotFound => I18n.T("El módulo ya no existe. Actualiza el listado."),
                 HttpStatusCode.Forbidden => I18n.T("Solo un coordinador puede gestionar módulos."),
                 HttpStatusCode.BadRequest => I18n.T("Revisa los datos: el nivel debe ser positivo, el módulo siguiente debe existir y la ruta no puede formar un ciclo."),
-                _ => I18n.T("No se pudo guardar el módulo. Inténtalo de nuevo.")
+                _ => ApiErrors.Describe(ex)
             };
         }
         catch (OperationCanceledException) { if (!disposed) error = I18n.T("El guardado tardó demasiado. Inténtalo de nuevo."); }

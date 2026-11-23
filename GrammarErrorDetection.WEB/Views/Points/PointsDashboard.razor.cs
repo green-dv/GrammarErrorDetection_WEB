@@ -52,7 +52,7 @@ public partial class PointsDashboard : IDisposable
         {
             if (disposed) return;
             if (ex.StatusCode == HttpStatusCode.Unauthorized) { Session.Clear(); Navigation.NavigateTo("/auth/login", replace: true); }
-            historyError = ex.StatusCode == HttpStatusCode.Forbidden ? I18n.T("No tienes permiso para consultar este historial.") : I18n.T("No se pudo consultar el historial. Inténtalo de nuevo.");
+            historyError = ex.StatusCode == HttpStatusCode.Forbidden ? I18n.T("No tienes permiso para consultar este historial.") : ApiErrors.Describe(ex);
         }
         catch (OperationCanceledException) { if (!disposed) historyError = I18n.T("La consulta del historial tardó demasiado. Inténtalo de nuevo."); }
         catch (JsonException) { if (!disposed) historyError = I18n.T("No se pudo interpretar el historial de puntos."); }
@@ -80,7 +80,7 @@ public partial class PointsDashboard : IDisposable
         {
             if (disposed) return;
             if (ex.StatusCode == HttpStatusCode.Unauthorized) { Session.Clear(); Navigation.NavigateTo("/auth/login", replace: true); }
-            error = ex.StatusCode == HttpStatusCode.Forbidden ? I18n.T("No tienes permiso para consultar tu progreso.") : I18n.T("No se pudo consultar tu progreso. Inténtalo de nuevo.");
+            error = ex.StatusCode == HttpStatusCode.Forbidden ? I18n.T("No tienes permiso para consultar tu progreso.") : ApiErrors.Describe(ex);
         }
         catch (OperationCanceledException) { if (!disposed) error = I18n.T("La consulta tardó demasiado. Inténtalo de nuevo."); }
         catch (JsonException) { if (!disposed) error = I18n.T("No se pudo interpretar tu progreso."); }

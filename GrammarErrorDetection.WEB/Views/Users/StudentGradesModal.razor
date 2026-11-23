@@ -40,10 +40,17 @@
                     <div class="grade-area-row">
                         <label for="grade-@examIndex-@areaIndex"><strong>@item.Name</strong><span>@item.Description</span></label>
                         <span class="grade-weight">@item.Weight %</span>
-                        <div class="grade-score-input"><input id="grade-@examIndex-@areaIndex" type="number" min="0" max="@item.Weight" step="1" placeholder="—" value="@draft.Exams[examIndex][areaIndex]?.ToString(System.Globalization.CultureInfo.InvariantCulture)" @oninput="args => SetScore(examIndex, areaIndex, args)" aria-label="@item.Name, Examen @(examIndex + 1), máximo @item.Weight puntos" /><span>/ @item.Weight</span></div>
+                        <div class="grade-score-input"><input id="grade-@examIndex-@areaIndex" type="number" min="0" max="@item.Weight" step="1" placeholder="—" value="@draft.Exams[examIndex][areaIndex]?.ToString(System.Globalization.CultureInfo.InvariantCulture)" @oninput="args => SetScore(examIndex, areaIndex, args)" aria-label="@item.Name, Examen @(examIndex + 1), máximo @item.Weight puntos" aria-invalid="@(fieldErrors.ContainsKey((examIndex, areaIndex)) ? "true" : null)" aria-describedby="@(fieldErrors.ContainsKey((examIndex, areaIndex)) ? $"grade-error-{examIndex}-{areaIndex}" : null)" /><span>/ @item.Weight</span></div>
+                        @if (fieldErrors.TryGetValue((examIndex, areaIndex), out var fieldError)) { <p id="grade-error-@examIndex-@areaIndex" class="ceti-modal-errors grade-field-error" role="alert">@fieldError</p> }
                     </div>
                 }
                 <div class="grade-total"><strong>@L["Total del examen {0}", examIndex + 1]</strong><span class="@StudentGradeDraft.Color(draft.Total(examIndex))">@(draft.Total(examIndex)?.ToString("0.##") ?? L["Pendiente"]) / 100 · @StudentGradeDraft.Result(draft.Total(examIndex))</span></div>
+                <div class="grade-comment">
+                    <label for="grade-comment-@examIndex"><strong>@L["Comentario sobre el estudiante"]</strong> <small>@L["(opcional)"]</small></label>
+                    <textarea id="grade-comment-@examIndex" rows="3" maxlength="@StudentGradeDraft.CommentMaxLength" placeholder="@L["Observaciones del docente sobre este examen…"]" value="@draft.Comments[examIndex]" @oninput="args => SetComment(examIndex, args)" aria-invalid="@(commentErrors.ContainsKey(examIndex) ? "true" : null)"></textarea>
+                    <small class="grade-comment-count">@draft.Comments[examIndex].Length / @StudentGradeDraft.CommentMaxLength</small>
+                    @if (commentErrors.TryGetValue(examIndex, out var commentError)) { <p class="ceti-modal-errors grade-field-error" role="alert">@commentError</p> }
+                </div>
             </section>
         }
         <div class="grade-total" aria-live="polite"><strong>@L["Promedio de ambos exámenes"]</strong><span class="@StudentGradeDraft.Color(draft.Average)">@(draft.Average?.ToString("0.##") ?? L["Pendiente"]) / 100 · @StudentGradeDraft.Result(draft.Average)</span></div>
@@ -53,7 +60,7 @@
         @if (validationError is not null) { <p class="ceti-modal-errors" role="alert">@validationError</p> }
         <p class="grade-local-note">@L["Rojo: menor a 70 · Verde: 70 o más. Completa las seis áreas para calcular cada examen."]</p>
     </div>
-    <footer class="ceti-modal-footer"><span>@L["Examen 1: 50 % · Examen 2: 50 %"]</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">@L["Cerrar"]</button><button type="button" class="data-table-button data-table-button-primary" disabled="@(saving || invalid.Any(item => item.Exam == activeExam))" @onclick="SaveAsync">@(saving ? L["Guardando…"] : I18n.T("Guardar examen {0}", activeExam + 1))</button></div></footer>
+    <footer class="ceti-modal-footer"><span>@L["Examen 1: 50 % · Examen 2: 50 %"]</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">@L["Cerrar"]</button><button type="button" class="data-table-button data-table-button-primary" disabled="@(saving || HasErrors(activeExam))" @onclick="SaveAsync">@(saving ? L["Guardando…"] : I18n.T("Guardar examen {0}", activeExam + 1))</button></div></footer>
 </ModalDialog>
 
 @code {
@@ -76,16 +83,38 @@
     private readonly CancellationTokenSource lifetime = new();
     public void Dispose() { disposed = true; lifetime.Cancel(); lifetime.Dispose(); }
     private string? validationError;
-    private readonly HashSet<(int Exam, int Area)> invalid = [];
+    private readonly Dictionary<(int Exam, int Area), string> fieldErrors = [];
+    private readonly Dictionary<int, string> commentErrors = [];
+    private bool HasErrors(int exam) => fieldErrors.Keys.Any(key => key.Exam == exam) || commentErrors.ContainsKey(exam);
     protected override void OnInitialized() => draft = Value.Copy();
     private void SetScore(int exam, int area, ChangeEventArgs args)
     {
-        var text = args.Value?.ToString();
-        var parsed = decimal.TryParse(text, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var score);
-        var valid = string.IsNullOrWhiteSpace(text) || (parsed && score == decimal.Truncate(score) && score >= 0 && score <= Areas[area].Weight);
-        if (valid) invalid.Remove((exam, area)); else invalid.Add((exam, area));
-        draft.Exams[exam][area] = parsed && valid ? score : null;
-        validationError = invalid.Count > 0 ? I18n.T("Cada nota debe ser un número entero entre 0 y el máximo de su área.") : null;
+        var text = args.Value?.ToString()?.Trim();
+        var maximum = Areas[area].Weight;
+        string? error = null;
+        decimal? score = null;
+        if (!string.IsNullOrEmpty(text))
+        {
+            if (!decimal.TryParse(text, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var parsed))
+                error = I18n.T("Ingresa un número.");
+            else if (parsed != decimal.Truncate(parsed) || text.Contains('e', StringComparison.OrdinalIgnoreCase))
+                error = I18n.T("Usa un número entero, sin decimales.");
+            else if (parsed < 0)
+                error = I18n.T("La nota no puede ser negativa.");
+            else if (parsed > maximum)
+                error = I18n.T("La nota no puede superar {0} puntos.", maximum);
+            else score = parsed;
+        }
+        if (error is null) fieldErrors.Remove((exam, area)); else fieldErrors[(exam, area)] = error;
+        draft.Exams[exam][area] = score;
+        validationError = null;
+    }
+    private void SetComment(int exam, ChangeEventArgs args)
+    {
+        var text = args.Value?.ToString() ?? "";
+        draft.Comments[exam] = text;
+        if (StudentGradeDraft.CommentError(text) is { } error) commentErrors[exam] = error; else commentErrors.Remove(exam);
+        validationError = null;
     }
     private async Task SaveAsync()
     {
@@ -99,8 +128,14 @@
                     : I18n.T("Tu sesión debe ser de Coordinator o del Teacher asignado a este módulo.");
             return;
         }
-        if (invalid.Any(item => item.Exam == activeExam) || draft.Exams[activeExam].Where((value, index) =>
-            value.HasValue && (value < 0 || value > Areas[index].Weight || value != decimal.Truncate(value.Value))).Any())
+        if (HasErrors(activeExam))
+        {
+            validationError = I18n.T("Corrige los campos marcados antes de guardar el examen.");
+            return;
+        }
+        if (draft.Exams[activeExam].Where((value, index) =>
+            value.HasValue && (value < 0 || value > Areas[index].Weight || value != decimal.Truncate(value.Value))).Any()
+            || StudentGradeDraft.CommentError(draft.Comments[activeExam]) is not null)
         {
             validationError = I18n.T("Revisa las notas del examen: usa enteros dentro de la ponderación de cada área.");
             return;
@@ -134,7 +169,7 @@
                     WritingScore = request.WritingScore, GrammarScore = request.GrammarScore,
                     VocabularyScore = request.VocabularyScore, ReadingScore = request.ReadingScore,
                     ListeningScore = request.ListeningScore, OralScore = request.OralScore,
-                    AcademicPerformance = request.AcademicPerformance, Active = true
+                    AcademicPerformance = request.AcademicPerformance, Active = true, Comment = request.Comment
                 }, lifetime.Token);
             if (disposed) return;
             if (response?.Data is not { } result || response.Error is { ErrorCode: not 0 }
@@ -156,7 +191,7 @@
                 System.Net.HttpStatusCode.Unauthorized => I18n.T("La sesión venció. Vuelve a iniciar sesión."),
                 System.Net.HttpStatusCode.Forbidden => I18n.T("La API rechazó la operación (403). Debe permitir Teacher en la consulta y el guardado de evaluaciones de sus cursos."),
                 System.Net.HttpStatusCode.BadRequest => I18n.T("La API rechazó las notas (400). Revisa la inscripción, el examen y los puntajes."),
-                _ => I18n.T("No se pudo guardar el examen. Puedes reintentar; primero se consultará si ya existe una evaluación.")
+                _ => ApiErrors.WithAdvice(ex, "Puedes reintentar; primero se consultará si ya existe una evaluación.")
             };
         }
         catch (OperationCanceledException) { if (!disposed) saveError = I18n.T("El guardado tardó demasiado. Puedes reintentar; se verificará primero si el examen ya se guardó."); }

@@ -125,7 +125,7 @@ public partial class MemberProfile : IDisposable
     private string HttpError(HttpRequestException exception)
     {
         if (exception.StatusCode == HttpStatusCode.Unauthorized) { Session.Clear(); Navigation.NavigateTo("/auth/login", replace: true); return I18n.T("La sesión expiró."); }
-        return exception.StatusCode == HttpStatusCode.Forbidden ? I18n.T("No tienes permiso para consultar esta información.") : I18n.T("No se pudo conectar con el servidor. Intenta de nuevo.");
+        return exception.StatusCode == HttpStatusCode.Forbidden ? I18n.T("No tienes permiso para consultar esta información.") : ApiErrors.Describe(exception);
     }
     private static string? Icon(UserAchievementBestResponse item)
     {

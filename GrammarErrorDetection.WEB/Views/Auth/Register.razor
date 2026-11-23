@@ -38,11 +38,11 @@
             <InputText id="register-ci" @bind-Value="model.CI" placeholder="@L["Tu documento de identidad"]" class="auth-control px-4" />
         </div>
         <div>
-            <label for="register-phone" class="auth-label">@L["Teléfono"] <span class="auth-field-optional">@L["(opcional)"]</span></label>
+            <label for="register-phone" class="auth-label">@L["Teléfono"]</label>
             <InputText id="register-phone" type="tel" @bind-Value="model.Phone" autocomplete="tel" placeholder="@L["Tu número de teléfono"]" class="auth-control px-4" />
         </div>
         <div>
-            <label for="register-birth-date" class="auth-label">@L["Fecha de nacimiento"] <span class="auth-field-optional">@L["(opcional)"]</span></label>
+            <label for="register-birth-date" class="auth-label">@L["Fecha de nacimiento"]</label>
             <InputDate id="register-birth-date" @bind-Value="model.BirthDate" autocomplete="bday" max="@DateTime.Today.ToString("yyyy-MM-dd")" class="auth-control px-4" />
         </div>
         <div class="auth-register-email">

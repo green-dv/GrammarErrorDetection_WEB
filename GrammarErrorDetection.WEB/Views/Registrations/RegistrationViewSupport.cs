@@ -34,7 +34,7 @@ internal static class RegistrationViewSupport
         HttpRequestException { StatusCode: HttpStatusCode.Forbidden } => I18n.T("No tienes permiso para realizar esta operación."),
         HttpRequestException { StatusCode: HttpStatusCode.NotFound } => I18n.T("La inscripción o el curso ya no está disponible. Actualiza el listado."),
         HttpRequestException { StatusCode: HttpStatusCode.BadRequest or HttpStatusCode.Conflict or HttpStatusCode.UnprocessableEntity } => I18n.T("No se pudo completar la operación. Revisa la solicitud y actualiza los datos: el estado, la elegibilidad o el cupo pueden haber cambiado."),
-        HttpRequestException => I18n.T("No se pudo conectar con el servicio. Inténtalo de nuevo."),
+        HttpRequestException http => ApiErrors.Describe(http),
         OperationCanceledException => I18n.T("La operación tardó demasiado. Actualiza el listado antes de volver a intentarlo."),
         System.Text.Json.JsonException => I18n.T("No se pudo interpretar la respuesta del servicio."),
         _ => ex.Message

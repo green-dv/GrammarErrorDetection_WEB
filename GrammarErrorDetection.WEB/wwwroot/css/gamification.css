@@ -96,3 +96,5 @@
 /* Administración: acciones de desafío (editar, repetir, duplicar). */
 .gamification-challenge-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
 .gamification-repeat .gamification-grid { margin-top: 12px; }
+.achievement-default-icon { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.gamification-medal .achievement-default-icon { width: 60%; height: 60%; }

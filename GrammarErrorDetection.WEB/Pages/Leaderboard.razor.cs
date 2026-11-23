@@ -115,7 +115,7 @@ public partial class Leaderboard : IDisposable
         HttpRequestException { StatusCode: HttpStatusCode.Unauthorized } => I18n.T("Tu sesión expiró. Vuelve a iniciar sesión."),
         HttpRequestException { StatusCode: HttpStatusCode.Forbidden } => I18n.T("La API no permitió consultar estos datos."),
         HttpRequestException { StatusCode: HttpStatusCode.BadRequest } => I18n.T("La API rechazó los datos de la consulta. Revisa los filtros y vuelve a iniciar sesión si el problema continúa."),
-        HttpRequestException => I18n.T("No se pudo conectar con la API. Inténtalo de nuevo."),
+        HttpRequestException http => ApiErrors.Describe(http),
         JsonException => I18n.T("La API devolvió datos con un formato inesperado."),
         _ => ex.Message
     };

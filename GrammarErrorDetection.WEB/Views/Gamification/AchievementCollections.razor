@@ -49,7 +49,7 @@
                             <article class="collection-achievement" @key="item.Id">
                                 <div class="collection-achievement-image">
                                     @if (GamificationAdmin.SafeIcon(item.IconLink) is { } icon) { <img src="@icon" alt="@L["Imagen del logro {0}", item.Name]" loading="lazy" /> }
-                                    else { <span aria-label="@L["Logro sin imagen"]">✦</span> }
+                                    else { <span role="img" aria-label="@L["Logro sin imagen"]"><svg class="achievement-default-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8m-4-4v4M7 4h10v5a5 5 0 0 1-10 0ZM7 6H4v2a3 3 0 0 0 3 3m10-5h3v2a3 3 0 0 1-3 3"/></svg></span> }
                                     @if (item.TierOrder is { } tier) { <span class="collection-tier">@L["Nivel {0}", tier]</span> }
                                 </div>
                                 <div class="collection-achievement-content"><div class="collection-achievement-state"><span class="data-table-chip">@(item.Active ? L["Activo"] : L["Inactivo"])</span>@if (item.IsSecret) { <span class="data-table-chip">@L["Secreto"]</span> }</div>

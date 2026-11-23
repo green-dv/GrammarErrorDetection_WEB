@@ -73,7 +73,7 @@ public partial class UserEditModal : IDisposable
                 HttpStatusCode.Forbidden => I18n.T("No tienes permiso para actualizar usuarios."),
                 HttpStatusCode.Conflict => I18n.T("El correo o el CI ya están registrados. Revisa los datos."),
                 HttpStatusCode.BadRequest => I18n.T("Revisa los datos del usuario e inténtalo de nuevo."),
-                _ => I18n.T("No se pudo guardar el usuario. Inténtalo de nuevo.")
+                _ => ApiErrors.Describe(ex)
             };
         }
         catch (OperationCanceledException) { if (!disposed) error = I18n.T("La actualización tardó demasiado. Inténtalo de nuevo."); }

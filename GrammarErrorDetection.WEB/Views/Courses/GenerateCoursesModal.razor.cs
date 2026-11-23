@@ -67,7 +67,7 @@ public partial class GenerateCoursesModal : IDisposable
                 HttpStatusCode.Forbidden => I18n.T("No tienes permiso para generar cursos."),
                 HttpStatusCode.BadRequest => I18n.T("Revisa el periodo y las fechas de destino."),
                 HttpStatusCode.Conflict => I18n.T("El periodo o los recursos cambiaron. Revisa el listado antes de volver a generar."),
-                _ => I18n.T("No se pudo confirmar la generación. Puede haber cambios ya guardados; revisa el listado antes de volver a enviar.")
+                _ => ApiErrors.WithAdvice(ex, "Puede haber cambios ya guardados; revisa el listado antes de volver a enviar.")
             };
         }
         catch (OperationCanceledException) { if (!disposed) error = I18n.T("No se pudo confirmar la generación a tiempo. Revisa el listado antes de volver a enviar."); }

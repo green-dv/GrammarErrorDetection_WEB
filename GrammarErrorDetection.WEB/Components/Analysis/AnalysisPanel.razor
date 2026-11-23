@@ -10,7 +10,7 @@
         <span class="an-status">@Analysis.Status</span>
     </header>
 
-    <ParagraphOverview Analysis="Analysis" Vocabulary="Vocabulary" Loading="VocabularyLoading" Error="@VocabularyError" OnRetry="OnRetryVocabulary" QuietStatus="@(View == AnalysisView.Vocabulary)" />
+    <ParagraphOverview Analysis="Analysis" Vocabulary="Vocabulary" Loading="VocabularyLoading" Error="@VocabularyError" Unavailable="@VocabularyUnavailable" OnRetry="OnRetryVocabulary" QuietStatus="@(View == AnalysisView.Vocabulary)" />
 
     <div class="an-tabs" role="tablist" aria-label="@L["Tipo de análisis"]">
         <button type="button" role="tab" id="an-tab-grammar" class="an-tab" aria-selected="@Selected(AnalysisView.Grammar)" aria-controls="an-panel"
@@ -33,7 +33,7 @@
         }
         else
         {
-            <VocabularyRecommendations Analysis="Vocabulary" Loading="VocabularyLoading" Error="@VocabularyError" OnRetry="OnRetryVocabulary" OnlyIssues="@FilterActive"
+            <VocabularyRecommendations Analysis="Vocabulary" Loading="VocabularyLoading" Error="@VocabularyError" Unavailable="@VocabularyUnavailable" OnRetry="OnRetryVocabulary" OnlyIssues="@FilterActive"
                                        Toolbar="ToolbarContent" Collapsed="collapsed" OnToggle="ToggleSentence" />
         }
     </div>
@@ -46,6 +46,8 @@
     [Parameter] public VocabularyAnalysisResponse? Vocabulary { get; set; }
     [Parameter] public bool VocabularyLoading { get; set; }
     [Parameter] public string? VocabularyError { get; set; }
+    // Motivo por el que el vocabulario no se verifica (p. ej. el análisis no se completó); no es un error reintentable.
+    [Parameter] public string? VocabularyUnavailable { get; set; }
     [Parameter] public EventCallback OnRetryVocabulary { get; set; }
     /// <summary>Estudiantes: la pestaña de errores gramaticales enlaza al material de apoyo.</summary>
     [Parameter] public bool ShowReinforcement { get; set; }

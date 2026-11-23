@@ -141,7 +141,7 @@ public partial class ConditionTypeList : IDisposable
             HttpStatusCode.Forbidden => I18n.T("No tienes permiso para consultar los tipos de condición."),
             HttpStatusCode.BadRequest => I18n.T("Revisa los filtros e inténtalo de nuevo."),
             HttpStatusCode.TooManyRequests => I18n.T("Se realizaron demasiadas consultas. Espera un momento e inténtalo de nuevo."),
-            _ => I18n.T("No se pudo conectar con el servicio de tipos de condición. Inténtalo de nuevo.")
+            _ => ApiErrors.Describe(exception)
         };
     }
 
@@ -194,7 +194,7 @@ public partial class ConditionTypeList : IDisposable
                 HttpStatusCode.Unauthorized => I18n.T("Tu sesión venció. Vuelve a iniciar sesión."),
                 HttpStatusCode.Forbidden => I18n.T("Solo un coordinador puede cambiar el estado de un tipo de condición."),
                 HttpStatusCode.NotFound => I18n.T("El tipo de condición ya no existe. Actualiza el listado."),
-                _ => I18n.T("No se pudo cambiar el estado. Inténtalo de nuevo.")
+                _ => ApiErrors.Describe(ex)
             };
             if (ex.StatusCode == HttpStatusCode.Unauthorized) { Session.Clear(); CheckSession(); }
         }

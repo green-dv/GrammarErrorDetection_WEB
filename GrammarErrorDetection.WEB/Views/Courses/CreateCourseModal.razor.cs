@@ -259,7 +259,7 @@ public partial class CreateCourseModal : IDisposable
             HttpStatusCode.Forbidden => I18n.T("No tienes permiso para realizar esta operación."),
             HttpStatusCode.BadRequest => I18n.T("Revisa los datos del curso y la selección de estudiantes."),
             HttpStatusCode.Conflict => I18n.T("La asignación o disponibilidad cambió. Revisa los estudiantes y el horario antes de volver a enviar."),
-            _ => creating ? I18n.T("No se pudo confirmar el guardado. Revisa el listado antes de volver a enviar.") : I18n.T("No se pudo cargar el listado. Inténtalo de nuevo.")
+            _ => creating ? ApiErrors.WithAdvice(exception, "Revisa el listado antes de volver a enviar.") : ApiErrors.Describe(exception)
         };
     }
 

@@ -76,9 +76,9 @@ public partial class LoginVerification : IDisposable
         {
             status = I18n.T("Demasiados intentos. Espera un momento e inténtalo de nuevo.");
         }
-        catch (HttpRequestException)
+        catch (HttpRequestException ex)
         {
-            status = I18n.T("No se pudo verificar el acceso con la API. Inténtalo de nuevo.");
+            status = ApiErrors.Describe(ex);
         }
         catch (OperationCanceledException)
         {

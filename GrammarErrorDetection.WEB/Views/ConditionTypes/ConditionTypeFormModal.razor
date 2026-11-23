@@ -116,7 +116,7 @@
                 HttpStatusCode.BadRequest => IsEdit
                     ? I18n.T("Revisa los datos: el nombre no puede estar vacío y el código no se puede cambiar.")
                     : I18n.T("Revisa los datos: el código va en MAYÚSCULAS y el motor de gamificación debe saber calcularlo."),
-                _ => I18n.T("No se pudo guardar el tipo de condición. Inténtalo de nuevo.")
+                _ => ApiErrors.Describe(ex)
             };
         }
         catch (OperationCanceledException) { if (!disposed) error = I18n.T("El guardado tardó demasiado. Inténtalo de nuevo."); }

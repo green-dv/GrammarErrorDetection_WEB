@@ -103,7 +103,7 @@ public partial class StudentGrammarList : IDisposable
             {
                 HttpRequestException { StatusCode: HttpStatusCode.Unauthorized } => I18n.T("Tu sesión venció. Vuelve a iniciar sesión."),
                 HttpRequestException { StatusCode: HttpStatusCode.Forbidden } => I18n.T("No tienes permiso para consultar las oraciones de este usuario."),
-                HttpRequestException => I18n.T("No se pudo conectar con el servicio de textos. Inténtalo de nuevo."),
+                HttpRequestException http => ApiErrors.Describe(http),
                 JsonException => I18n.T("No se pudo interpretar el listado de oraciones."),
                 _ => ex.Message
             };

@@ -116,9 +116,9 @@
         {
             status = I18n.T("Demasiados intentos. Espera un momento antes de volver a intentarlo.");
         }
-        catch (HttpRequestException)
+        catch (HttpRequestException ex)
         {
-            status = I18n.T("No se pudo conectar con la API. Comprueba que esté disponible y vuelve a intentarlo.");
+            status = ApiErrors.Describe(ex);
         }
         catch (OperationCanceledException)
         {

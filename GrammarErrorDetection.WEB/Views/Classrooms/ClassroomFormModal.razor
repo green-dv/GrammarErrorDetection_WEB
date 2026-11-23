@@ -108,7 +108,7 @@
                 HttpStatusCode.NotFound => I18n.T("El aula ya no existe. Actualiza el listado."),
                 HttpStatusCode.Forbidden => I18n.T("Solo un coordinador puede gestionar aulas."),
                 HttpStatusCode.BadRequest => I18n.T("Revisa los datos: el nombre no puede estar vacío y la capacidad debe estar entre 1 y 1000."),
-                _ => I18n.T("No se pudo guardar el aula. Inténtalo de nuevo.")
+                _ => ApiErrors.Describe(ex)
             };
         }
         catch (OperationCanceledException) { if (!disposed) error = I18n.T("El guardado tardó demasiado. Inténtalo de nuevo."); }

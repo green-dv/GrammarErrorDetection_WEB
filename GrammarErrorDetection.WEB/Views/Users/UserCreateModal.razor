@@ -86,7 +86,7 @@
                 HttpStatusCode.Conflict => I18n.T("El correo o el CI ya están registrados."),
                 HttpStatusCode.BadRequest => I18n.T("Revisa los datos: el rol debe estar activo y los campos tener un formato válido."),
                 HttpStatusCode.Forbidden => I18n.T("Solo un coordinador puede crear usuarios."),
-                _ => I18n.T("No se pudo crear el usuario. Inténtalo de nuevo.")
+                _ => ApiErrors.Describe(ex)
             };
         }
         catch (OperationCanceledException) { }

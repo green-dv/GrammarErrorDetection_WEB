@@ -31,9 +31,9 @@ public partial class SelectVerificationMethod : IDisposable
             await LoginFlow.SendEmailCodeAsync(lifetime.Token);
             Navigation.NavigateTo("/auth/verify");
         }
-        catch (HttpRequestException)
+        catch (HttpRequestException ex)
         {
-            status = I18n.T("No se pudo enviar el código. Espera un momento e inténtalo de nuevo.");
+            status = ApiErrors.Describe(ex);
         }
         catch (JsonException)
         {

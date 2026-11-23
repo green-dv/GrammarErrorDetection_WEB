@@ -317,7 +317,7 @@ public partial class GamificationEditor : IDisposable
                 ? I18n.T("La API rechazó los cambios. Si alguien ya obtuvo este logro, no se pueden modificar sus condiciones. Revisa los datos o crea otro logro.")
                 : I18n.T("La API rechazó los datos. Revisa los campos y las condiciones."),
             HttpStatusCode.Conflict => I18n.T("Los datos cambiaron o entran en conflicto. Cierra y actualiza el listado."),
-            _ => I18n.T("No se pudo completar la solicitud.")
+            _ => ApiErrors.Describe(ex)
         };
     }
     private static string? Changed(string value, string? original) => value == original ? null : value;

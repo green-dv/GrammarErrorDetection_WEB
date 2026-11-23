@@ -8,12 +8,15 @@ using GrammarErrorDetection.Services.Interfaces;
 using GrammarErrorDetection.Services.Services.Auth;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.JSInterop;
 
 namespace GrammarErrorDetection.WEB.Pages;
 
 public partial class Nlp : IDisposable
 {
-    private const long MaxPhotoSize = 5 * 1024 * 1024;
+    // Igual al límite del servicio OCR (10 MiB): una foto de celular suele pesar más de 5 MB y
+    // reducirla antes de enviarla le quita detalle a la letra. La imagen se envía sin recomprimir.
+    private const long MaxPhotoSize = 10 * 1024 * 1024;
     [Inject] private ITextService Texts { get; set; } = default!;
     [Inject] private IRegistrationService Registrations { get; set; } = default!;
     [Inject] private IOcrService Ocr { get; set; } = default!;
@@ -22,6 +25,12 @@ public partial class Nlp : IDisposable
     [Inject] private NavigationManager Navigation { get; set; } = default!;
     private string text = "", search = "", appliedSearch = "";
     private string? historyError, uploadError, status, photoMessage, photoError;
+    // Líneas que el OCR leyó con poca seguridad; se muestran para que el estudiante las revise.
+    private List<string> reviewLines = [];
+    // Foto elegida que espera confirmación en el modal de vista previa.
+    private IBrowserFile? pendingPhoto;
+    private string? previewUrl;
+    private bool previewOpen;
     private int currentPage = 1, pageSize = 5, requestVersion;
     private bool allTexts, loading, uploading, recognizingPhoto, photoMenuOpen, hasNext, disposed;
     private List<TextResponse> paragraphs = [];
@@ -54,7 +63,14 @@ public partial class Nlp : IDisposable
     private VocabularyAnalysisResponse? VocabularyFor(TextResponse analysis) => vocabulary?.TextId == analysis.Id ? vocabulary : null;
     private string? VocabularyErrorFor(TextResponse analysis) => vocabularyTextId == analysis.Id ? vocabularyError : null;
     // Pendiente: cargando, o a punto de cargar (la carga empieza tras mostrar la pestaña).
-    private bool VocabularyPending(TextResponse analysis) => loadingVocabulary || vocabularyTextId != analysis.Id;
+    // Si el análisis no se procesó (o no tiene oraciones) la verificación nunca empieza: no hay nada que esperar.
+    private bool VocabularyPending(TextResponse analysis) =>
+        VocabularyUnavailableFor(analysis) is null && (loadingVocabulary || vocabularyTextId != analysis.Id);
+
+    private string? VocabularyUnavailableFor(TextResponse analysis) =>
+        !IsProcessed(analysis)
+            ? I18n.T("El vocabulario se verifica cuando el análisis del párrafo termina correctamente. Estado actual: {0}.", analysis.Status)
+            : analysis.Sentences.Count == 0 ? I18n.T("El párrafo no tiene oraciones para verificar el vocabulario.") : null;
 
     private bool NeedsVocabulary => !disposed && !loadingVocabulary
         && CurrentAnalysis is { Sentences.Count: > 0 } analysis && IsProcessed(analysis) && analysis.Id != vocabularyTextId;
@@ -107,7 +123,7 @@ public partial class Nlp : IDisposable
                 HttpStatusCode.Forbidden => I18n.T("No tienes permiso para consultar el vocabulario de este párrafo."),
                 HttpStatusCode.NotFound => I18n.T("No se encontró el párrafo seleccionado."),
                 HttpStatusCode.TooManyRequests => I18n.T("Hay demasiadas consultas de vocabulario. Espera un momento antes de reintentar."),
-                _ => I18n.T("No se pudo verificar el vocabulario. Inténtalo de nuevo.")
+                _ => ApiErrors.Describe(http)
             };
         }
         return ex is InvalidOperationException ? ex.Message : I18n.T("La respuesta del vocabulario no tiene el formato esperado.");
@@ -208,6 +224,7 @@ public partial class Nlp : IDisposable
         if (EditorBusy) return;
         selected = null; text = "";
         status = uploadError = photoMessage = photoError = null;
+        reviewLines = [];
         photoMenuOpen = false;
     }
     private void SelectParagraph(TextResponse paragraph)
@@ -216,6 +233,7 @@ public partial class Nlp : IDisposable
         selected = paragraph; text = paragraph.OriginalContent;
         registrationId = paragraph.UserId == Session.Current?.User?.Id ? paragraph.RegistrationId : null;
         status = uploadError = photoMessage = photoError = null;
+        reviewLines = [];
         photoMenuOpen = false;
     }
 
@@ -285,7 +303,7 @@ public partial class Nlp : IDisposable
                 HttpStatusCode.Forbidden => I18n.T("No tienes permiso para consultar o analizar estos párrafos."),
                 HttpStatusCode.BadRequest => I18n.T("La API rechazó el párrafo o los filtros. Revisa el contenido e inténtalo de nuevo."),
                 HttpStatusCode.TooManyRequests => I18n.T("Hay demasiadas solicitudes. Espera un momento antes de reintentar."),
-                _ => upload ? I18n.T("No se pudo confirmar el análisis. Revisa el historial antes de reintentar para evitar duplicados.") : I18n.T("No se pudo consultar el historial. Inténtalo de nuevo.")
+                _ => upload ? ApiErrors.WithAdvice(http, "Revisa el historial antes de reintentar para evitar duplicados.") : ApiErrors.Describe(http)
             };
         }
         return ex is InvalidOperationException ? ex.Message : I18n.T("La respuesta del análisis no tiene el formato esperado.");
@@ -304,10 +322,12 @@ public partial class Nlp : IDisposable
         photoError = null;
     }
 
-    private async Task RecognizePhotoAsync(InputFileChangeEventArgs args)
+    // Paso 1: valida la foto elegida y la muestra en un modal. Solo se envía al OCR al confirmar.
+    private async Task SelectPhotoAsync(InputFileChangeEventArgs args)
     {
         photoMenuOpen = false;
         photoMessage = photoError = null;
+        reviewLines = [];
         if (disposed || EditorBusy) return;
 
         var photo = args.File;
@@ -318,7 +338,7 @@ public partial class Nlp : IDisposable
         }
         if (photo.Size > MaxPhotoSize)
         {
-            photoError = I18n.T("Selecciona una imagen de hasta 5 MB.");
+            photoError = I18n.T("Selecciona una imagen de hasta 10 MB.");
             return;
         }
         if (string.IsNullOrWhiteSpace(photo.ContentType)
@@ -327,6 +347,55 @@ public partial class Nlp : IDisposable
             photoError = I18n.T("El archivo seleccionado debe ser una imagen.");
             return;
         }
+
+        previewUrl = await BuildPreviewAsync(photo);
+        if (disposed) return;
+        pendingPhoto = photo;
+        previewOpen = true;
+    }
+
+    // Miniatura (máx. 1200 px) solo para mostrar; al OCR se envía el archivo original.
+    private async Task<string?> BuildPreviewAsync(IBrowserFile photo)
+    {
+        try
+        {
+            var thumbnail = await photo.RequestImageFileAsync("image/jpeg", 1200, 1200);
+            await using var stream = thumbnail.OpenReadStream(MaxPhotoSize, lifetime.Token);
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer, lifetime.Token);
+            return "data:image/jpeg;base64," + Convert.ToBase64String(buffer.ToArray());
+        }
+        catch (Exception ex) when (ex is JSException or IOException or InvalidOperationException or OperationCanceledException)
+        {
+            // Formato que el navegador no sabe dibujar: se abre el modal sin imagen.
+            return null;
+        }
+    }
+
+    private static string FormatSize(long bytes) =>
+        bytes >= 1024 * 1024 ? $"{bytes / 1048576d:0.#} MB" : $"{Math.Max(1, bytes / 1024)} KB";
+
+    private void CancelPhoto()
+    {
+        if (recognizingPhoto) return;
+        ClosePhotoPreview();
+    }
+
+    private void ClosePhotoPreview()
+    {
+        previewOpen = false;
+        pendingPhoto = null;
+        previewUrl = null;
+        // Reiniciar los InputFile permite volver a elegir la misma foto.
+        devicePhotoInputKey = new();
+        cameraPhotoInputKey = new();
+    }
+
+    // Paso 2: el estudiante confirmó en el modal; se envía la foto original al OCR.
+    private async Task RecognizePhotoAsync()
+    {
+        var photo = pendingPhoto;
+        if (photo is null || disposed || recognizingPhoto || uploading) return;
 
         recognizingPhoto = true;
         status = uploadError = null;
@@ -340,6 +409,8 @@ public partial class Nlp : IDisposable
 
             text = result.Paragraph.Trim();
             selected = null;
+            reviewLines = result.Lines.Where(l => l.NeedsReview && !string.IsNullOrWhiteSpace(l.Text))
+                .Select(l => l.Text).ToList();
             photoMessage = text.Length > 5000
                 ? I18n.T("Texto extraído. Supera los 5000 caracteres; recórtalo antes de subir el párrafo.")
                 : result.LineCount > 0
@@ -363,17 +434,18 @@ public partial class Nlp : IDisposable
         finally
         {
             recognizingPhoto = false;
-            devicePhotoInputKey = new();
-            cameraPhotoInputKey = new();
+            ClosePhotoPreview();
         }
     }
 
-    private static string OcrErrorMessage(HttpRequestException exception) => exception.StatusCode switch
+    // Primero el motivo concreto que explica el servicio OCR; sin él, un mensaje según el código.
+    private static string OcrErrorMessage(HttpRequestException exception) => ApiErrors.ServerMessage(exception) ?? exception.StatusCode switch
     {
         HttpStatusCode.RequestEntityTooLarge => I18n.T("La imagen es demasiado grande para el servicio OCR."),
         HttpStatusCode.UnsupportedMediaType => I18n.T("El servicio OCR no admite el formato de esta imagen."),
         HttpStatusCode.BadRequest => I18n.T("El servicio OCR no pudo procesar esta imagen."),
-        _ => "No se pudo conectar con el servicio OCR en https://localhost:8443. Verifica que esté disponible e inténtalo de nuevo."
+        null => I18n.T("No se pudo conectar con el servicio OCR. Verifica que esté disponible e inténtalo de nuevo."),
+        _ => I18n.T("Ocurrió un error interno del servidor.")
     };
 
     public void Dispose()

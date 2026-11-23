@@ -106,7 +106,7 @@ public partial class ProfileSettings : IDisposable
         else if (exception.StatusCode == HttpStatusCode.Forbidden) status = I18n.T("Tu cuenta no tiene permiso para realizar esta operación.");
         else if (exception.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.Conflict) status = I18n.T("No se pudo completar la operación. Revisa el código o si TOTP ya está activado en tu cuenta.");
         else if (exception.StatusCode == HttpStatusCode.TooManyRequests) status = I18n.T("Demasiados intentos. Espera un momento e inténtalo de nuevo.");
-        else status = I18n.T("No se pudo conectar con la API. Inténtalo de nuevo.");
+        else status = ApiErrors.Describe(exception);
     }
 
     public void Dispose()

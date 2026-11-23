@@ -60,7 +60,7 @@
                 System.Net.HttpStatusCode.BadRequest or System.Net.HttpStatusCode.UnprocessableEntity => I18n.T("Revisa la cantidad, el motivo y la inscripción."),
                 System.Net.HttpStatusCode.NotFound => I18n.T("La inscripción no está disponible."),
                 System.Net.HttpStatusCode.TooManyRequests => I18n.T("Demasiadas solicitudes. Espera un momento."),
-                _ => I18n.T("No se pudo confirmar la asignación. Verifica los movimientos antes de volver a enviarla.")
+                _ => ApiErrors.WithAdvice(ex, "Verifica los movimientos antes de volver a enviarla.")
             };
         }
         catch (OperationCanceledException) { if (!disposed) error = I18n.T("No se recibió confirmación a tiempo. Verifica los movimientos antes de repetir la asignación."); }

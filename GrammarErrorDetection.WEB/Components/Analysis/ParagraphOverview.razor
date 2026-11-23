@@ -38,6 +38,10 @@
         {
             <p class="an-legend-status" role="status">@L["Verificando el vocabulario…"]</p>
         }
+        else if (Unavailable is not null)
+        {
+            <p class="an-legend-status" role="status">@L["Vocabulario sin verificar: solo se marca la gramática."]</p>
+        }
         else if (Error is not null)
         {
             <p class="an-legend-status" role="@(QuietStatus ? "status" : "alert")">
@@ -77,6 +81,7 @@
     [Parameter] public VocabularyAnalysisResponse? Vocabulary { get; set; }
     [Parameter] public bool Loading { get; set; }
     [Parameter] public string? Error { get; set; }
+    [Parameter] public string? Unavailable { get; set; }
     [Parameter] public EventCallback OnRetry { get; set; }
     /// <summary>Con la pestaña de vocabulario abierta, esa pestaña ya muestra el aviso con su reintento: aquí queda una línea corta.</summary>
     [Parameter] public bool QuietStatus { get; set; }

@@ -282,7 +282,7 @@ public partial class UserList : IDisposable
             HttpStatusCode.Forbidden => I18n.T("No tienes permiso para consultar estos datos."),
             HttpStatusCode.BadRequest => I18n.T("Revisa los filtros e inténtalo de nuevo."),
             HttpStatusCode.TooManyRequests => I18n.T("Se realizaron demasiadas consultas. Espera un momento e inténtalo de nuevo."),
-            _ => I18n.T("No se pudo conectar con el servicio de usuarios. Inténtalo de nuevo.")
+            _ => ApiErrors.Describe(exception)
         };
     }
 

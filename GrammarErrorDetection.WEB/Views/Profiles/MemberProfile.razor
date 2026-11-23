@@ -30,7 +30,7 @@
                 <article><span class="member-stat-icon" aria-hidden="true">▤</span><div><span>@L["Módulo actual"]</span><strong>@(member?.CurrentCourse?.ModuleName ?? "—")</strong><small>@(member?.CurrentCourse is { } course ? I18n.T("Bimestre {0} · {1} · Paralelo {2}", course.Bimester, course.Year, course.Parallel ?? "—") : L["Sin curso actual informado"])</small></div></article>
                 @if (ShowAchievements)
                 {
-                    <article><span class="member-stat-icon member-stat-gold" aria-hidden="true">✦</span><div><span>@L["Puntos de estas medallas"]</span><strong>@(loadingMedals || medalsError is not null ? "—" : PageAwardPoints?.ToString() ?? "—")</strong><small>@L["Premios obtenidos · página actual"]</small></div></article>
+                    <article><span class="member-stat-icon member-stat-gold" aria-hidden="true"><svg class="achievement-default-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8m-4-4v4M7 4h10v5a5 5 0 0 1-10 0ZM7 6H4v2a3 3 0 0 0 3 3m10-5h3v2a3 3 0 0 1-3 3"/></svg></span><div><span>@L["Puntos de estas medallas"]</span><strong>@(loadingMedals || medalsError is not null ? "—" : PageAwardPoints?.ToString() ?? "—")</strong><small>@L["Premios obtenidos · página actual"]</small></div></article>
                 }
             </div>
         </div>
@@ -55,7 +55,7 @@
             <header class="member-panel-heading"><div><p class="member-eyebrow">@L["RECONOCIMIENTOS"]</p><h2>@(IsOwn ? L["Mis medallas"] : L["Medallas"])</h2><p>@L["El mejor nivel alcanzado en cada colección y el próximo objetivo."]</p></div><button type="button" class="data-table-button" disabled="@loadingMedals" @onclick="() => LoadMedalPageAsync(page)">@L["Actualizar"]</button></header>
             @if (loadingMedals) { <p class="member-empty" role="status">@L["Cargando medallas y próximos niveles…"]</p> }
             else if (medalsError is not null) { <div class="data-table-error" role="alert">@medalsError <button class="data-table-text-button" @onclick="() => LoadMedalPageAsync(page)">@L["Reintentar"]</button></div> }
-            else if (medals.Count == 0) { <div class="member-empty"><span aria-hidden="true">✦</span><h3>@L["Aún no hay medallas para mostrar"]</h3><p>@L["Los reconocimientos del aprendizaje aparecerán aquí."]</p></div> }
+            else if (medals.Count == 0) { <div class="member-empty"><span aria-hidden="true"><svg class="achievement-default-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8m-4-4v4M7 4h10v5a5 5 0 0 1-10 0ZM7 6H4v2a3 3 0 0 0 3 3m10-5h3v2a3 3 0 0 1-3 3"/></svg></span><h3>@L["Aún no hay medallas para mostrar"]</h3><p>@L["Los reconocimientos del aprendizaje aparecerán aquí."]</p></div> }
             else
             {
                 <div class="member-medals">
@@ -63,7 +63,7 @@
                     {
                         <article class="member-medal @(medal.IsObtained ? "is-earned" : "is-pending")" @key="medal.Id">
                             <div class="member-medal-top"><span class="member-medal-state">@(medal.IsMaxTier ? L["Nivel máximo"] : medal.IsObtained ? L["Obtenida"] : L["Por obtener"])</span>@if (medal.AchievementCategoryName is { } category) { <small>@category</small> }</div>
-                            @if (Icon(medal) is { } icon) { <img class="member-medal-icon" src="@icon" alt="" loading="lazy" /> } else { <div class="member-medal-symbol" aria-hidden="true">✦</div> }
+                            @if (Icon(medal) is { } icon) { <img class="member-medal-icon" src="@icon" alt="" loading="lazy" /> } else { <div class="member-medal-symbol" aria-hidden="true"><svg class="achievement-default-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8m-4-4v4M7 4h10v5a5 5 0 0 1-10 0ZM7 6H4v2a3 3 0 0 0 3 3m10-5h3v2a3 3 0 0 1-3 3"/></svg></div> }
                             <p class="member-medal-collection">@(medal.AchievementCollectionName ?? L["Logro individual"])</p><h3>@MedalName(medal)</h3>
                             <p class="member-medal-description">@(medal.IsObtained ? medal.BestAchievement?.Description ?? medal.Description : medal.NextAchievement?.Description ?? medal.Description)</p>
                             @if (medal.TierOrder is { } tier) { <span class="member-tier">@L["Nivel {0}", tier]</span> }

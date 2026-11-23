@@ -9,6 +9,13 @@
     {
         <AnalysisSkeleton Message="@L["Verificando el vocabulario…"]" />
     }
+    else if (Unavailable is not null)
+    {
+        <div class="an-alert" role="status">
+            <AnalysisIcon Name="info" />
+            <div><p>@Unavailable</p></div>
+        </div>
+    }
     else if (Error is not null)
     {
         <div class="an-alert is-err" role="alert">
@@ -112,6 +119,7 @@
     [Parameter] public VocabularyAnalysisResponse? Analysis { get; set; }
     [Parameter] public bool Loading { get; set; }
     [Parameter] public string? Error { get; set; }
+    [Parameter] public string? Unavailable { get; set; }
     [Parameter] public EventCallback OnRetry { get; set; }
     /// <summary>Muestra solo las oraciones con errores de vocabulario.</summary>
     [Parameter] public bool OnlyIssues { get; set; }

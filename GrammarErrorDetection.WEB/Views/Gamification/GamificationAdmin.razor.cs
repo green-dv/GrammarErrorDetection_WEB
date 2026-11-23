@@ -117,7 +117,7 @@ public partial class GamificationAdmin : IDisposable
     private string HandleHttp(HttpRequestException ex)
     {
         if (ex.StatusCode == HttpStatusCode.Unauthorized) { Session.Clear(); Navigation.NavigateTo("/auth/login", replace: true); return I18n.T("La sesión expiró."); }
-        return ex.StatusCode == HttpStatusCode.Forbidden ? I18n.T("No tienes permiso para gestionar la gamificación.") : I18n.T("No se pudo consultar la API. Intenta de nuevo.");
+        return ex.StatusCode == HttpStatusCode.Forbidden ? I18n.T("No tienes permiso para gestionar la gamificación.") : ApiErrors.Describe(ex);
     }
     internal static string StatusLabel(string value) => value switch { "Draft" => I18n.T("Borrador"), "Published" => I18n.T("Publicado"), "Closed" => I18n.T("Cerrado"), _ => value };
     internal static string? SafeIcon(string? value) => Uri.TryCreate(value, UriKind.Absolute, out var uri) && (uri.Scheme == "https" || uri.Scheme == "http") ? uri.AbsoluteUri : null;

@@ -1,3 +1,4 @@
+@using GrammarErrorDetection.WEB.Components.Dialogs
 @page "/process"
 @page "/nlp"
 @using GrammarErrorDetection.WEB.Components.Analysis
@@ -64,12 +65,19 @@
                                 <label for="nlp-photo-camera" role="menuitem"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h4l2-2h4l2 2h4v12H4z"/><circle cx="12" cy="13" r="3"/></svg><span><strong>@L["Tomar una foto"]</strong><small>@L["Abre la cámara del dispositivo"]</small></span></label>
                             </div>
                         }
-                        <InputFile @key="devicePhotoInputKey" id="nlp-photo-device" class="nlp-photo-input" accept="image/*" OnChange="RecognizePhotoAsync" disabled="@EditorBusy" aria-label="@L["Subir imagen desde este dispositivo"]" />
-                        <InputFile @key="cameraPhotoInputKey" id="nlp-photo-camera" class="nlp-photo-input" accept="image/*" capture="environment" OnChange="RecognizePhotoAsync" disabled="@EditorBusy" aria-label="@L["Tomar una foto"]" />
+                        <InputFile @key="devicePhotoInputKey" id="nlp-photo-device" class="nlp-photo-input" accept="image/*" OnChange="SelectPhotoAsync" disabled="@EditorBusy" aria-label="@L["Subir imagen desde este dispositivo"]" />
+                        <InputFile @key="cameraPhotoInputKey" id="nlp-photo-camera" class="nlp-photo-input" accept="image/*" capture="environment" OnChange="SelectPhotoAsync" disabled="@EditorBusy" aria-label="@L["Tomar una foto"]" />
                     </div>
                     <button type="button" class="nlp-upload-button" disabled="@(EditorBusy || loading || string.IsNullOrWhiteSpace(text))" @onclick="UploadAsync"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V3m-5 5 5-5 5 5M4 15v6h16v-6"/></svg>@(uploading ? L["Analizando…"] : L["Subir párrafo"])</button>
                 </div>
                 @if (photoMessage is not null) { <p class="nlp-feedback" role="status">@photoMessage</p> }
+                @if (reviewLines.Count > 0)
+                {
+                    <div class="nlp-ocr-review" role="status">
+                        <strong>@L["Líneas que el OCR leyó con poca seguridad. Compáralas con tu foto y corrige el texto:"]</strong>
+                        <ul>@foreach (var line in reviewLines) { <li>@line</li> }</ul>
+                    </div>
+                }
                 @if (photoError is not null) { <p class="nlp-upload-error" role="alert">@photoError</p> }
                 @if (status is not null) { <p class="nlp-feedback" role="status">@status</p> }
                 @if (uploadError is not null) { <p class="nlp-upload-error" role="alert">@uploadError</p> }
@@ -91,9 +99,33 @@
                 {
                     <AnalysisPanel @key="analysis.Id" Analysis="analysis" View="analysisView" ViewChanged="ChangeView"
                                    Vocabulary="@VocabularyFor(analysis)" VocabularyLoading="@VocabularyPending(analysis)"
-                                   VocabularyError="@VocabularyErrorFor(analysis)" OnRetryVocabulary="ReloadVocabularyAsync"
+                                   VocabularyError="@VocabularyErrorFor(analysis)" VocabularyUnavailable="@VocabularyUnavailableFor(analysis)" OnRetryVocabulary="ReloadVocabularyAsync"
                                    ShowReinforcement="@Session.IsInRole("Student")" />
                 }            </section>
         </div>
     </div>
 </section>
+
+@if (previewOpen && pendingPhoto is not null)
+{
+    <ModalDialog Title="@L["Vista previa de la foto"]" Subtitle="@L["Revisa que el texto se vea nítido y completo antes de leerlo."]" Class="nlp-photo-preview-dialog" Busy="recognizingPhoto" OnClose="CancelPhoto">
+        <div class="ceti-modal-body">
+            @if (previewUrl is not null)
+            {
+                <img class="nlp-photo-preview-image" src="@previewUrl" alt="@L["Vista previa de la foto seleccionada"]" />
+            }
+            else
+            {
+                <p class="nlp-photo-preview-missing">@L["Tu navegador no puede mostrar esta imagen, pero se enviará igualmente."]</p>
+            }
+            <p class="nlp-photo-preview-meta">@pendingPhoto.Name · @FormatSize(pendingPhoto.Size)</p>
+        </div>
+        <footer class="ceti-modal-footer">
+            <span role="status">@(recognizingPhoto ? L["Leyendo el texto de la foto…"] : "")</span>
+            <div>
+                <button type="button" class="data-table-button" disabled="@recognizingPhoto" @onclick="CancelPhoto">@L["Elegir otra"]</button>
+                <button type="button" class="data-table-button data-table-button-primary" disabled="@recognizingPhoto" @onclick="RecognizePhotoAsync">@L["Leer texto"]</button>
+            </div>
+        </footer>
+    </ModalDialog>
+}

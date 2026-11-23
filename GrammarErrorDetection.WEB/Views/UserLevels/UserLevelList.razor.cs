@@ -141,7 +141,7 @@ public partial class UserLevelList : IDisposable
             HttpStatusCode.Forbidden => I18n.T("No tienes permiso para consultar los niveles."),
             HttpStatusCode.BadRequest => I18n.T("Revisa los filtros e inténtalo de nuevo."),
             HttpStatusCode.TooManyRequests => I18n.T("Se realizaron demasiadas consultas. Espera un momento e inténtalo de nuevo."),
-            _ => I18n.T("No se pudo conectar con el servicio de niveles. Inténtalo de nuevo.")
+            _ => ApiErrors.Describe(exception)
         };
     }
 
@@ -195,7 +195,7 @@ public partial class UserLevelList : IDisposable
                 HttpStatusCode.Forbidden => I18n.T("Solo un coordinador puede cambiar el estado de un nivel."),
                 HttpStatusCode.NotFound => I18n.T("El nivel ya no existe. Actualiza el listado."),
                 HttpStatusCode.BadRequest => I18n.T("No se pudo cambiar el estado: debe quedar siempre un nivel activo con 0 puntos y los puntos mínimos deben aumentar con el nivel."),
-                _ => I18n.T("No se pudo cambiar el estado. Inténtalo de nuevo.")
+                _ => ApiErrors.Describe(ex)
             };
             if (ex.StatusCode == HttpStatusCode.Unauthorized) { Session.Clear(); CheckSession(); }
         }
