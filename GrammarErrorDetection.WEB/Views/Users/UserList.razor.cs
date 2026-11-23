@@ -104,7 +104,9 @@ public partial class UserList : IDisposable
     private UserSearchFilter? appliedFilter;
     private List<UserSearchResponse> users = [];
     private long? total;
-    private List<UserLookupOption> roles = [], modules = [];
+    // Demo para docentes: el rol Coordinador no se ofrece al filtrar ni al crear usuarios (allRoles solo sirve para mostrar el rol actual al editar).
+    private List<UserLookupOption> roles = [], allRoles = [], modules = [];
+    private static bool IsCoordinatorRole(UserLookupOption role) => string.Equals(role.Name, "Coordinator", StringComparison.OrdinalIgnoreCase);
     private UserSearchResponse? editingUser, statusUser;
     private bool updatingStatus;
     private string? statusError;
@@ -239,7 +241,8 @@ public partial class UserList : IDisposable
         {
             var lists = await Task.WhenAll(ReadCatalogAsync(UserService.GetRolesAsync), ReadCatalogAsync(UserService.GetModulesAsync));
             if (disposed) return;
-            roles = lists[0];
+            allRoles = lists[0];
+            roles = lists[0].Where(role => !IsCoordinatorRole(role)).ToList();
             modules = lists[1];
         }
         catch (HttpRequestException ex) { if (!disposed) catalogError = HttpError(ex); }

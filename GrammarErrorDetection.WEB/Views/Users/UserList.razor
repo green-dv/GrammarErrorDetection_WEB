@@ -177,7 +177,7 @@
 }
 @if (CanManageUsers && editingUser is not null)
 {
-    <UserEditModal @key="editingUser.Id" User="editingUser" Roles="roles" IsSelf="@(editingUser.Id == Session.Current?.User?.Id)" OnClose="CloseEdit" OnSaved="UserSavedAsync" />
+    <UserEditModal @key="editingUser.Id" User="editingUser" Roles="allRoles" IsSelf="@(editingUser.Id == Session.Current?.User?.Id)" OnClose="CloseEdit" OnSaved="UserSavedAsync" />
 }
 @if (CanManageUsers && statusUser is not null)
 {

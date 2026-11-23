@@ -19,8 +19,6 @@
 .auth-login-form { margin-top: 1.25rem; }
 .auth-login-form:has(.auth-errors) { margin-top: .75rem; }
 .auth-account-switch { margin-top: 1rem; text-align: center; color: var(--color-muted); font-size: .8125rem; }
-.auth-role-preview { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .5rem; margin: .75rem 0; color: #66708a; font-size: .8125rem; line-height: 1.4; }
-.auth-role-preview strong { color: #176b9f; font-weight: 600; }
 @media (min-width: 40rem) {
     .auth-label { font-size: 1rem; }
     .auth-control { height: 4rem; }

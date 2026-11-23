@@ -23,7 +23,7 @@
                     <label class="data-table-field"><span>@L["Rol"]</span>
                         <select value="@(model.RoleId?.ToString() ?? "")" disabled="@(IsSelf || Roles.Count == 0)" aria-describedby="user-role-help"
                                 @onchange="args => model.RoleId = Guid.TryParse(args.Value?.ToString(), out var id) ? id : model.RoleId">
-                            @foreach (var role in Roles.Where(r => r.Active || r.Id == User.RoleId))
+                            @foreach (var role in Roles.Where(r => (r.Active && !string.Equals(r.Name, "Coordinator", StringComparison.OrdinalIgnoreCase)) || r.Id == User.RoleId))
                             {
                                 <option value="@role.Id">@UserCreateModal.RoleLabel(role.Name)</option>
                             }
