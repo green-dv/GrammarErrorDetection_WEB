@@ -54,7 +54,15 @@ public partial class CourseList : IDisposable
             : I18n.T("La generación se completó. No se pudo actualizar el listado; pulsa Reintentar para consultarlo.");
     }
     private CourseSearchResponse? editingCourse;
-    private void OpenCreate() { if (CanCreate && CheckSession()) { editingCourse = null; showCreate = true; } }
+    private bool CatalogsIncomplete => catalogError is not null || modules.Count == 0 || classrooms.Count == 0 || (!IsTeacher && teachers.Count == 0);
+    private async Task OpenCreate()
+    {
+        if (!CanCreate || !CheckSession()) return;
+        // Si algún catálogo no llegó (BD sin datos o consulta fallida) se reintenta una vez antes de abrir el formulario.
+        if (CatalogsIncomplete) await LoadCatalogsAsync();
+        if (disposed) return;
+        editingCourse = null; showCreate = true;
+    }
     private void OpenEdit(CourseSearchResponse course) { if (CanCreate && !busy && !loadingCatalogs && CheckSession()) { editingCourse = course; showCreate = true; } }
     private void CloseCreate() { showCreate = false; editingCourse = null; }
     private async Task CourseSavedAsync(CourseCreateResponse response)

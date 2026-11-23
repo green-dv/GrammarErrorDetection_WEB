@@ -11,6 +11,10 @@
             @foreach (var message in validationErrors) { <p>@message</p> }
         </div>
     }
+    @if (Modules.Count == 0 || Classrooms.Count == 0 || (!TeacherLocked && Teachers.Count == 0))
+    {
+        <div class="create-course-errors" role="note"><p>@L["Faltan datos para crear el curso: necesitas al menos un módulo, un aula y un profesor registrados. Si ya los registraste, cierra esta ventana y vuelve a intentarlo."]</p></div>
+    }
     <div class="create-course-body">
         <section class="create-course-fields" aria-labelledby="course-data-title">
             <h3 id="course-data-title"><span>1</span> @L["Datos del curso"]</h3>
@@ -36,7 +40,7 @@
             <p class="create-course-hint">@L["Cambiar el módulo, año o bimestre reinicia la selección de estudiantes."]</p>
         </section>
         <section class="create-course-students" aria-labelledby="eligible-students-title" aria-busy="@loading.ToString().ToLowerInvariant()">
-            <header><div><h3 id="eligible-students-title"><span>2</span> @L["Estudiantes elegibles"]</h3><p>@(IsEdit ? L["Los estudiantes actuales ya están seleccionados. Añade elegibles o quita estudiantes para definir la lista final."] : L["Los estudiantes ya asignados aparecen primero. Selecciónalos únicamente si quieres trasladarlos a este curso."])</p></div></header>
+            <header><div><h3 id="eligible-students-title"><span>2</span> @L["Estudiantes elegibles"] <small class="create-course-optional">@L["(opcional)"]</small></h3><p>@(IsEdit ? L["Los estudiantes actuales ya están seleccionados. Añade elegibles o quita estudiantes para definir la lista final."] : L["Los estudiantes ya asignados aparecen primero. Selecciónalos únicamente si quieres trasladarlos a este curso."])</p></div></header>
             <form @onsubmit="SearchEligibleAsync" @onsubmit:preventDefault>
                 <fieldset disabled="@(saving || loading || initializing || (IsEdit && !membersLoaded) || !ValidScope)" class="create-course-search">
                     <label class="data-table-field"><span>@L["Nombre"]</span><input @bind="firstName" maxlength="50" placeholder="@L["Nombre"]" /></label>

@@ -56,3 +56,4 @@
     .create-course-field-grid { grid-template-columns: 1fr; }
     .create-course-search { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+.create-course-optional { font-weight: 400; color: var(--t-muted); }

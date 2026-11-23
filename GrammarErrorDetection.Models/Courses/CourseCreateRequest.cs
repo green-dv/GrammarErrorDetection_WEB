@@ -43,7 +43,6 @@ public sealed class CourseCreateRequest : CourseWriteRequest
     public override IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         foreach (var result in base.Validate(validationContext)) yield return result;
-        if (StudentIds is { Count: 0 }) yield return new("Selecciona al menos un estudiante.", [nameof(StudentIds)]);
     }
 }
 

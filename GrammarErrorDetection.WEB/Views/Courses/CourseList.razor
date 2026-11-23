@@ -4,7 +4,7 @@
         <div class="courses-header-actions">
             @if (CanCreate)
             {
-                <button type="button" class="data-table-button data-table-button-primary" @onclick="OpenCreate" disabled="@(busy || loadingCatalogs || modules.Count == 0 || (!IsTeacher && teachers.Count == 0) || classrooms.Count == 0)" aria-haspopup="dialog">@L["+ Crear curso"]</button>
+                <button type="button" class="data-table-button data-table-button-primary" @onclick="OpenCreate" disabled="@(busy || loadingCatalogs)" aria-haspopup="dialog">@L["+ Crear curso"]</button>
             }
             @if (CanGenerate)
             {

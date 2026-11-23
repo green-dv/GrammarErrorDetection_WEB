@@ -2450,5 +2450,6 @@
 "Una letra minúscula": "One lowercase letter",
 "Un número": "One number",
 "Un carácter especial (por ejemplo ! @ # $ %)": "One special character (for example ! @ # $ %)",
-"La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial.": "The password must have at least 8 characters, an uppercase letter, a lowercase letter, a number and a special character."
+"La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial.": "The password must have at least 8 characters, an uppercase letter, a lowercase letter, a number and a special character.",
+"Faltan datos para crear el curso: necesitas al menos un módulo, un aula y un profesor registrados. Si ya los registraste, cierra esta ventana y vuelve a intentarlo.": "Some data is missing to create the course: you need at least one module, one classroom and one teacher registered. If you already registered them, close this window and try again."
 }
