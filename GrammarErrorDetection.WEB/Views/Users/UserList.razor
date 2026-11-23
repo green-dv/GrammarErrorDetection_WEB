@@ -7,7 +7,7 @@
     {
         <header class="users-heading">
             <div class="users-heading-content">
-                <p class="users-eyebrow">@L["CETI · COMUNIDAD ACADÉMICA"]</p>
+                <p class="users-eyebrow">@L["COMUNIDAD ACADÉMICA"]</p>
                 <h1 id="users-title">@L["Usuarios"]</h1>
                 <p>@L["Datos de contacto y recorrido académico de los estudiantes."]</p>
             </div>
@@ -167,12 +167,12 @@
 @if (CanManageUsers && resendUser is not null)
 {
     <ModalDialog Title="@L["Reenviar credenciales"]" Busy="@resending" OnClose="() => { if (!resending) resendUser = null; }">
-        <div class="ceti-modal-body">
-            @if (resendError is not null) { <div class="ceti-modal-errors" role="alert"><p>@resendError</p></div> }
+        <div class="gp-modal-body">
+            @if (resendError is not null) { <div class="gp-modal-errors" role="alert"><p>@resendError</p></div> }
             <p>@L["Se generará una nueva contraseña temporal para"] <strong>@FullName(resendUser)</strong> @L["y se enviará a"] <strong>@resendUser.Email</strong>.</p>
             <p>@L["La contraseña actual dejará de funcionar y deberá crear una nueva al iniciar sesión."]</p>
         </div>
-        <footer class="ceti-modal-footer"><span role="status">@(resending ? L["Enviando…"] : "")</span><div><button type="button" class="data-table-button" disabled="@resending" @onclick="() => resendUser = null">@L["Cancelar"]</button><button type="button" class="data-table-button data-table-button-primary" disabled="@resending" @onclick="ConfirmResendAsync">@L["Generar y enviar"]</button></div></footer>
+        <footer class="gp-modal-footer"><span role="status">@(resending ? L["Enviando…"] : "")</span><div><button type="button" class="data-table-button" disabled="@resending" @onclick="() => resendUser = null">@L["Cancelar"]</button><button type="button" class="data-table-button data-table-button-primary" disabled="@resending" @onclick="ConfirmResendAsync">@L["Generar y enviar"]</button></div></footer>
     </ModalDialog>
 }
 @if (CanManageUsers && editingUser is not null)
@@ -182,12 +182,12 @@
 @if (CanManageUsers && statusUser is not null)
 {
     <ModalDialog Title="@(statusUser.Active ? L["Desactivar usuario"] : L["Reactivar usuario"])" Busy="@updatingStatus" OnClose="CloseStatus">
-        <div class="ceti-modal-body">
-            @if (statusError is not null) { <div class="ceti-modal-errors" role="alert"><p>@statusError</p></div> }
+        <div class="gp-modal-body">
+            @if (statusError is not null) { <div class="gp-modal-errors" role="alert"><p>@statusError</p></div> }
             <p>¿Quieres @(statusUser.Active ? "desactivar" : "reactivar") a <strong>@FullName(statusUser)</strong>?</p>
             <p>@(statusUser.Active ? L["El usuario quedará inactivo. Sus datos se conservarán."] : L["El usuario volverá a estar activo."])</p>
         </div>
-        <footer class="ceti-modal-footer"><span role="status">@(updatingStatus ? L["Actualizando estado…"] : "")</span><div><button type="button" class="data-table-button" disabled="@updatingStatus" @onclick="CloseStatus">@L["Cancelar"]</button><button type="button" class="data-table-button data-table-button-danger" disabled="@updatingStatus" @onclick="ConfirmStatusAsync">@(statusUser.Active ? L["Desactivar"] : L["Reactivar"])</button></div></footer>
+        <footer class="gp-modal-footer"><span role="status">@(updatingStatus ? L["Actualizando estado…"] : "")</span><div><button type="button" class="data-table-button" disabled="@updatingStatus" @onclick="CloseStatus">@L["Cancelar"]</button><button type="button" class="data-table-button data-table-button-danger" disabled="@updatingStatus" @onclick="ConfirmStatusAsync">@(statusUser.Active ? L["Desactivar"] : L["Reactivar"])</button></div></footer>
     </ModalDialog>
 }
 

@@ -9,10 +9,10 @@
 <ModalDialog Title="@L["Nuevo usuario"]" Subtitle="@L["Las credenciales se envían al correo de la persona"]" Busy="@saving" OnClose="OnClose">
     <EditForm Model="model" OnValidSubmit="SaveAsync" OnInvalidSubmit="ShowErrors" novalidate>
         <LocalizedValidator />
-        <div class="ceti-modal-body">
+        <div class="gp-modal-body">
             @if (error is not null || validationErrors.Count > 0)
             {
-                <div class="ceti-modal-errors" role="alert">
+                <div class="gp-modal-errors" role="alert">
                     @if (error is not null) { <p>@error</p> }
                     @foreach (var validationError in validationErrors) { <p>@validationError</p> }
                 </div>
@@ -35,7 +35,7 @@
                 <p class="gamification-help">@L["Se generará una contraseña temporal aleatoria. Al iniciar sesión por primera vez, la persona deberá crear una propia."]</p>
             </fieldset>
         </div>
-        <footer class="ceti-modal-footer"><span role="status">@(saving ? L["Creando usuario y enviando correo…"] : "")</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">@L["Cancelar"]</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@saving">@L["Crear y enviar credenciales"]</button></div></footer>
+        <footer class="gp-modal-footer"><span role="status">@(saving ? L["Creando usuario y enviando correo…"] : "")</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">@L["Cancelar"]</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@saving">@L["Crear y enviar credenciales"]</button></div></footer>
     </EditForm>
 </ModalDialog>
 

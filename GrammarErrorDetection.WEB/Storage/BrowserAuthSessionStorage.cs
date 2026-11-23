@@ -7,7 +7,7 @@ namespace GrammarErrorDetection.WEB.Storage;
 
 public sealed class BrowserAuthSessionStorage(IJSRuntime jsRuntime) : IAuthSessionStorage
 {
-    private const string StorageKey = "ceti.auth.session";
+    private const string StorageKey = "gp.auth.session";
     private readonly IJSInProcessRuntime browser = (IJSInProcessRuntime)jsRuntime;
 
     public AuthSessionSnapshot? Read()

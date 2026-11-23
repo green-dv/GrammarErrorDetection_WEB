@@ -11,7 +11,7 @@
             @foreach (var segment in Marked(sentence))
             {
                 if (segment.Kind == MarkKind.None) { @segment.Text }
-                else { <mark class="@AnalysisFormat.MarkClass(segment.Kind)">@segment.Text<span class="ceti-sr-only"> (@AnalysisFormat.MarkLabel(segment.Kind))</span></mark> }
+                else { <mark class="@AnalysisFormat.MarkClass(segment.Kind)">@segment.Text<span class="gp-sr-only"> (@AnalysisFormat.MarkLabel(segment.Kind))</span></mark> }
             }
         }
     </p>

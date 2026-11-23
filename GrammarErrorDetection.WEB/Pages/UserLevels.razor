@@ -4,11 +4,11 @@
 @inject AuthSessionState Session
 @inject NavigationManager Navigation
 
-<PageTitle>@L["Niveles de puntos | CETI La Paz"]</PageTitle>
+<PageTitle>@L["Niveles de puntos | Grammar Practice"]</PageTitle>
 
 @if (Session.Current is not null)
 {
-    @if (Session.Roles.Contains("Coordinator", StringComparer.Ordinal))
+    @if (Session.IsStaff)
     {
         <UserLevelList />
     }

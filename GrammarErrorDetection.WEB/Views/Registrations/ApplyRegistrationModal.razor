@@ -3,7 +3,7 @@
 @using static GrammarErrorDetection.WEB.Views.Registrations.RegistrationViewSupport
 
 <ModalDialog Title="@L["Solicitar / editar inscripción"]" Class="registration-course-modal" Busy="Busy" OnClose="CloseAsync">
-    <p class="ceti-modal-description">@L["Selecciona un año y bimestre para consultar los cursos a los que puedes postular. Si ya tienes una inscripción pendiente en ese periodo, se actualizará esa misma solicitud."]</p>
+    <p class="gp-modal-description">@L["Selecciona un año y bimestre para consultar los cursos a los que puedes postular. Si ya tienes una inscripción pendiente en ese periodo, se actualizará esa misma solicitud."]</p>
     <EditForm Model="period" OnValidSubmit="SearchAsync" novalidate>
         <LocalizedValidator />
         <fieldset class="data-filter-panel data-filter-panel-inset" disabled="@Busy">
@@ -17,9 +17,9 @@
     </EditForm>
     <EditForm Model="application" OnValidSubmit="SaveAsync" novalidate>
         <LocalizedValidator />
-        <div class="ceti-modal-body">
+        <div class="gp-modal-body">
             @if (loading) { <p role="status">@L["Consultando cursos disponibles…"]</p> }
-            @if (courseError is not null) { <p class="ceti-modal-errors" role="alert">@courseError</p><button type="button" class="data-table-button" disabled="@Busy" @onclick="RetryAsync">@L["Reintentar consulta"]</button> }
+            @if (courseError is not null) { <p class="gp-modal-errors" role="alert">@courseError</p><button type="button" class="data-table-button" disabled="@Busy" @onclick="RetryAsync">@L["Reintentar consulta"]</button> }
             <fieldset class="registration-course-options" disabled="@Busy">
                 <legend>@L["Cursos disponibles"]</legend>
                 @foreach (var course in courses)
@@ -38,9 +38,9 @@
             }
             @if (selected is not null) { <p class="registration-selection">@L["Seleccionado:"] <strong>@selected.ModuleName · Paralelo @selected.Parallel · @selected.Year / Bimestre @selected.Bimester</strong></p> }
             <ValidationSummary />
-            @if (saveError is not null) { <p class="ceti-modal-errors" role="alert">@saveError</p> }
+            @if (saveError is not null) { <p class="gp-modal-errors" role="alert">@saveError</p> }
         </div>
-        <footer class="ceti-modal-footer"><span>@(saving ? L["Guardando solicitud…"] : L["La solicitud quedará pendiente de aprobación."])</span><div><button type="button" class="data-table-button" disabled="@Busy" @onclick="CloseAsync">@L["Cancelar"]</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@(Busy || selected is null || courseError is not null)">@L["Enviar solicitud"]</button></div></footer>
+        <footer class="gp-modal-footer"><span>@(saving ? L["Guardando solicitud…"] : L["La solicitud quedará pendiente de aprobación."])</span><div><button type="button" class="data-table-button" disabled="@Busy" @onclick="CloseAsync">@L["Cancelar"]</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@(Busy || selected is null || courseError is not null)">@L["Enviar solicitud"]</button></div></footer>
     </EditForm>
 </ModalDialog>
 

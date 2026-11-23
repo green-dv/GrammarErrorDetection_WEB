@@ -2,7 +2,7 @@
 @layout AuthLayout
 @using GrammarErrorDetection.WEB.Views.Auth.Components
 
-<PageTitle>@L["Método de verificación | CETI La Paz"]</PageTitle>
+<PageTitle>@L["Método de verificación | Grammar Practice"]</PageTitle>
 @if (Flow.PendingEmail is not null)
 {
     <AuthHeader Title="@L["Verifica tu identidad"]" Subtitle='@(Flow.IsTotpEnabled ? L["Elige cómo quieres verificar tu inicio de sesión."] : L["Continúa con la verificación por correo electrónico."])' />

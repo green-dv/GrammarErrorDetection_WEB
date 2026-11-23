@@ -2,17 +2,17 @@ name: Deploy WEB
 
 on:
   push:
-    branches: [master]
+    branches: [master, feature/InvitacionQR]
   workflow_dispatch:
 
 concurrency:
-  group: deploy-web
+  group: deploy-web-demo
   cancel-in-progress: false
 
 env:
-  IMAGE: ghcr.io/green-dv/grammarerrordetection_web
+  IMAGE: ghcr.io/green-dv/grammarerrordetection_web_demo
   # Carpeta del VPS, relativa al home de green, donde vive el compose de la WEB.
-  DEPLOY_DIR: apps/GrammarErrorDetection/web
+  DEPLOY_DIR: apps/GrammarErrorDetection/webTeachers/web
 
 jobs:
   deploy:

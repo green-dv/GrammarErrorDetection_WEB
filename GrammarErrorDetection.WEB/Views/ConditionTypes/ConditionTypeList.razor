@@ -3,7 +3,7 @@
 <section class="users-page users-directory conditions-page" aria-labelledby="conditions-title">
     <header class="users-heading">
         <div class="users-heading-content">
-            <p class="users-eyebrow">@L["CETI · GAMIFICACIÓN"]</p>
+            <p class="users-eyebrow">@L["GAMIFICACIÓN"]</p>
             <h1 id="conditions-title">@L["Tipos de condición"]</h1>
             <p>@L["Condiciones medibles con las que se definen logros y desafíos. El código lo calcula el motor de gamificación y no se puede cambiar."]</p>
         </div>
@@ -78,11 +78,11 @@
 @if (statusType is not null)
 {
     <ModalDialog Title="@(statusType.Active ? L["Deshabilitar tipo de condición"] : L["Reactivar tipo de condición"])" Busy="@updatingStatus" OnClose="CloseStatus">
-        <div class="ceti-modal-body">
-            @if (statusError is not null) { <div class="ceti-modal-errors" role="alert"><p>@statusError</p></div> }
+        <div class="gp-modal-body">
+            @if (statusError is not null) { <div class="gp-modal-errors" role="alert"><p>@statusError</p></div> }
             <p>¿Quieres @(statusType.Active ? "deshabilitar" : "reactivar") el tipo de condición <strong>@statusType.Name</strong>?</p>
             <p>@(statusType.Active ? (statusType.UsageCount > 0 ? (statusType.UsageCount == 1 ? L["1 condición activa de un logro o desafío usa este tipo y dejará de poder cumplirse mientras esté deshabilitado. "] : L["{0} condiciones activas de logros y desafíos usan este tipo y dejarán de poder cumplirse mientras esté deshabilitado. ", statusType.UsageCount]) : "") + L["El tipo se conserva y podrás reactivarlo cuando quieras."] : L["El tipo volverá a estar activo y las condiciones que lo usan podrán cumplirse de nuevo."])</p>
         </div>
-        <footer class="ceti-modal-footer"><span role="status">@(updatingStatus ? L["Actualizando estado…"] : "")</span><div><button type="button" class="data-table-button" disabled="@updatingStatus" @onclick="CloseStatus">@L["Cancelar"]</button><button type="button" class="data-table-button data-table-button-danger" disabled="@updatingStatus" @onclick="ConfirmStatusAsync">@(statusType.Active ? L["Deshabilitar"] : L["Reactivar"])</button></div></footer>
+        <footer class="gp-modal-footer"><span role="status">@(updatingStatus ? L["Actualizando estado…"] : "")</span><div><button type="button" class="data-table-button" disabled="@updatingStatus" @onclick="CloseStatus">@L["Cancelar"]</button><button type="button" class="data-table-button data-table-button-danger" disabled="@updatingStatus" @onclick="ConfirmStatusAsync">@(statusType.Active ? L["Deshabilitar"] : L["Reactivar"])</button></div></footer>
     </ModalDialog>
 }

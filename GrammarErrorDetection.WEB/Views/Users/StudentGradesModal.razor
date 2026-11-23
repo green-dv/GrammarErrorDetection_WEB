@@ -8,7 +8,7 @@
 @using GrammarErrorDetection.WEB.Components.Dialogs
 
 <ModalDialog Title="@L["Registrar notas"]" Class="grade-dialog" Busy="saving" OnClose="OnClose">
-    <div class="ceti-modal-body">
+    <div class="gp-modal-body">
         <p class="grade-module">@L["MÓDULO {0} · PARALELO {1}", Module, Parallel]</p>
         <div class="grade-student"><span class="data-table-avatar" aria-hidden="true">@Initials</span><div><strong>@Name</strong><span>@Email</span></div></div>
         <p>@L["Ingresa los puntos obtenidos según la ponderación de cada área."]</p>
@@ -41,7 +41,7 @@
                         <label for="grade-@examIndex-@areaIndex"><strong>@item.Name</strong><span>@item.Description</span></label>
                         <span class="grade-weight">@item.Weight %</span>
                         <div class="grade-score-input"><input id="grade-@examIndex-@areaIndex" type="number" min="0" max="@item.Weight" step="1" placeholder="—" value="@draft.Exams[examIndex][areaIndex]?.ToString(System.Globalization.CultureInfo.InvariantCulture)" @oninput="args => SetScore(examIndex, areaIndex, args)" aria-label="@item.Name, Examen @(examIndex + 1), máximo @item.Weight puntos" aria-invalid="@(fieldErrors.ContainsKey((examIndex, areaIndex)) ? "true" : null)" aria-describedby="@(fieldErrors.ContainsKey((examIndex, areaIndex)) ? $"grade-error-{examIndex}-{areaIndex}" : null)" /><span>/ @item.Weight</span></div>
-                        @if (fieldErrors.TryGetValue((examIndex, areaIndex), out var fieldError)) { <p id="grade-error-@examIndex-@areaIndex" class="ceti-modal-errors grade-field-error" role="alert">@fieldError</p> }
+                        @if (fieldErrors.TryGetValue((examIndex, areaIndex), out var fieldError)) { <p id="grade-error-@examIndex-@areaIndex" class="gp-modal-errors grade-field-error" role="alert">@fieldError</p> }
                     </div>
                 }
                 <div class="grade-total"><strong>@L["Total del examen {0}", examIndex + 1]</strong><span class="@StudentGradeDraft.Color(draft.Total(examIndex))">@(draft.Total(examIndex)?.ToString("0.##") ?? L["Pendiente"]) / 100 · @StudentGradeDraft.Result(draft.Total(examIndex))</span></div>
@@ -49,18 +49,18 @@
                     <label for="grade-comment-@examIndex"><strong>@L["Comentario sobre el estudiante"]</strong> <small>@L["(opcional)"]</small></label>
                     <textarea id="grade-comment-@examIndex" rows="3" maxlength="@StudentGradeDraft.CommentMaxLength" placeholder="@L["Observaciones del docente sobre este examen…"]" value="@draft.Comments[examIndex]" @oninput="args => SetComment(examIndex, args)" aria-invalid="@(commentErrors.ContainsKey(examIndex) ? "true" : null)"></textarea>
                     <small class="grade-comment-count">@draft.Comments[examIndex].Length / @StudentGradeDraft.CommentMaxLength</small>
-                    @if (commentErrors.TryGetValue(examIndex, out var commentError)) { <p class="ceti-modal-errors grade-field-error" role="alert">@commentError</p> }
+                    @if (commentErrors.TryGetValue(examIndex, out var commentError)) { <p class="gp-modal-errors grade-field-error" role="alert">@commentError</p> }
                 </div>
             </section>
         }
         <div class="grade-total" aria-live="polite"><strong>@L["Promedio de ambos exámenes"]</strong><span class="@StudentGradeDraft.Color(draft.Average)">@(draft.Average?.ToString("0.##") ?? L["Pendiente"]) / 100 · @StudentGradeDraft.Result(draft.Average)</span></div>
         </fieldset>
-        @if (saveError is not null) { <p class="ceti-modal-errors" role="alert">@saveError</p> }
+        @if (saveError is not null) { <p class="gp-modal-errors" role="alert">@saveError</p> }
         @if (savedMessage is not null) { <p role="status">@savedMessage</p> }
-        @if (validationError is not null) { <p class="ceti-modal-errors" role="alert">@validationError</p> }
+        @if (validationError is not null) { <p class="gp-modal-errors" role="alert">@validationError</p> }
         <p class="grade-local-note">@L["Rojo: menor a 70 · Verde: 70 o más. Completa las seis áreas para calcular cada examen."]</p>
     </div>
-    <footer class="ceti-modal-footer"><span>@L["Examen 1: 50 % · Examen 2: 50 %"]</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">@L["Cerrar"]</button><button type="button" class="data-table-button data-table-button-primary" disabled="@(saving || HasErrors(activeExam))" @onclick="SaveAsync">@(saving ? L["Guardando…"] : I18n.T("Guardar examen {0}", activeExam + 1))</button></div></footer>
+    <footer class="gp-modal-footer"><span>@L["Examen 1: 50 % · Examen 2: 50 %"]</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">@L["Cerrar"]</button><button type="button" class="data-table-button data-table-button-primary" disabled="@(saving || HasErrors(activeExam))" @onclick="SaveAsync">@(saving ? L["Guardando…"] : I18n.T("Guardar examen {0}", activeExam + 1))</button></div></footer>
 </ModalDialog>
 
 @code {

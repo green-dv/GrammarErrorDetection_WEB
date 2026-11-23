@@ -46,8 +46,8 @@
 .grade-score-input>span{color:var(--t-muted);flex-shrink:0;font-size:calc(11px * var(--ui-scale, 1))}
 .grade-total{color:var(--t-text);background:var(--t-subtle);border-radius:7px;justify-content:space-between;gap:12px;margin-top:8px;padding:13px;font-size:calc(13px * var(--ui-scale, 1));display:flex}
 .grade-total>span{color:var(--t-accent);font-weight:750}
-.grade-dialog.ceti-modal { width: min(680px, calc(100vw - 32px)); }
-.grade-dialog .ceti-modal-heading { padding: 22px 22px 12px; }
+.grade-dialog.gp-modal { width: min(680px, calc(100vw - 32px)); }
+.grade-dialog .gp-modal-heading { padding: 22px 22px 12px; }
 .grade-module { color: var(--t-accent); font-size: calc(11px * var(--ui-scale, 1)); font-weight: 700; letter-spacing: 1px; }
 .grade-local-note { color: var(--t-muted); font-size: calc(11px * var(--ui-scale, 1)); }
 .grade-student { margin: 0 0 16px; }

@@ -1,0 +1,196 @@
+@page "/auth/join/{Token}"
+@using System.Net
+@using GrammarErrorDetection.Models.Registrations
+@using GrammarErrorDetection.Services.Interfaces
+@using GrammarErrorDetection.Services.Services.Auth
+@using GrammarErrorDetection.Services.Services.Registrations
+@using GrammarErrorDetection.WEB.Components.Dialogs
+@using GrammarErrorDetection.WEB.Views.Auth.Components
+@inject AuthSessionState Session
+@inject ICourseInvitationService Invitations
+@inject CourseInvitationFlowState Flow
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<PageTitle>@L["Invitación a un curso | Grammar Practice"]</PageTitle>
+@if (Session.Current is null)
+{
+    <AuthHeader Title="@L["Te invitaron a un curso"]" Subtitle="@L["Tu docente o coordinador te compartió un enlace de inscripción."]" />
+}
+else
+{
+    <header class="users-heading"><div><p class="users-eyebrow">@L["INVITACIÓN"]</p><h1>@L["Te invitaron a un curso"]</h1><p>@L["Tu docente o coordinador te compartió un enlace de inscripción."]</p></div></header>
+}
+
+@if (busy)
+{
+    <p class="data-table-message" role="status">@(joining ? L["Inscribiéndote al curso…"] : L["Revisando tu invitación…"])</p>
+}
+else if (message is not null)
+{
+    <div class="auth-errors" role="alert"><p class="auth-errors-title">@L["No pudimos completar tu inscripción"]</p><p>@message</p></div>
+    <p class="auth-account-switch"><a href="/home" class="auth-link">@L["Ir al inicio"]</a></p>
+}
+else if (Session.Current is null)
+{
+    <div class="space-y-6">
+        <p class="auth-account-switch">@L["Para unirte al curso, crea tu cuenta o inicia sesión. Te inscribiremos automáticamente al terminar."]</p>
+        <a href="/auth/register" class="auth-submit">@L["Crear cuenta"]</a>
+        <p class="auth-account-switch">@L["¿Ya tienes una cuenta?"] <a href="/auth/login" class="auth-link">@L["Iniciar sesión"]</a></p>
+    </div>
+}
+
+@if (offer is not null)
+{
+    <ModalDialog Title="@L["¿Quieres unirte a este curso?"]" Class="course-joined-dialog" OnClose="Decline">
+        <div class="gp-modal-body">
+            <p>@L["Te invitaron al siguiente curso:"]</p>
+            <dl class="course-joined-facts">
+                <div><dt>@L["Módulo"]</dt><dd>@offer.ModuleName@(string.IsNullOrWhiteSpace(offer.Parallel) ? "" : " · " + offer.Parallel)</dd></div>
+                <div><dt>@L["Periodo"]</dt><dd>@L["Bimestre {0} · {1}", offer.Bimester, offer.Year]</dd></div>
+                <div><dt>@L["Horario"]</dt><dd>@offer.StartTime.ToString("HH:mm") – @offer.EndTime.ToString("HH:mm")</dd></div>
+                @if (!string.IsNullOrWhiteSpace(offer.TeacherName)) { <div><dt>@L["Profesor"]</dt><dd>@offer.TeacherName</dd></div> }
+                @if (!string.IsNullOrWhiteSpace(offer.ClassroomName)) { <div><dt>@L["Aula"]</dt><dd>@offer.ClassroomName</dd></div> }
+            </dl>
+            <p class="course-joined-warning" role="note">@L["Una vez que te unas no podrás salir del curso, a menos que hables con tu docente."]</p>
+        </div>
+        <footer class="gp-modal-footer"><span></span><div>
+            <button type="button" class="data-table-button" @onclick="Decline" disabled="@busy">@L["Ahora no"]</button>
+            <button type="button" class="data-table-button data-table-button-primary" @onclick="JoinAsync" disabled="@busy">@L["Unirme al curso"]</button>
+        </div></footer>
+    </ModalDialog>
+}
+
+@if (joined is not null)
+{
+    <ModalDialog Title="@(joined.AlreadyMember ? L["Ya perteneces a este curso"] : L["¡Registro completado!"])" Class="course-joined-dialog" OnClose="GoToCourses">
+        <div class="gp-modal-body" role="status">
+            <p>@(joined.AlreadyMember ? L["Ya estabas inscrito en este curso."] : L["Quedaste inscrito en el curso:"])</p>
+            <dl class="course-joined-facts">
+                <div><dt>@L["Módulo"]</dt><dd>@joined.ModuleName@(string.IsNullOrWhiteSpace(joined.Parallel) ? "" : " · " + joined.Parallel)</dd></div>
+                <div><dt>@L["Periodo"]</dt><dd>@L["Bimestre {0} · {1}", joined.Bimester, joined.Year]</dd></div>
+                <div><dt>@L["Horario"]</dt><dd>@joined.StartTime.ToString("HH:mm") – @joined.EndTime.ToString("HH:mm")</dd></div>
+                @if (!string.IsNullOrWhiteSpace(joined.TeacherName)) { <div><dt>@L["Profesor"]</dt><dd>@joined.TeacherName</dd></div> }
+                @if (!string.IsNullOrWhiteSpace(joined.ClassroomName)) { <div><dt>@L["Aula"]</dt><dd>@joined.ClassroomName</dd></div> }
+            </dl>
+        </div>
+        <footer class="gp-modal-footer"><span></span><div><button type="button" class="data-table-button data-table-button-primary" @onclick="GoToCourses">@L["Ir a mis cursos"]</button></div></footer>
+    </ModalDialog>
+}
+
+@if (roleBlocked is not null)
+{
+    <ModalDialog Title="@L["No puedes inscribirte a este curso"]" Class="course-joined-dialog" OnClose="GoHome">
+        <div class="gp-modal-body" role="alert">
+            <p>@L["Por tu rol ({0}) no puedes inscribirte al módulo {1}. Las inscripciones por enlace son solo para estudiantes.", RoleLabel, CourseLabel(roleBlocked)]</p>
+        </div>
+        <footer class="gp-modal-footer"><span></span><div><button type="button" class="data-table-button data-table-button-primary" @onclick="GoHome">@L["Entendido"]</button></div></footer>
+    </ModalDialog>
+}
+
+@if (conflict is not null)
+{
+    <ModalDialog Title="@L["No puedes unirte a este curso"]" Class="course-joined-dialog" OnClose="GoHome">
+        <div class="gp-modal-body" role="alert"><p>@conflict</p></div>
+        <footer class="gp-modal-footer"><span></span><div><button type="button" class="data-table-button data-table-button-primary" @onclick="GoHome">@L["Entendido"]</button></div></footer>
+    </ModalDialog>
+}
+
+@code {
+    [Parameter] public string Token { get; set; } = string.Empty;
+    private readonly CancellationTokenSource lifetime = new();
+    private CourseJoinResult? joined, offer, roleBlocked;
+    private string? message, conflict;
+    private bool busy, joining, started, disposed;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (started) return;
+        started = true;
+        Flow.Remember(Token);
+        if (Session.Current is null) return;   // Se queda en memoria hasta registrarse o iniciar sesión (Home lo retoma).
+        await PreviewAsync();
+    }
+
+    // Primero se muestra el curso y se pide confirmación; no se inscribe hasta que el estudiante acepta.
+    private async Task PreviewAsync()
+    {
+        busy = true;
+        try
+        {
+            var response = await Invitations.PreviewAsync(Token, lifetime.Token);
+            if (disposed) return;
+            if (response?.Data is not { } data || response.Error is { ErrorCode: not 0 })
+                throw new InvalidOperationException(I18n.T("No se pudo revisar la invitación. Inténtalo de nuevo."));
+            // Docente o coordinador: la API solo devuelve el curso; se les explica que su rol no permite inscribirse.
+            if (!Session.IsInRole("Student")) { roleBlocked = data; Flow.Clear(); }
+            else if (data.AlreadyMember) { joined = data; Flow.Clear(); }
+            else offer = data;
+        }
+        catch (Exception ex) when (Fail(ex)) { }
+        finally { busy = false; }
+    }
+
+    private string RoleLabel => Session.IsInRole("Coordinator") ? I18n.T("Coordinador") : Session.IsInRole("Teacher") ? I18n.T("Docente") : I18n.T("sin rol de estudiante");
+
+    private static string CourseLabel(CourseJoinResult course) =>
+        string.IsNullOrWhiteSpace(course.Parallel) ? course.ModuleName : $"{course.ModuleName} · {course.Parallel}";
+
+    private void Decline()
+    {
+        Flow.Clear();
+        GoHome();
+    }
+
+    private async Task JoinAsync()
+    {
+        busy = true;
+        joining = true;
+        try
+        {
+            var response = await Invitations.JoinAsync(Token, lifetime.Token);
+            if (disposed) return;
+            if (response?.Data is not { } data || response.Error is { ErrorCode: not 0 })
+                throw new InvalidOperationException(I18n.T("No se pudo confirmar la inscripción. Revisa tus cursos antes de volver a intentar."));
+            offer = null;
+            joined = data;
+        }
+        catch (Exception ex) when (Fail(ex)) { }
+        finally
+        {
+            // La invitación se consume en cualquier desenlace para no repetirla al volver al inicio.
+            Flow.Clear();
+            busy = false;
+            joining = false;
+        }
+    }
+
+    /// <summary>Traduce el error a la pantalla que corresponde; devuelve true si lo manejó.</summary>
+    private bool Fail(Exception ex)
+    {
+        if (disposed || ex is OperationCanceledException) return true;
+        offer = null;
+        switch (ex)
+        {
+            case HttpRequestException http when http.StatusCode == HttpStatusCode.Unauthorized:
+                Session.Clear(); Navigation.NavigateTo("/auth/login", replace: true); return true;
+            // 409: ya tiene un curso sin terminar → ventana informativa; el resto, mensaje en la página.
+            case HttpRequestException http when http.StatusCode == HttpStatusCode.Conflict:
+                conflict = ApiErrors.Describe(http); Flow.Clear(); return true;
+            case HttpRequestException http: message = ApiErrors.Describe(http); Flow.Clear(); return true;
+            case InvalidOperationException invalid: message = invalid.Message; Flow.Clear(); return true;
+            default: return false;
+        }
+    }
+
+    private void GoToCourses() => Navigation.NavigateTo("/my-courses", replace: true);
+    private void GoHome() => Navigation.NavigateTo("/home", replace: true);
+
+    public void Dispose()
+    {
+        if (disposed) return;
+        disposed = true;
+        lifetime.Cancel();
+        lifetime.Dispose();
+    }
+}

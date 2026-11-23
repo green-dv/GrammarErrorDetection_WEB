@@ -7,7 +7,7 @@ namespace GrammarErrorDetection.WEB.Storage;
 /// <summary>Lee/guarda el idioma elegido (localStorage) y carga el diccionario inglés al arrancar.</summary>
 public static class LanguageStorage
 {
-    private const string Key = "ceti-lang";
+    private const string Key = "gp-lang";
 
     public static async Task InitializeAsync(IJSRuntime js, HttpClient http)
     {

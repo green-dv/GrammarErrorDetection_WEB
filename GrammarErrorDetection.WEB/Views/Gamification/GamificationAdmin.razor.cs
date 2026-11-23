@@ -26,7 +26,7 @@ public partial class GamificationAdmin : IDisposable
     private string name = "", publication = "", active = "", appliedName = "", appliedPublication = "", appliedActive = "";
     private string? error, message;
     private bool Allowed => Session.Current is not null && (Session.IsInRole("Coordinator") || Session.IsInRole("Teacher") || Session.IsInRole("Student"));
-    private bool CanManage => Session.Current is not null && Session.IsInRole("Coordinator");
+    private bool CanManage => Session.Current is not null && Session.IsStaff;
     private int RowCount => achievementsTab ? achievements.Count : challenges.Count;
     private long? total;
     private string PagerInfo => !busy && error is null && RowCount > 0 ? I18n.T("Mostrando {0}–{1}", (page - 1) * pageSize + 1, (page - 1) * pageSize + RowCount) + (total is { } all ? I18n.T(" de {0}", all) : "") : "";

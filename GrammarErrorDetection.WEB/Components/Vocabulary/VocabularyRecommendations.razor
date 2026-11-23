@@ -57,7 +57,7 @@
                         {
                             <button type="button" class="an-flag an-flag--toggle is-warn" aria-expanded="@(open ? "true" : "false")" aria-controls="an-body-@sentence.SentenceId" @onclick="() => OnToggle.InvokeAsync(sentence.SentenceId)">
                                 <AnalysisIcon Name="alert" /><span>@sentence.Issues.Count @AnalysisFormat.Plural(sentence.Issues.Count, "palabra", "palabras")@(open ? "" : L[" · Ver alternativas"])</span><AnalysisIcon Name="chevron" Class="an-chev" />
-                                <span class="ceti-sr-only"> @L["de la oración {0}", sentence.SentenceIndex]</span>
+                                <span class="gp-sr-only"> @L["de la oración {0}", sentence.SentenceIndex]</span>
                             </button>
                         }
                         else if (sentence.UncheckedCount > 0)
@@ -78,15 +78,15 @@
                                     <li class="an-issue" @key="@($"{issue.StartIndex}-{issue.EndIndex}")">
                                         @if (issue.Alternatives.Count == 0)
                                         {
-                                            <p class="an-change"><del class="an-wrong"><span class="ceti-sr-only">@L["Palabra con error:"] </span>@issue.Token</del></p>
+                                            <p class="an-change"><del class="an-wrong"><span class="gp-sr-only">@L["Palabra con error:"] </span>@issue.Token</del></p>
                                             <p class="an-note">@L["No encontramos una alternativa para esta palabra. Revisa cómo está escrita."]</p>
                                         }
                                         else
                                         {
                                             <p class="an-change">
-                                                <del class="an-wrong"><span class="ceti-sr-only">@L["Palabra con error:"] </span>@issue.Token</del>
+                                                <del class="an-wrong"><span class="gp-sr-only">@L["Palabra con error:"] </span>@issue.Token</del>
                                                 <AnalysisIcon Name="arrow" />
-                                                <ins class="an-right"><span class="ceti-sr-only">@L["Se escribe:"] </span>@issue.Alternatives[0].Word</ins>
+                                                <ins class="an-right"><span class="gp-sr-only">@L["Se escribe:"] </span>@issue.Alternatives[0].Word</ins>
                                             </p>
                                             @Meaning(issue.Alternatives[0])
                                             @if (issue.Alternatives.Count > 1)

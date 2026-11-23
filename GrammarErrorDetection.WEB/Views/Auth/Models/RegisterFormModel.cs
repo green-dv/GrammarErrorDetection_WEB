@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using GrammarErrorDetection.Models.Auth;
 
 namespace GrammarErrorDetection.WEB.Views.Auth.Models;
 
@@ -39,6 +40,9 @@ public sealed class RegisterFormModel : IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
+        // Menos de 8 ya lo informa [StringLength]; aquí se exige mayúscula, minúscula, número y carácter especial.
+        if (Password.Length >= PasswordPolicy.MinimumLength && !PasswordPolicy.IsStrong(Password) && PasswordPolicy.Check(Password).Any(rule => !rule.Met))
+            yield return new ValidationResult("La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial.", [nameof(Password)]);
         if (BirthDate > DateOnly.FromDateTime(DateTime.Today))
             yield return new ValidationResult("La fecha de nacimiento no puede ser futura.", [nameof(BirthDate)]);
         else if (BirthDate is { Year: < 1900 })

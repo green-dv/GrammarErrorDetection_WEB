@@ -1,7 +1,11 @@
-# Se copia a ~/apps/web/ en el VPS en cada deploy (lo hace el workflow).
+# DEMO: se copia a ~/apps/GrammarErrorDetection/webTeachers/web/ en el VPS en cada deploy (lo hace el workflow).
+# "name" fija el proyecto: sin el, compose usaria el nombre de la carpeta ("web") y --remove-orphans
+# podria tocar los contenedores de produccion. El servicio se llama web-demo porque en app-net el alias
+# "web" ya es el de produccion.
+name: grammarpractice-demo-web
 services:
-  web:
-    image: ghcr.io/green-dv/grammarerrordetection_web:latest
+  web-demo:
+    image: ghcr.io/green-dv/grammarerrordetection_web_demo:latest
     restart: unless-stopped
     networks: [app-net]
     healthcheck:

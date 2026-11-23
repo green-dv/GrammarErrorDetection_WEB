@@ -6,7 +6,7 @@
 {
     <section class="users-page gamification-page" aria-labelledby="gamification-title">
         <header class="users-heading">
-            <div><p class="users-eyebrow">@L["CETI · MOTIVACIÓN Y APRENDIZAJE"]</p><h1 id="gamification-title">@L["Gamificación"]</h1><p>@L["Consulta los logros, las recompensas y los desafíos de aprendizaje."]</p></div>
+            <div><p class="users-eyebrow">@L["MOTIVACIÓN Y APRENDIZAJE"]</p><h1 id="gamification-title">@L["Gamificación"]</h1><p>@L["Consulta los logros, las recompensas y los desafíos de aprendizaje."]</p></div>
             <div class="gamification-header-actions">
                 @if (achievementsTab) { <a class="data-table-button" href="/gamification/collections">@L["Colecciones de logros"]</a> }
                 @if (CanManage) { <button class="data-table-button data-table-button-primary" disabled="@busy" @onclick="OpenCreate" aria-haspopup="dialog">+ @(achievementsTab ? L["Crear logro"] : L["Crear desafío"])</button> }

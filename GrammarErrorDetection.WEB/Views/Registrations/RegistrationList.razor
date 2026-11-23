@@ -6,7 +6,7 @@
 @if (Allowed)
 {
     <section class="users-page registrations-page" aria-labelledby="registrations-title">
-        <header class="users-heading"><div><p class="users-eyebrow">@L["CETI · PORTAL ACADÉMICO"]</p><h1 id="registrations-title">@Title</h1><p>@(Mine ? L["Consulta tus solicitudes y su estado de aprobación."] : L["Revisa y resuelve las solicitudes de inscripción de los estudiantes."])</p></div>
+        <header class="users-heading"><div><p class="users-eyebrow">@L["PORTAL ACADÉMICO"]</p><h1 id="registrations-title">@Title</h1><p>@(Mine ? L["Consulta tus solicitudes y su estado de aprobación."] : L["Revisa y resuelve las solicitudes de inscripción de los estudiantes."])</p></div>
             @if (Mine && !CoursesOnly)
             {
                 <button type="button" class="data-table-button data-table-button-primary" disabled="@(loading || deciding)" @onclick="OpenApply" aria-haspopup="dialog">@L["Solicitar / editar inscripción"]</button>
@@ -111,11 +111,11 @@
     @if (reviewing is { } entry && !Mine)
     {
         <ModalDialog Title="@(approving ? L["Aprobar inscripción"] : L["Rechazar inscripción"])" Busy="deciding" OnClose="CloseReview">
-            <div class="ceti-modal-body"><p>@L["Estudiante:"] <strong>@Text(entry.FirstName) @Text(entry.LastName)</strong></p><p>@L["CIC: {0} · Teléfono: {1}", Text(entry.Ci), Text(entry.Phone)]</p><p>@L["Módulo:"] <strong>@Text(entry.ModuleName)</strong></p>
+            <div class="gp-modal-body"><p>@L["Estudiante:"] <strong>@Text(entry.FirstName) @Text(entry.LastName)</strong></p><p>@L["CIC: {0} · Teléfono: {1}", Text(entry.Ci), Text(entry.Phone)]</p><p>@L["Módulo:"] <strong>@Text(entry.ModuleName)</strong></p>
                 <p>@(approving ? L["Se comprobarán nuevamente la elegibilidad y el cupo. La aprobación bloquea nuevas solicitudes para el mismo periodo."] : L["La inscripción se desactivará. El estudiante dejará de pertenecer al curso y podrá enviar una nueva solicitud."])</p>
-                @if (decisionError is not null) { <p class="ceti-modal-errors" role="alert">@decisionError</p> }
+                @if (decisionError is not null) { <p class="gp-modal-errors" role="alert">@decisionError</p> }
             </div>
-            <footer class="ceti-modal-footer"><span>@(deciding ? L["Guardando decisión…"] : L["Confirma la decisión sobre esta solicitud."])</span><div><button type="button" class="data-table-button" disabled="@deciding" @onclick="CloseReview">@L["Cancelar"]</button><button type="button" class="data-table-button @(approving ? "data-table-button-primary" : "data-table-button-danger")" disabled="@deciding" @onclick="ConfirmAsync">@(approving ? L["Confirmar aprobación"] : L["Rechazar y desactivar"])</button></div></footer>
+            <footer class="gp-modal-footer"><span>@(deciding ? L["Guardando decisión…"] : L["Confirma la decisión sobre esta solicitud."])</span><div><button type="button" class="data-table-button" disabled="@deciding" @onclick="CloseReview">@L["Cancelar"]</button><button type="button" class="data-table-button @(approving ? "data-table-button-primary" : "data-table-button-danger")" disabled="@deciding" @onclick="ConfirmAsync">@(approving ? L["Confirmar aprobación"] : L["Rechazar y desactivar"])</button></div></footer>
         </ModalDialog>
     }
     @if (applying && Mine && !CoursesOnly)

@@ -10,18 +10,18 @@
 @inject NavigationManager Navigation
 
 <ModalDialog Title="@(IsEdit ? L["Editar colección"] : L["Registrar colección"])" Busy="saving" OnClose="OnClose">
-    <p class="ceti-modal-description">@(IsEdit ? L["Actualiza el nombre, la descripción y el estado de la colección."] : L["Crea una colección para agrupar los niveles y logros de una misma actividad."])</p>
+    <p class="gp-modal-description">@(IsEdit ? L["Actualiza el nombre, la descripción y el estado de la colección."] : L["Crea una colección para agrupar los niveles y logros de una misma actividad."])</p>
     <EditForm Model="model" OnValidSubmit="SaveAsync" OnInvalidSubmit="InvalidSubmit" novalidate>
         <LocalizedValidator />
-        <div class="ceti-modal-body">
-            <div class="ceti-modal-errors" role="alert">@if (error is not null) { <p>@error</p> }<ValidationSummary /></div>
+        <div class="gp-modal-body">
+            <div class="gp-modal-errors" role="alert">@if (error is not null) { <p>@error</p> }<ValidationSummary /></div>
             <fieldset class="gamification-fields gamification-grid" disabled="@(saving || uncertain)">
                 <label class="data-table-field gamification-full"><span>@L["Nombre *"]</span><InputText @bind-Value="model.Name" maxlength="150" autofocus /></label>
                 <label class="data-table-field gamification-full"><span>@L["Descripción"]</span><InputTextArea @bind-Value="model.Description" rows="4" /></label>
                 <label class="gamification-checks gamification-full"><InputCheckbox @bind-Value="model.Active" /> @L["Colección activa"]</label>
             </fieldset>
         </div>
-        <footer class="ceti-modal-footer"><span role="status">@(saving ? L["Guardando colección…"] : L["* Campo obligatorio"])</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">@(uncertain ? L["Cerrar y revisar colecciones"] : L["Cancelar"])</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@(saving || uncertain)">@(IsEdit ? L["Guardar cambios"] : L["Registrar colección"])</button></div></footer>
+        <footer class="gp-modal-footer"><span role="status">@(saving ? L["Guardando colección…"] : L["* Campo obligatorio"])</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">@(uncertain ? L["Cerrar y revisar colecciones"] : L["Cancelar"])</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@(saving || uncertain)">@(IsEdit ? L["Guardar cambios"] : L["Registrar colección"])</button></div></footer>
     </EditForm>
 </ModalDialog>
 
@@ -45,7 +45,7 @@
     {
         if (saving || uncertain || disposed) return;
         if (Session.Current is null) { Navigation.NavigateTo("/auth/login", replace: true); return; }
-        if (!Session.IsInRole("Coordinator")) { error = I18n.T("No tienes permiso para registrar colecciones."); return; }
+        if (!Session.IsStaff) { error = I18n.T("No tienes permiso para registrar colecciones."); return; }
         saving = true; error = null;
         AchievementCollectionResponse? result = null;
         try

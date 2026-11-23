@@ -5,8 +5,9 @@
 @using GrammarErrorDetection.WEB.Views.Dashboards
 @inject AuthSessionState Session
 @inject NavigationManager Navigation
+@inject GrammarErrorDetection.Services.Services.Registrations.CourseInvitationFlowState Invitation
 
-<PageTitle>@L["Inicio | CETI La Paz"]</PageTitle>
+<PageTitle>@L["Inicio | Grammar Practice"]</PageTitle>
 
 @if (Session.Current is { User: not null })
 {
@@ -40,7 +41,10 @@
 @code {
     protected override void OnInitialized()
     {
-        if (Session.Current is null) Navigation.NavigateTo("/auth/login", replace: true);
+        if (Session.Current is null) { Navigation.NavigateTo("/auth/login", replace: true); return; }
+        // Venía de un enlace/QR de invitación: tras registrarse o iniciar sesión se completa la inscripción al curso.
+        if (Invitation.PendingToken is { } token && Session.IsInRole("Student"))
+            Navigation.NavigateTo($"/auth/join/{Uri.EscapeDataString(token)}", replace: true);
     }
 
 }

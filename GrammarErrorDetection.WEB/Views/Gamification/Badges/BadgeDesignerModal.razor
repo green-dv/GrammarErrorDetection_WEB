@@ -4,7 +4,7 @@
 @inject HttpClient AssetClient
 
 <ModalDialog Title="@L["Crear imagen del logro"]" Busy="exporting" OnClose="OnClose" Class="badge-designer-dialog">
-    <p class="ceti-modal-description">@L["Combina una base, elementos y una cinta diagonal para crear tu badge."]</p>
+    <p class="gp-modal-description">@L["Combina una base, elementos y una cinta diagonal para crear tu badge."]</p>
     <div class="badge-designer-body">
         <aside class="badge-designer-preview">
             <div class="badge-preview-canvas"><BadgePreview Design="design" /></div>
@@ -47,8 +47,8 @@
             </div></section>
         </fieldset>
     </div>
-    @if (errors.Count > 0) { <div class="badge-designer-errors ceti-modal-errors" role="alert">@foreach (var error in errors) { <p>@error</p> }</div> }
-    <footer class="ceti-modal-footer"><span role="status">@(exporting ? L["Preparando imagen…"] : L["La imagen se adjuntará al guardar el logro."])</span><div><button type="button" class="data-table-button" disabled="@exporting" @onclick="OnClose">@L["Cancelar"]</button><button type="button" class="data-table-button data-table-button-primary" disabled="@exporting" @onclick="UseImageAsync">@L["Usar esta imagen"]</button></div></footer>
+    @if (errors.Count > 0) { <div class="badge-designer-errors gp-modal-errors" role="alert">@foreach (var error in errors) { <p>@error</p> }</div> }
+    <footer class="gp-modal-footer"><span role="status">@(exporting ? L["Preparando imagen…"] : L["La imagen se adjuntará al guardar el logro."])</span><div><button type="button" class="data-table-button" disabled="@exporting" @onclick="OnClose">@L["Cancelar"]</button><button type="button" class="data-table-button data-table-button-primary" disabled="@exporting" @onclick="UseImageAsync">@L["Usar esta imagen"]</button></div></footer>
 </ModalDialog>
 
 @code {

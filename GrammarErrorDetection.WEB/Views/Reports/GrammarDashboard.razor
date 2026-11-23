@@ -11,7 +11,7 @@
     else
     {
         <header class="grammar-report-heading">
-            <div><p class="portal-eyebrow">@L["CETI · SEGUIMIENTO PEDAGÓGICO"]</p><h2 id="grammar-dashboard-title">@ReportTitle</h2><p>@(IsPersonal ? L["Dificultades de escritura en todos los cursos y prácticas personales."] : L["Identifica las dificultades del grupo y cómo cambian entre periodos."])</p></div>
+            <div><p class="portal-eyebrow">@L["SEGUIMIENTO PEDAGÓGICO"]</p><h2 id="grammar-dashboard-title">@ReportTitle</h2><p>@(IsPersonal ? L["Dificultades de escritura en todos los cursos y prácticas personales."] : L["Identifica las dificultades del grupo y cómo cambian entre periodos."])</p></div>
             <div class="grammar-report-exports">
                 <button type="button" class="data-table-button data-table-button-primary" disabled="@(data is null || loading || exporting)" @onclick="ExportAsync">@L["Descargar Excel"]</button>
                 @if (exporting) { <span role="status">@L["Descargando…"]</span> }

@@ -7,7 +7,7 @@
 
 @* Repetir: abre la ronda siguiente con nuevas fechas y vuelve a habilitar el desafío para todos. *@
 <ModalDialog Title="@L["Repetir desafío"]" Subtitle="@(I18n.T("{0} · ronda {1}", Challenge.Title, Challenge.Round + 1))" Busy="saving" OnClose="OnClose">
-    <div class="ceti-modal-body gamification-repeat">
+    <div class="gp-modal-body gamification-repeat">
         <p>@L["El desafío vuelve a estar disponible"] <strong>@L["para todos los estudiantes"]</strong>@L[", incluidos quienes ya lo completaron. Solo cuenta la actividad desde el nuevo inicio, con las mismas condiciones: {0}.", ConditionConfiguration.Summary(Challenge.Conditions)]</p>
         <p>@(Challenge.CompletionCount == 1 ? L["1 estudiante completó"] : I18n.T("{0} estudiantes completaron", Challenge.CompletionCount)) la ronda @Challenge.Round; ese historial se conserva.</p>
         <div class="gamification-grid">
@@ -16,7 +16,7 @@
         </div>
         @if (error is not null) { <p class="data-table-error" role="alert">@error</p> }
     </div>
-    <footer class="ceti-modal-footer">
+    <footer class="gp-modal-footer">
         <span role="status">@(saving ? L["Abriendo nueva ronda…"] : "")</span>
         <div>
             <button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">@L["Cancelar"]</button>

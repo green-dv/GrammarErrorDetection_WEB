@@ -1,15 +1,15 @@
 @implements IAsyncDisposable
 @inject IJSRuntime JS
 
-<dialog class="ceti-modal @Class" @ref="dialog" aria-labelledby="@titleId" aria-modal="true" @oncancel="RequestCloseAsync" @oncancel:preventDefault>
-    <header class="ceti-modal-heading @(Subtitle is null ? "" : "has-subtitle")">
+<dialog class="gp-modal @Class" @ref="dialog" aria-labelledby="@titleId" aria-modal="true" @oncancel="RequestCloseAsync" @oncancel:preventDefault>
+    <header class="gp-modal-heading @(Subtitle is null ? "" : "has-subtitle")">
         @if (Subtitle is null)
         {
             <h2 id="@titleId">@Title</h2>
         }
         else
         {
-            <div class="ceti-modal-title"><h2 id="@titleId">@Title</h2><p>@Subtitle</p></div>
+            <div class="gp-modal-title"><h2 id="@titleId">@Title</h2><p>@Subtitle</p></div>
         }
         <button type="button" class="data-table-icon-button" aria-label="@L["Cerrar ventana"]" disabled="@Busy" @onclick="RequestCloseAsync">×</button>
     </header>

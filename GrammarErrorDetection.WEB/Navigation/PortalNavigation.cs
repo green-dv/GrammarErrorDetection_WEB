@@ -17,7 +17,7 @@ public static class PortalNavigation
         new("learning", I18n.T("Aprendizaje"), [], ["materials", "recommendations", "process", "gamification"]),
         new("my-learning", I18n.T("Mi formación"), ["Student"], ["my-courses", "my-enrollments"]),
         new("academic", I18n.T("Gestión académica"), ["Coordinator", "Teacher"], ["courses", "enrollments", "reports"]),
-        new("administration", I18n.T("Administración"), ["Coordinator"], ["users", "categories", "modules", "classrooms", "user-levels", "condition-types"])
+        new("administration", I18n.T("Administración"), ["Coordinator", "Teacher"], ["users", "categories", "modules", "classrooms", "user-levels", "condition-types"])
     ];
 
     public static bool CanViewSection(PortalMenuSection section, IReadOnlyList<string> roles) =>
@@ -35,14 +35,14 @@ public static class PortalNavigation
         new("my-enrollments", I18n.T("Mis inscripciones"), List, ["Student"]),
         new("my-courses", I18n.T("Mis cursos"), Book, ["Student"]),
         new("users", I18n.T("Usuarios"), "<circle cx='9' cy='8' r='3'/><path d='M3 20v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 4v2'/>", ["Coordinator"]),
-        new("categories", I18n.T("Categorías de error"), "<path d='M3 12V4h8l10 10-8 8ZM7.5 8.5h.01'/>", ["Coordinator"], I18n.T("clasificación errores gramática etiquetas reentrenamiento")),
-        new("modules", I18n.T("Módulos"), "<path d='M12 3 3 8l9 5 9-5ZM3 13l9 5 9-5M3 17.5 12 22l9-4.5'/>", ["Coordinator"], I18n.T("niveles ruta cursos ciclo promoción")),
-        new("classrooms", I18n.T("Aulas"), "<path d='M3 21V8l9-5 9 5v13M9 21v-6h6v6M3 21h18'/>", ["Coordinator"], I18n.T("capacidad salones espacios pisos")),
-        new("user-levels", I18n.T("Niveles de puntos"), "<path d='M4 20h4v-5H4ZM10 20h4V10h-4ZM16 20h4V4h-4Z'/>", ["Coordinator"], I18n.T("gamificación puntos rangos escalera")),
-        new("condition-types", I18n.T("Tipos de condición"), "<path d='M4 6h10M4 12h6M4 18h10M17 4l3 3-3 3M17 14l3 3-3 3'/>", ["Coordinator"], I18n.T("gamificación logros desafíos condiciones")),
+        new("categories", I18n.T("Categorías de error"), "<path d='M3 12V4h8l10 10-8 8ZM7.5 8.5h.01'/>", ["Coordinator", "Teacher"], I18n.T("clasificación errores gramática etiquetas reentrenamiento")),
+        new("modules", I18n.T("Módulos"), "<path d='M12 3 3 8l9 5 9-5ZM3 13l9 5 9-5M3 17.5 12 22l9-4.5'/>", ["Coordinator", "Teacher"], I18n.T("niveles ruta cursos ciclo promoción")),
+        new("classrooms", I18n.T("Aulas"), "<path d='M3 21V8l9-5 9 5v13M9 21v-6h6v6M3 21h18'/>", ["Coordinator", "Teacher"], I18n.T("capacidad salones espacios pisos")),
+        new("user-levels", I18n.T("Niveles de puntos"), "<path d='M4 20h4v-5H4ZM10 20h4V10h-4ZM16 20h4V4h-4Z'/>", ["Coordinator", "Teacher"], I18n.T("gamificación puntos rangos escalera")),
+        new("condition-types", I18n.T("Tipos de condición"), "<path d='M4 6h10M4 12h6M4 18h10M17 4l3 3-3 3M17 14l3 3-3 3'/>", ["Coordinator", "Teacher"], I18n.T("gamificación logros desafíos condiciones")),
         new("courses", I18n.T("Cursos"), Book, ["Coordinator", "Teacher"]),
         new("reports", I18n.T("Reportes"), "<path d='M4 20h16M7 16v-5m5 5V5m5 11V8'/>", ["Coordinator", "Teacher"], I18n.T("gramática desempeño falencias estadísticas")),
-        new("enrollments", I18n.T("Inscripciones"), List, ["Coordinator"]),
+        new("enrollments", I18n.T("Inscripciones"), List, ["Coordinator", "Teacher"]),
         new("gamification", I18n.T("Gamificación"), "<path d='M8 3h8v7a4 4 0 0 1-8 0ZM8 5H4v3a4 4 0 0 0 4 4m8-7h4v3a4 4 0 0 1-4 4m-4 2v6m-4 1h8'/>", ["Coordinator", "Teacher", "Student"], I18n.T("logros desafíos challenges"))
     ];
 

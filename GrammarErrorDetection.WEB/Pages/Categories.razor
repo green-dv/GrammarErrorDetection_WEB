@@ -4,11 +4,11 @@
 @inject AuthSessionState Session
 @inject NavigationManager Navigation
 
-<PageTitle>@L["Categorías de error | CETI La Paz"]</PageTitle>
+<PageTitle>@L["Categorías de error | Grammar Practice"]</PageTitle>
 
 @if (Session.Current is not null)
 {
-    @if (Session.Roles.Contains("Coordinator", StringComparer.Ordinal))
+    @if (Session.IsStaff)
     {
         <CategoryList />
     }

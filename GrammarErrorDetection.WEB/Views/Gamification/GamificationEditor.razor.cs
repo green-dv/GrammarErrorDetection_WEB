@@ -134,7 +134,7 @@ public partial class GamificationEditor : IDisposable
     private bool CheckPermission()
     {
         if (Session.Current is null) { Navigation.NavigateTo("/auth/login", replace: true); return false; }
-        if (Session.IsInRole("Coordinator")) return true;
+        if (Session.IsStaff) return true;
         error = I18n.T("No tienes permiso para gestionar la gamificación."); return false;
     }
 

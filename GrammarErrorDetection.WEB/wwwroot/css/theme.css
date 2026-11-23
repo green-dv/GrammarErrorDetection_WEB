@@ -37,9 +37,9 @@
 
 /* Fondo y texto general en oscuro. */
 :root[data-theme="dark"] body { background: var(--t-page); color: var(--t-text); }
-:root[data-theme="dark"] .ceti-shell { background: var(--t-page); }
-:root[data-theme="dark"] .ceti-sidebar { background: linear-gradient(180deg, #070c1d, #0a2240); }
-:root[data-theme="dark"] .ceti-mobile-toggle { border-color: var(--t-line); background: var(--t-surface); color: var(--t-text); }
+:root[data-theme="dark"] .gp-shell { background: var(--t-page); }
+:root[data-theme="dark"] .gp-sidebar { background: linear-gradient(180deg, #070c1d, #0a2240); }
+:root[data-theme="dark"] .gp-mobile-toggle { border-color: var(--t-line); background: var(--t-surface); color: var(--t-text); }
 :root[data-theme="dark"] input, :root[data-theme="dark"] select, :root[data-theme="dark"] textarea { color: var(--t-text); }
 :root[data-theme="dark"] h1, :root[data-theme="dark"] h2, :root[data-theme="dark"] h3, :root[data-theme="dark"] h4 { color: var(--t-text); }
 
@@ -173,7 +173,7 @@
     --screen-line: var(--t-line);
 }
 :root[data-theme="dark"] .data-table-card { --table-line: var(--t-line); }
-:root[data-theme="dark"] .ceti-modal { --table-ink: var(--t-text); --table-muted: var(--t-muted); --table-accent: var(--t-accent); }
+:root[data-theme="dark"] .gp-modal { --table-ink: var(--t-text); --table-muted: var(--t-muted); --table-accent: var(--t-accent); }
 :root[data-theme="dark"] .member-profile { --member-ink: var(--t-text); --member-muted: var(--t-muted); }
 :root[data-theme="dark"] .grammar-kpi { --kpi-tint: var(--t-subtle); }
 :root[data-theme="dark"] .file-icon { --file-tint: var(--t-subtle); }
@@ -227,8 +227,8 @@
 :root[data-theme="dark"] .points-level-card { background: linear-gradient(120deg, #17304a, #18223b); }
 
 /* ---------- Modo oscuro: segunda ronda ---------- */
-/* Tokens de pantalla definidos en .ceti-content (bordes de casi todas las tarjetas del portal). */
-:root[data-theme="dark"] .ceti-content { --screen-ink: var(--t-text); --screen-muted: var(--t-muted); --screen-line: var(--t-line); }
+/* Tokens de pantalla definidos en .gp-content (bordes de casi todas las tarjetas del portal). */
+:root[data-theme="dark"] .gp-content { --screen-ink: var(--t-text); --screen-muted: var(--t-muted); --screen-line: var(--t-line); }
 
 /* Reporte gramatical: tarjetas de indicadores sin el degradado a blanco. */
 :root[data-theme="dark"] .grammar-kpi { background: linear-gradient(155deg, color-mix(in srgb, var(--kpi-color) 16%, var(--t-surface)), var(--t-surface) 65%); }

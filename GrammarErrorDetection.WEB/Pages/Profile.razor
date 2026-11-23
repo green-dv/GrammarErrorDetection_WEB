@@ -1,12 +1,12 @@
 @page "/profile"
 @using GrammarErrorDetection.WEB.Views.Profiles
 
-<PageTitle>@L["Mi perfil | CETI La Paz"]</PageTitle>
+<PageTitle>@L["Mi perfil | Grammar Practice"]</PageTitle>
 @if (Session.Current?.User is { } user)
 {
     <section class="profile-page" aria-labelledby="profile-title">
         <header class="portal-heading">
-            <p class="portal-eyebrow">@L["CETI · MI CUENTA"]</p>
+            <p class="portal-eyebrow">@L["MI CUENTA"]</p>
             <h1 id="profile-title">@L["Mi perfil"]</h1>
             <p>@L["Tu información, cursos, progreso académico y configuración de cuenta."]</p>
         </header>

@@ -3,10 +3,10 @@
 @page "/nlp"
 @using GrammarErrorDetection.WEB.Components.Analysis
 
-<PageTitle>@L["Procesar | CETI La Paz"]</PageTitle>
+<PageTitle>@L["Procesar | Grammar Practice"]</PageTitle>
 
 <section class="users-page nlp-page" aria-labelledby="nlp-title">
-    <header class="users-heading"><div><p class="users-eyebrow">@L["CETI · PRÁCTICA DE ESCRITURA"]</p><h1 id="nlp-title">@L["Procesar"]</h1><p>@L["Escribe en inglés y revisa los errores de cada oración."]</p></div></header>
+    <header class="users-heading"><div><p class="users-eyebrow">@L["PRÁCTICA DE ESCRITURA"]</p><h1 id="nlp-title">@L["Procesar"]</h1><p>@L["Escribe en inglés y revisa los errores de cada oración."]</p></div></header>
     <div class="nlp-layout">
         <aside class="nlp-history" aria-labelledby="nlp-history-title" aria-busy="@(loading ? "true" : "false")">
             <header><h2 id="nlp-history-title">@(allTexts ? L["Todos los párrafos"] : L["Mis párrafos"])</h2><button type="button" class="data-table-text-button" disabled="@EditorBusy" @onclick="NewParagraph">@L["Nuevo"]</button></header>
@@ -15,7 +15,7 @@
                 <label class="data-table-field nlp-history-search"><span>@L["Mostrar"]</span><select @bind="allTexts" @bind:after="ChangeScopeAsync" disabled="@(loading || EditorBusy)"><option value="false">@L["Mis párrafos"]</option><option value="true">@L["Todos los usuarios"]</option></select></label>
             }
             <form class="nlp-history-search-form" @onsubmit="SearchAsync" @onsubmit:preventDefault>
-                <label class="data-table-field"><span class="ceti-sr-only">@L["Buscar por contenido"]</span><input type="search" placeholder="@L["Buscar por contenido…"]" maxlength="5000" @bind="search" @bind:event="oninput" /></label>
+                <label class="data-table-field"><span class="gp-sr-only">@L["Buscar por contenido"]</span><input type="search" placeholder="@L["Buscar por contenido…"]" maxlength="5000" @bind="search" @bind:event="oninput" /></label>
                 <button type="submit" class="data-table-button" disabled="@(loading || EditorBusy)">@L["Buscar"]</button>
             </form>
             <p class="nlp-history-count" role="status">@(loading ? L["Cargando párrafos…"] : I18n.T("{0} párrafos en esta página", paragraphs.Count))</p>
@@ -52,7 +52,7 @@
                     @if (loadingCourses) { <p class="nlp-feedback" role="status">@L["Consultando tus cursos…"]</p> }
                     @if (coursesError is not null) { <p class="nlp-upload-error" role="alert">@coursesError <button type="button" class="data-table-text-button" disabled="@loadingCourses" @onclick="LoadUploadCoursesAsync">@L["Reintentar cursos"]</button></p> }
                 }
-                <label class="ceti-sr-only" for="nlp-paragraph">@L["Párrafo en inglés"]</label>
+                <label class="gp-sr-only" for="nlp-paragraph">@L["Párrafo en inglés"]</label>
                 <textarea id="nlp-paragraph" rows="4" lang="en" spellcheck="false" maxlength="5000" placeholder="@L["Write your paragraph here…"]" disabled="@EditorBusy" @bind="text" @bind:event="oninput"></textarea>
                 <p class="nlp-character-count">@text.Length / 5000 caracteres</p>
                 <div class="nlp-editor-actions">
@@ -109,7 +109,7 @@
 @if (previewOpen && pendingPhoto is not null)
 {
     <ModalDialog Title="@L["Vista previa de la foto"]" Subtitle="@L["Revisa que el texto se vea nítido y completo antes de leerlo."]" Class="nlp-photo-preview-dialog" Busy="recognizingPhoto" OnClose="CancelPhoto">
-        <div class="ceti-modal-body">
+        <div class="gp-modal-body">
             @if (previewUrl is not null)
             {
                 <img class="nlp-photo-preview-image" src="@previewUrl" alt="@L["Vista previa de la foto seleccionada"]" />
@@ -120,7 +120,7 @@
             }
             <p class="nlp-photo-preview-meta">@pendingPhoto.Name · @FormatSize(pendingPhoto.Size)</p>
         </div>
-        <footer class="ceti-modal-footer">
+        <footer class="gp-modal-footer">
             <span role="status">@(recognizingPhoto ? L["Leyendo el texto de la foto…"] : "")</span>
             <div>
                 <button type="button" class="data-table-button" disabled="@recognizingPhoto" @onclick="CancelPhoto">@L["Elegir otra"]</button>

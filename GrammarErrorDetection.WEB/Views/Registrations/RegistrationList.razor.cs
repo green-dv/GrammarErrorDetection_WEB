@@ -26,7 +26,7 @@ public partial class RegistrationList : IDisposable
     private string PageOf => total is { } all ? I18n.T(" de {0}", Math.Max(1, (all + pageSize - 1) / pageSize)) : "";
     private string? error, message, decisionError;
     private int page = 1, pageSize = 20;
-    private bool Allowed => Session.Current?.User?.Id == owner && Session.IsInRole(Mine ? "Student" : "Coordinator");
+    private bool Allowed => Session.Current?.User?.Id == owner && (Mine ? Session.IsInRole("Student") : Session.IsStaff);
     private string Title => CoursesOnly ? I18n.T("Mis cursos") : Mine ? I18n.T("Mis inscripciones") : I18n.T("Inscripciones");
     private const int Columns = 8;
 

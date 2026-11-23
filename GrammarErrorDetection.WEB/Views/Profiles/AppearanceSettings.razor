@@ -1,7 +1,7 @@
 @inject IJSRuntime JS
 
 @* Configuración > Apariencia: tema claro, oscuro o el del sistema. La preferencia se guarda en este navegador
-   (window.cetiTheme, definido en index.html) y se aplica al instante. *@
+   (window.gpTheme, definido en index.html) y se aplica al instante. *@
 <div class="settings-content appearance-settings">
     <h2>@L["Apariencia e idioma"]</h2>
     <h3 class="appearance-subtitle">@L["Idioma"]</h3>
@@ -55,7 +55,7 @@
         if (!firstRender) return;
         try
         {
-            choice = await JS.InvokeAsync<string>("cetiTheme.get");
+            choice = await JS.InvokeAsync<string>("gpTheme.get");
             applied = await JS.InvokeAsync<string>("document.documentElement.getAttribute", "data-theme") ?? "light";
         }
         catch (JSException) { }
@@ -66,7 +66,7 @@
     private async Task SetAsync(string value)
     {
         choice = value;
-        try { applied = await JS.InvokeAsync<string>("cetiTheme.set", value); }
+        try { applied = await JS.InvokeAsync<string>("gpTheme.set", value); }
         catch (JSException) { }
     }
 }

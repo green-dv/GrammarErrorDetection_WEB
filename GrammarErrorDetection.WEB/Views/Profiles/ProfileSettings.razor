@@ -24,7 +24,7 @@
             {
                 <div class="settings-totp-layout">
                     <div>
-                        <div class="settings-qr"><img src="@qrImage" alt="@L["Código QR para configurar tu autenticador CETI"]" width="220" height="220" /></div>
+                        <div class="settings-qr"><img src="@qrImage" alt="@L["Código QR para configurar tu autenticador Grammar Practice"]" width="220" height="220" /></div>
                         <details class="settings-manual-key"><summary>@L["¿No puedes escanear el QR?"]</summary><p>@L["Introduce esta clave en tu autenticador:"]</p><code>@manualKey</code></details>
                     </div>
                     <EditForm EditContext="editContext" OnValidSubmit="ConfirmTotpAsync" OnInvalidSubmit="ShowValidationErrors" novalidate class="settings-totp-fields">

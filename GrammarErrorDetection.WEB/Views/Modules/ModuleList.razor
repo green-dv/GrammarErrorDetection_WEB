@@ -3,7 +3,7 @@
 <section class="users-page users-directory modules-page" aria-labelledby="modules-title">
     <header class="users-heading">
         <div class="users-heading-content">
-            <p class="users-eyebrow">@L["CETI · GESTIÓN ACADÉMICA"]</p>
+            <p class="users-eyebrow">@L["GESTIÓN ACADÉMICA"]</p>
             <h1 id="modules-title">@L["Módulos"]</h1>
             <p>@L["Niveles del ciclo de cursos y el módulo al que se promueve a los estudiantes."]</p>
         </div>
@@ -93,11 +93,11 @@
 @if (statusModule is not null)
 {
     <ModalDialog Title="@(statusModule.Active ? L["Deshabilitar módulo"] : L["Reactivar módulo"])" Busy="@updatingStatus" OnClose="CloseStatus">
-        <div class="ceti-modal-body">
-            @if (statusError is not null) { <div class="ceti-modal-errors" role="alert"><p>@statusError</p></div> }
+        <div class="gp-modal-body">
+            @if (statusError is not null) { <div class="gp-modal-errors" role="alert"><p>@statusError</p></div> }
             <p>¿Quieres @(statusModule.Active ? "deshabilitar" : "reactivar") el módulo <strong>@statusModule.Name</strong>?</p>
             <p>@(statusModule.Active ? L["El módulo se conserva con sus datos y su historial. Podrás reactivarlo cuando quieras."] : L["El módulo volverá a estar activo."])</p>
         </div>
-        <footer class="ceti-modal-footer"><span role="status">@(updatingStatus ? L["Actualizando estado…"] : "")</span><div><button type="button" class="data-table-button" disabled="@updatingStatus" @onclick="CloseStatus">@L["Cancelar"]</button><button type="button" class="data-table-button data-table-button-danger" disabled="@updatingStatus" @onclick="ConfirmStatusAsync">@(statusModule.Active ? L["Deshabilitar"] : L["Reactivar"])</button></div></footer>
+        <footer class="gp-modal-footer"><span role="status">@(updatingStatus ? L["Actualizando estado…"] : "")</span><div><button type="button" class="data-table-button" disabled="@updatingStatus" @onclick="CloseStatus">@L["Cancelar"]</button><button type="button" class="data-table-button data-table-button-danger" disabled="@updatingStatus" @onclick="ConfirmStatusAsync">@(statusModule.Active ? L["Deshabilitar"] : L["Reactivar"])</button></div></footer>
     </ModalDialog>
 }

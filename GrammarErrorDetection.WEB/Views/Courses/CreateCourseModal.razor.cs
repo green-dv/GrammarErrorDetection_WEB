@@ -40,6 +40,7 @@ public partial class CreateCourseModal : IDisposable
     private bool saving, loading, hasNext, disposed, transferConfirmed;
     private int page = 1, requestVersion;
     private const int PageSize = 20;
+    private bool TeacherLocked => Session.IsInRole("Teacher") && !Session.IsInRole("Coordinator") && Session.Current?.User is not null;
     private (Guid, int, int) Scope => (model.ModuleNameId, model.Year, model.Bimester);
     private (Guid, int, int)? loadedScope;
     private bool ValidScope => model.ModuleNameId != Guid.Empty && model.Year is >= 1 and <= 9999 && model.Bimester is >= 1 and <= 6;
@@ -61,6 +62,8 @@ public partial class CreateCourseModal : IDisposable
                 StartTime = ParseTime(course.StartTime), EndTime = ParseTime(course.EndTime)
             };
         }
+        // Un docente solo crea cursos a su nombre (la API también lo impone).
+        if (TeacherLocked) model.TeacherId = Session.Current!.User!.Id;
         editContext = new EditContext(model);
         if (IsEdit) await LoadCurrentStudentsAsync();
     }
@@ -126,7 +129,7 @@ public partial class CreateCourseModal : IDisposable
     private bool CheckPermission()
     {
         if (Session.Current is null) { Navigation.NavigateTo("/auth/login", replace: true); return false; }
-        if (!Session.IsInRole("Coordinator") || Session.IsInRole("Teacher")) { error = I18n.T("No tienes permiso para gestionar cursos."); return false; }
+        if (!Session.IsStaff) { error = I18n.T("No tienes permiso para gestionar cursos."); return false; }
         return true;
     }
 

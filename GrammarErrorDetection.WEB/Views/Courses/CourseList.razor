@@ -1,12 +1,12 @@
 <section class="users-page courses-page" aria-labelledby="courses-title">
     <header class="users-heading courses-heading">
-        <div><p class="users-eyebrow">@L["CETI · GESTIÓN ACADÉMICA"]</p><h1 id="courses-title">@L["Cursos"]</h1><p>@L["Módulos, docentes y resultados de cada bimestre."]</p></div>
+        <div><p class="users-eyebrow">@L["GESTIÓN ACADÉMICA"]</p><h1 id="courses-title">@L["Cursos"]</h1><p>@L["Módulos, docentes y resultados de cada bimestre."]</p></div>
         <div class="courses-header-actions">
             @if (CanCreate)
             {
-                <button type="button" class="data-table-button data-table-button-primary" @onclick="OpenCreate" disabled="@(busy || loadingCatalogs || modules.Count == 0 || teachers.Count == 0 || classrooms.Count == 0)" aria-haspopup="dialog">@L["+ Crear curso"]</button>
+                <button type="button" class="data-table-button data-table-button-primary" @onclick="OpenCreate" disabled="@(busy || loadingCatalogs || modules.Count == 0 || (!IsTeacher && teachers.Count == 0) || classrooms.Count == 0)" aria-haspopup="dialog">@L["+ Crear curso"]</button>
             }
-            @if (CanCreate)
+            @if (CanGenerate)
             {
                 <button type="button" class="data-table-button courses-generate" disabled="@busy" @onclick="OpenGenerate" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8ZM20 16v6m-3-3h6"/></svg>@L["Generar cursos automáticamente"]</button>
             }
@@ -80,6 +80,10 @@
                                 <td>@if (course.Exam2Average is null) { <span class="data-table-secondary">@L["Pendiente"]</span> } else { <span class="data-table-grade">@course.Exam2Average?.ToString("0.##")</span><span class="data-table-grade-scale"> / 100</span> }</td>
                                 <td><div class="data-table-actions">
                                     <a class="data-table-icon-button" href="@($"/courses/{course.Id:D}")" title="@L["Ver estudiantes del curso"]" aria-label="@L["Ver estudiantes de {0} paralelo {1}", course.ModuleName, course.Parallel]"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></a>
+                                    @if (course.Active)
+                                    {
+                                        <button type="button" class="data-table-icon-button" @onclick="() => OpenInvite(course)" title="@L["Invitar estudiantes (enlace y QR)"]" aria-label="@L["Invitar estudiantes a {0} paralelo {1}", course.ModuleName, course.Parallel]" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h3v3h-3zM20 14v3m-6 4h3m3 0h1v-4"/></svg></button>
+                                    }
                                     @if (CanCreate)
                                     {
                                         <button type="button" class="data-table-icon-button" disabled="@loadingCatalogs" @onclick="() => OpenEdit(course)" title="@L["Editar curso"]" aria-label="@L["Editar curso {0} paralelo {1}", course.ModuleName, course.Parallel]" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15l-1 6Z"/></svg></button>
@@ -119,6 +123,10 @@
                         </div>
                         <div class="data-table-actions course-card-actions">
                             <a class="data-table-button" href="@($"/courses/{course.Id:D}")" aria-label="@L["Ver estudiantes de {0} paralelo {1}", course.ModuleName, course.Parallel]">@L["Ver estudiantes"]</a>
+                            @if (course.Active)
+                            {
+                                <button type="button" class="data-table-button" @onclick="() => OpenInvite(course)" aria-label="@L["Invitar estudiantes a {0} paralelo {1}", course.ModuleName, course.Parallel]" aria-haspopup="dialog">@L["Invitar"]</button>
+                            }
                             @if (CanCreate)
                             {
                                 <button type="button" class="data-table-button" disabled="@loadingCatalogs" @onclick="() => OpenEdit(course)" aria-label="@L["Editar curso {0} paralelo {1}", course.ModuleName, course.Parallel]" aria-haspopup="dialog">@L["Editar"]</button>
@@ -138,9 +146,14 @@
     <CreateCourseModal @key="@(editingCourse?.Id ?? Guid.Empty)" Course="editingCourse" Modules="modules" Teachers="teachers" Classrooms="classrooms" OnClose="CloseCreate" OnCreated="CourseCreatedAsync" OnSaved="CourseSavedAsync" />
 }
 
-@if (showGenerate && CanCreate)
+@if (showGenerate && CanGenerate)
 {
     <GenerateCoursesModal OnClose="CloseGenerate" OnGenerated="CoursesGeneratedAsync" />
+}
+
+@if (invitingCourse is { } inviting)
+{
+    <CourseInvitationModal @key="inviting.Id" ClassId="inviting.Id" CourseLabel="@($"{inviting.ModuleName} · {inviting.Parallel}")" OnClose="CloseInvite" />
 }
 
 

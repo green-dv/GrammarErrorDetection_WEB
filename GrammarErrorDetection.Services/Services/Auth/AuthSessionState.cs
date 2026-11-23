@@ -10,6 +10,8 @@ public sealed class AuthSessionState(IAuthSessionStorage? storage = null)
     public bool? IsTotpEnabled { get; private set; }
     public IReadOnlyList<string> Roles => Current is { } session ? JwtRoleReader.ReadRoles(session.AccessToken) : [];
     public bool IsInRole(string role) => Roles.Contains(role, StringComparer.Ordinal);
+    /// <summary>Coordinador o docente: gestionan catálogos y gamificación (los docentes solo sus propios cursos).</summary>
+    public bool IsStaff => IsInRole("Coordinator") || IsInRole("Teacher");
 
     public void Restore()
     {

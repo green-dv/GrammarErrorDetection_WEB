@@ -1,9 +1,10 @@
 @page "/register"
 @page "/auth/register"
 @layout AuthLayout
+@using GrammarErrorDetection.Models.Auth
 @using GrammarErrorDetection.WEB.Views.Auth.Components
 
-<PageTitle>@L["Crear cuenta | CETI La Paz"]</PageTitle>
+<PageTitle>@L["Crear cuenta | Grammar Practice"]</PageTitle>
 <AuthHeader Title="@L["Crea tu cuenta"]" Subtitle="@L["Completa tus datos y verifica tu correo."]" />
 
 <EditForm EditContext="editContext" OnValidSubmit="SubmitRegistrationAsync" OnInvalidSubmit="ShowValidationErrors" novalidate autocomplete="off" class="auth-register-form" aria-describedby="register-errors">
@@ -41,7 +42,7 @@
             <label for="register-phone" class="auth-label">@L["Teléfono"]</label>
             <InputText id="register-phone" type="tel" @bind-Value="model.Phone" autocomplete="tel" placeholder="@L["Tu número de teléfono"]" class="auth-control px-4" />
         </div>
-        <div>
+        <div class="auth-register-wide">
             <label for="register-birth-date" class="auth-label">@L["Fecha de nacimiento"]</label>
             <InputDate id="register-birth-date" @bind-Value="model.BirthDate" autocomplete="bday" max="@DateTime.Today.ToString("yyyy-MM-dd")" class="auth-control px-4" />
         </div>
@@ -51,6 +52,13 @@
         </div>
         <AuthPasswordField Id="new-password" @bind-Value="model.Password" Autocomplete="new-password" Placeholder="@L["Crea una contraseña"]" Required="false" />
         <AuthPasswordField Id="confirm-password" Label="@L["Confirmar contraseña"]" @bind-Value="model.ConfirmPassword" Autocomplete="new-password" Placeholder="@L["Repite tu contraseña"]" Required="false" />
+        <ul class="auth-password-rules" aria-label="@L["Requisitos de la contraseña"]">
+            @foreach (var (label, met) in PasswordPolicy.Check(model.Password))
+            {
+                <li class="@(met ? "is-met" : "")"><span aria-hidden="true">@(met ? "✓" : "•")</span>@L[label]<span class="data-table-sr-only">@(met ? L[": cumplido"] : L[": pendiente"])</span></li>
+            }
+            <li class="@(model.ConfirmPassword.Length > 0 && model.ConfirmPassword == model.Password ? "is-met" : "")"><span aria-hidden="true">@(model.ConfirmPassword.Length > 0 && model.ConfirmPassword == model.Password ? "✓" : "•")</span>@L["Las dos contraseñas coinciden"]</li>
+        </ul>
         <button type="submit" class="auth-submit auth-register-submit" aria-busy="@(busy ? "true" : "false")">
             @(busy ? L["Enviando…"] : L["Enviar código de verificación"])
             <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 12h15m-6-6 6 6-6 6"/></svg>

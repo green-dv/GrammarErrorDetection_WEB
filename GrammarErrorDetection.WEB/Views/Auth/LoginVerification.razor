@@ -2,7 +2,7 @@
 @layout AuthLayout
 @using GrammarErrorDetection.WEB.Views.Auth.Components
 
-<PageTitle>@L["Verificar acceso | CETI La Paz"]</PageTitle>
+<PageTitle>@L["Verificar acceso | Grammar Practice"]</PageTitle>
 @if (Flow.HasPendingVerification)
 {
     <AuthHeader Title="@(Flow.IsTotpSelected ? L["Abre tu autenticador"] : L["Revisa tu correo"])" Subtitle="@(Flow.IsTotpSelected ? L["Ingresa el código de tu aplicación autenticadora."] : I18n.T("Ingresa el código enviado a {0}.", Flow.PendingEmail))" />

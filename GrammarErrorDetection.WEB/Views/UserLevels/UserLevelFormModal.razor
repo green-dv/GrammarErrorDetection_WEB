@@ -13,10 +13,10 @@
 <ModalDialog Title="@(IsEdit ? L["Editar nivel"] : L["Nuevo nivel"])" Subtitle="@(IsEdit ? Level!.Name : L["Nivel que se alcanza al sumar puntos"])" Busy="@saving" OnClose="OnClose">
     <EditForm EditContext="editContext" OnSubmit="SaveAsync" novalidate>
         <LocalizedValidator />
-        <div class="ceti-modal-body">
+        <div class="gp-modal-body">
             @if (error is not null || validationErrors.Count > 0)
             {
-                <div class="ceti-modal-errors" role="alert">
+                <div class="gp-modal-errors" role="alert">
                     @if (error is not null) { <p>@error</p> }
                     @foreach (var validationError in validationErrors) { <p>@validationError</p> }
                 </div>
@@ -30,7 +30,7 @@
                 <p class="gamification-help">@L["Los puntos mínimos deben aumentar con el número de nivel y siempre debe haber un nivel activo con 0 puntos. Al guardar se reasigna el nivel de todos los usuarios según sus puntos."]</p>
             </fieldset>
         </div>
-        <footer class="ceti-modal-footer"><span role="status">@(saving ? L["Guardando y reasignando niveles…"] : IsEdit && !HasChanges ? L["No hay cambios para guardar."] : "")</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">@L["Cancelar"]</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@(saving || (IsEdit && !HasChanges))">@(IsEdit ? L["Guardar cambios"] : L["Crear nivel"])</button></div></footer>
+        <footer class="gp-modal-footer"><span role="status">@(saving ? L["Guardando y reasignando niveles…"] : IsEdit && !HasChanges ? L["No hay cambios para guardar."] : "")</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">@L["Cancelar"]</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@(saving || (IsEdit && !HasChanges))">@(IsEdit ? L["Guardar cambios"] : L["Crear nivel"])</button></div></footer>
     </EditForm>
 </ModalDialog>
 
@@ -78,7 +78,7 @@
             return;
         }
         if (Session.Current is null) { Navigation.NavigateTo("/auth/login", replace: true); return; }
-        if (!Session.Roles.Contains("Coordinator", StringComparer.Ordinal)) { error = I18n.T("Solo un coordinador puede gestionar niveles."); return; }
+        if (!Session.IsStaff) { error = I18n.T("Solo un coordinador puede gestionar niveles."); return; }
         saving = true;
         try
         {

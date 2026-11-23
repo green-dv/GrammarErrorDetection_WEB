@@ -1,0 +1,31 @@
+@using GrammarErrorDetection.WEB.Components.Dialogs
+
+<ModalDialog Title="@L["Invitar estudiantes al curso"]" Subtitle="@CourseLabel" Class="course-invitation-dialog" Busy="@loading" OnClose="OnClose">
+    <div class="gp-modal-body course-invitation-body">
+        @if (error is not null)
+        {
+            <div class="gp-modal-errors" role="alert"><p>@error</p></div>
+        }
+        else if (loading)
+        {
+            <p class="data-table-message" role="status">@L["Generando enlace…"]</p>
+        }
+        else if (link is not null)
+        {
+            <p class="generate-courses-note">@L["Comparte este enlace o el código QR. Quien lo abra podrá registrarse e inscribirse directamente en este curso, sin necesitar el curso anterior."]</p>
+            @if (qrImage is not null)
+            {
+                <img class="course-invitation-qr" src="@qrImage" width="220" height="220" alt="@L["Código QR de la invitación al curso"]" />
+            }
+            <label class="data-table-field"><span>@L["Enlace de invitación"]</span><input type="text" readonly value="@link" @onfocus="SelectAsync" aria-describedby="invitation-expiry" /></label>
+            <small id="invitation-expiry" class="course-invitation-expiry">@L["Válido hasta {0}.", expires?.ToLocalTime().ToString("dd/MM/yyyy HH:mm")]</small>
+        }
+    </div>
+    <footer class="gp-modal-footer">
+        <span role="status">@copyStatus</span>
+        <div>
+            <button type="button" class="data-table-button" disabled="@(link is null)" @onclick="CopyAsync">@L["Copiar enlace"]</button>
+            <button type="button" class="data-table-button data-table-button-primary" @onclick="OnClose">@L["Cerrar"]</button>
+        </div>
+    </footer>
+</ModalDialog>

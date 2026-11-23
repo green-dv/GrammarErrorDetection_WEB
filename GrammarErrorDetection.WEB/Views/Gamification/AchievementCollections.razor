@@ -4,7 +4,7 @@
     <section class="users-page gamification-page collection-page" aria-labelledby="collections-title">
         <a class="data-table-text-button collection-back" href="@(IsDetail ? "/gamification/collections" : "/gamification")">← @(IsDetail ? L["Volver a colecciones"] : L["Volver a logros"])</a>
         <header class="users-heading">
-            <div><p class="users-eyebrow">@L["CETI · GAMIFICACIÓN"]</p><h1 id="collections-title">@(IsDetail ? collection?.Name ?? L["Detalle de colección"] : L["Colecciones de logros"])</h1><p>@(IsDetail ? L["Los niveles y reconocimientos que forman esta colección."] : L["Agrupa los logros en recorridos de aprendizaje."])</p></div>
+            <div><p class="users-eyebrow">@L["GAMIFICACIÓN"]</p><h1 id="collections-title">@(IsDetail ? collection?.Name ?? L["Detalle de colección"] : L["Colecciones de logros"])</h1><p>@(IsDetail ? L["Los niveles y reconocimientos que forman esta colección."] : L["Agrupa los logros en recorridos de aprendizaje."])</p></div>
             @if (CanManage && !IsDetail) { <button type="button" class="data-table-button data-table-button-primary" disabled="@loading" @onclick="OpenCreate" aria-haspopup="dialog">@L["+ Registrar colección"]</button> }
             else if (CanManage && collection is not null)
             {

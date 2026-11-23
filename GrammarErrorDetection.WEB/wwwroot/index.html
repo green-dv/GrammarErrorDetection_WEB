@@ -10,7 +10,7 @@
     <script>
         // Tema antes de que cargue Blazor (evita el destello blanco). Preferencia: system | light | dark.
         (function () {
-            var key = 'ceti-theme', media = window.matchMedia('(prefers-color-scheme: dark)');
+            var key = 'gp-theme', media = window.matchMedia('(prefers-color-scheme: dark)');
             function preference() {
                 try { var value = localStorage.getItem(key); return value === 'light' || value === 'dark' ? value : 'system'; }
                 catch (e) { return 'system'; }
@@ -23,7 +23,7 @@
             }
             apply();
             if (media.addEventListener) media.addEventListener('change', function () { if (preference() === 'system') apply(); });
-            window.cetiTheme = {
+            window.gpTheme = {
                 get: preference,
                 set: function (choice) {
                     try { if (choice === 'light' || choice === 'dark') localStorage.setItem(key, choice); else localStorage.removeItem(key); }
@@ -37,7 +37,7 @@
         // Idioma elegido: se fija en <html> y, si es inglés, el diccionario se descarga mientras arranca Blazor.
         (function () {
             try {
-                if (localStorage.getItem('ceti-lang') === 'en') {
+                if (localStorage.getItem('gp-lang') === 'en') {
                     document.documentElement.lang = 'en';
                     var l = document.createElement('link');
                     l.rel = 'preload'; l.as = 'fetch'; l.href = 'i18n/en.json'; l.crossOrigin = 'anonymous';
@@ -61,6 +61,7 @@
     <link rel="stylesheet" href="css/member-profile.css" />
     <link rel="stylesheet" href="css/create-course.css" />
     <link rel="stylesheet" href="css/generate-courses.css" />
+    <link rel="stylesheet" href="css/course-invitation.css" />
     <link rel="stylesheet" href="css/auth.css" />
     <link rel="stylesheet" href="css/portal.css" />
     <link rel="stylesheet" href="css/nlp.css" />
@@ -87,6 +88,7 @@
         <a href="." class="reload">Reload</a>
         <span class="dismiss">🗙</span>
     </div>
+    <script src="js/session-sync.js"></script>
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
 </body>
 

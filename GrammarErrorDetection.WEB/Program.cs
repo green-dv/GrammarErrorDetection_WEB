@@ -52,6 +52,8 @@ builder.Services.AddScoped<IConditionTypeCatalogService, GrammarErrorDetection.S
 builder.Services.AddScoped<IGamificationService, GrammarErrorDetection.Services.Services.Gamification.GamificationService>();
 builder.Services.AddScoped<IEvaluationService, GrammarErrorDetection.Services.Services.Evaluations.EvaluationService>();
 builder.Services.AddScoped<IRegistrationService, GrammarErrorDetection.Services.Services.Registrations.RegistrationService>();
+builder.Services.AddScoped<ICourseInvitationService, GrammarErrorDetection.Services.Services.Registrations.CourseInvitationService>();
+builder.Services.AddScoped<GrammarErrorDetection.Services.Services.Registrations.CourseInvitationFlowState>();
 builder.Services.AddSingleton<GrammarErrorDetection.Services.Localization.Localizer>();
 builder.Services.AddScoped<LoginFlowState>();
 builder.Services.AddScoped<PasswordChangeFlowState>();
@@ -64,5 +66,10 @@ var host = builder.Build();
 await LanguageStorage.InitializeAsync(
     host.Services.GetRequiredService<Microsoft.JSInterop.IJSRuntime>(),
     new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
-host.Services.GetRequiredService<AuthSessionState>().Restore();
+var authSession = host.Services.GetRequiredService<AuthSessionState>();
+authSession.Restore();
+// Pestaña nueva sin sesión propia (sessionStorage es por pestaña): se le pide a las otras pestañas del navegador, en memoria.
+if (authSession.Current is null
+    && await host.Services.GetRequiredService<Microsoft.JSInterop.IJSRuntime>().InvokeAsync<bool>("gpSessionSync.request", new object[] { 300 }))
+    authSession.Restore();
 await host.RunAsync();

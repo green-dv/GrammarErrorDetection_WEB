@@ -6,7 +6,7 @@
 .auth-register-fields .auth-control { height: 2.75rem; font-size: .875rem; }
 .auth-register-submit { min-height: 3rem; padding: .75rem 1rem; font-size: .9375rem; }
 .auth-verification-note { margin-top: 1rem; color: var(--color-muted); font-size: .875rem; line-height: 1.5; }
-.auth-register-email, .auth-register-submit { grid-column: 1 / -1; }
+.auth-register-email, .auth-register-wide, .auth-register-submit, .auth-password-rules { grid-column: 1 / -1; }
 .auth-field-optional { font-size: .6875rem; font-weight: 400; color: var(--color-muted); }
 .auth-verification-fields { display: grid; gap: .75rem; }
 .auth-verification-fields .auth-label { margin: 0; }
@@ -19,5 +19,13 @@
 }
 @media (min-width: 40rem) {
     .auth-register-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem .875rem; }
-    .auth-register-email, .auth-register-submit { grid-column: 1 / -1; }
+    .auth-register-email, .auth-register-wide, .auth-register-submit, .auth-password-rules { grid-column: 1 / -1; }
+}
+.auth-register-fields input[type="date"] { min-height: 2.75rem; }
+.auth-password-rules { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .25rem .875rem; margin: 0; padding: 0; list-style: none; font-size: .75rem; color: var(--color-muted); }
+.auth-password-rules li { display: flex; align-items: center; gap: .4rem; }
+.auth-password-rules li > span[aria-hidden] { width: 1rem; text-align: center; font-weight: 700; }
+.auth-password-rules li.is-met { color: #15803d; }
+@media (max-width: 24rem) {
+    .auth-password-rules { grid-template-columns: minmax(0, 1fr); }
 }

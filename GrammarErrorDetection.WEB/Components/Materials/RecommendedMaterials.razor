@@ -100,7 +100,7 @@
 @if (viewing is { } view)
 {
     <ModalDialog Title="@view.Name" Subtitle="@(view.Category is null ? null : I18n.T("Material recomendado para {0}", view.Category))" Class="material-viewer-dialog" OnClose="Close">
-        <div class="ceti-modal-body">
+        <div class="gp-modal-body">
             <MaterialViewer Material="view">
                 <Feedback>
                     @if (TracksInteractions && viewingMaterial is { } current)

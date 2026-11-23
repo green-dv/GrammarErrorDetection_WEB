@@ -5,7 +5,7 @@
 <section class="study-plan" aria-labelledby="study-plan-title" aria-busy="@(loading ? "true" : "false")">
     <header class="users-heading sp-header">
         <div>
-            <p class="users-eyebrow">@L["CETI · APRENDIZAJE PERSONALIZADO"]</p>
+            <p class="users-eyebrow">@L["APRENDIZAJE PERSONALIZADO"]</p>
             @if (Embedded) { <h2 id="study-plan-title">@L["Plan de estudio personalizado"]</h2> }
             else { <h1 id="study-plan-title">@L["Plan de estudio personalizado"]</h1> }
             <p>@L["Basado en tus errores recientes, te recomendamos el siguiente material de apoyo."]</p>
@@ -295,7 +295,7 @@
 @if (viewing is { } view)
 {
     <ModalDialog Title="@view.Name" Subtitle="@ViewerSubtitle" Class="material-viewer-dialog" OnClose="Close">
-        <div class="ceti-modal-body">
+        <div class="gp-modal-body">
             <MaterialViewer Material="view">
                 <Feedback>
                     @if (viewingMaterial is { } current && lastOpened is { } opened)

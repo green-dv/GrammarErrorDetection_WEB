@@ -5,11 +5,11 @@
     {
         <a class="data-table-icon-button" href="@ViewHref" aria-label="@L["Visualizar {0}", Label]" title="@L["Visualizar"]"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></a>
     }
-    @if (Session.IsInRole("Coordinator") && OnEdit.HasDelegate)
+    @if (Session.IsStaff && OnEdit.HasDelegate)
     {
         <button type="button" class="data-table-icon-button" disabled="@Disabled" @onclick="OnEdit" title="@L["Editar"]" aria-label="@L["Editar {0}", Label]" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15l-1 6Z"/></svg></button>
     }
-    @if (Session.IsInRole("Coordinator") && OnToggleActive.HasDelegate)
+    @if (Session.IsStaff && OnToggleActive.HasDelegate)
     {
         <button type="button" class="data-table-icon-button @(Active ? "data-table-icon-danger" : "")" disabled="@Disabled" @onclick="OnToggleActive" title="@(Active ? L["Deshabilitar"] : L["Habilitar"])" aria-label="@(Active ? I18n.T("Deshabilitar {0}", Label) : I18n.T("Habilitar {0}", Label))" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true">@if (Active) { <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/> } else { <path d="M4 9a8 8 0 1 1 0 6M4 3v6h6"/> }</svg></button>
     }

@@ -3,7 +3,7 @@
 <section class="users-page users-directory levels-page" aria-labelledby="levels-title">
     <header class="users-heading">
         <div class="users-heading-content">
-            <p class="users-eyebrow">@L["CETI · GAMIFICACIÓN"]</p>
+            <p class="users-eyebrow">@L["GAMIFICACIÓN"]</p>
             <h1 id="levels-title">@L["Niveles de puntos"]</h1>
             <p>@L["Niveles que alcanzan los usuarios al sumar puntos. Los puntos mínimos deben aumentar con el nivel y siempre debe haber un nivel activo con 0 puntos."]</p>
         </div>
@@ -93,11 +93,11 @@
 @if (statusLevel is not null)
 {
     <ModalDialog Title="@(statusLevel.Active ? L["Deshabilitar nivel"] : L["Reactivar nivel"])" Busy="@updatingStatus" OnClose="CloseStatus">
-        <div class="ceti-modal-body">
-            @if (statusError is not null) { <div class="ceti-modal-errors" role="alert"><p>@statusError</p></div> }
+        <div class="gp-modal-body">
+            @if (statusError is not null) { <div class="gp-modal-errors" role="alert"><p>@statusError</p></div> }
             <p>¿Quieres @(statusLevel.Active ? "deshabilitar" : "reactivar") el nivel <strong>@statusLevel.Name</strong>?</p>
             <p>@(statusLevel.Active ? (statusLevel.UserCount > 0 ? I18n.T(statusLevel.UserCount == 1 ? "{0} usuario pasará al nivel que les corresponda por sus puntos. " : "{0} usuarios pasarán al nivel que les corresponda por sus puntos. ", statusLevel.UserCount) : "") + L["El nivel se conserva y podrás reactivarlo cuando quieras. Siempre debe quedar un nivel activo con 0 puntos."] : L["El nivel volverá a estar activo y se reasignará el nivel de los usuarios según sus puntos."])</p>
         </div>
-        <footer class="ceti-modal-footer"><span role="status">@(updatingStatus ? L["Actualizando estado…"] : "")</span><div><button type="button" class="data-table-button" disabled="@updatingStatus" @onclick="CloseStatus">@L["Cancelar"]</button><button type="button" class="data-table-button data-table-button-danger" disabled="@updatingStatus" @onclick="ConfirmStatusAsync">@(statusLevel.Active ? L["Deshabilitar"] : L["Reactivar"])</button></div></footer>
+        <footer class="gp-modal-footer"><span role="status">@(updatingStatus ? L["Actualizando estado…"] : "")</span><div><button type="button" class="data-table-button" disabled="@updatingStatus" @onclick="CloseStatus">@L["Cancelar"]</button><button type="button" class="data-table-button data-table-button-danger" disabled="@updatingStatus" @onclick="ConfirmStatusAsync">@(statusLevel.Active ? L["Deshabilitar"] : L["Reactivar"])</button></div></footer>
     </ModalDialog>
 }

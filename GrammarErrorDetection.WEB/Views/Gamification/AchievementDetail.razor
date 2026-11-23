@@ -4,7 +4,7 @@
 {
     <section class="users-page gamification-page">
         <a class="data-table-text-button collection-back" href="@(achievement?.AchievementCollectionId is { } collectionId ? $"/gamification/collections/{collectionId:D}" : "/gamification")">← @(achievement?.AchievementCollectionId is not null ? L["Volver a la colección"] : L["Volver a logros"])</a>
-        <header class="users-heading"><div><p class="users-eyebrow">@L["CETI · GAMIFICACIÓN"]</p><h1>@L["Detalle del logro"]</h1><p>@L["Información, recompensa y condición de obtención."]</p></div>
+        <header class="users-heading"><div><p class="users-eyebrow">@L["GAMIFICACIÓN"]</p><h1>@L["Detalle del logro"]</h1><p>@L["Información, recompensa y condición de obtención."]</p></div>
             @if (CanManage && achievement is not null) { <GamificationActions Label="@(I18n.T("logro {0}", achievement.Name))" Active="achievement.Active" Disabled="loading" OnEdit="OpenEdit" OnToggleActive="OpenStatus" /> }
         </header>
         @if (error is not null) { <div class="data-table-error" role="alert">@error <button type="button" class="data-table-text-button" disabled="@loading" @onclick="LoadAsync">@L["Reintentar"]</button></div> }

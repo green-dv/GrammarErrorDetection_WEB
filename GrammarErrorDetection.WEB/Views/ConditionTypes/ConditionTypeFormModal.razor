@@ -13,10 +13,10 @@
 <ModalDialog Title="@(IsEdit ? L["Editar tipo de condición"] : L["Nuevo tipo de condición"])" Subtitle="@(IsEdit ? Type!.Code : L["Solo para códigos que el motor ya calcula"])" Busy="@saving" OnClose="OnClose">
     <EditForm EditContext="editContext" OnSubmit="SaveAsync" novalidate>
         <LocalizedValidator />
-        <div class="ceti-modal-body">
+        <div class="gp-modal-body">
             @if (error is not null || validationErrors.Count > 0)
             {
-                <div class="ceti-modal-errors" role="alert">
+                <div class="gp-modal-errors" role="alert">
                     @if (error is not null) { <p>@error</p> }
                     @foreach (var validationError in validationErrors) { <p>@validationError</p> }
                 </div>
@@ -32,7 +32,7 @@
                     : L["Un tipo nuevo solo se acepta si el motor de gamificación ya sabe calcular su código; si no, el servidor lo rechaza."])</p>
             </fieldset>
         </div>
-        <footer class="ceti-modal-footer"><span role="status">@(saving ? L["Guardando…"] : IsEdit && !HasChanges ? L["No hay cambios para guardar."] : "")</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">@L["Cancelar"]</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@(saving || (IsEdit && !HasChanges))">@(IsEdit ? L["Guardar cambios"] : L["Crear tipo"])</button></div></footer>
+        <footer class="gp-modal-footer"><span role="status">@(saving ? L["Guardando…"] : IsEdit && !HasChanges ? L["No hay cambios para guardar."] : "")</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">@L["Cancelar"]</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@(saving || (IsEdit && !HasChanges))">@(IsEdit ? L["Guardar cambios"] : L["Crear tipo"])</button></div></footer>
     </EditForm>
 </ModalDialog>
 
@@ -80,7 +80,7 @@
             return;
         }
         if (Session.Current is null) { Navigation.NavigateTo("/auth/login", replace: true); return; }
-        if (!Session.Roles.Contains("Coordinator", StringComparer.Ordinal)) { error = I18n.T("Solo un coordinador puede gestionar tipos de condición."); return; }
+        if (!Session.IsStaff) { error = I18n.T("Solo un coordinador puede gestionar tipos de condición."); return; }
         saving = true;
         try
         {

@@ -1,13 +1,13 @@
 @using GrammarErrorDetection.WEB.Components.Dialogs
 
 <ModalDialog Title="@L["Editar usuario"]" Busy="@saving" OnClose="OnClose">
-    <p class="ceti-modal-description">@User.FirstName @User.LastName</p>
+    <p class="gp-modal-description">@User.FirstName @User.LastName</p>
     <EditForm EditContext="editContext" OnSubmit="SaveAsync" novalidate>
         <LocalizedValidator />
-        <div class="ceti-modal-body">
+        <div class="gp-modal-body">
             @if (error is not null || validationErrors.Count > 0)
             {
-                <div class="ceti-modal-errors" role="alert">
+                <div class="gp-modal-errors" role="alert">
                     @if (error is not null) { <p>@error</p> }
                     @foreach (var validationError in validationErrors) { <p>@validationError</p> }
                 </div>
@@ -33,6 +33,6 @@
                 </div>
             </fieldset>
         </div>
-        <footer class="ceti-modal-footer"><span role="status">@(saving ? L["Guardando cambios…"] : HasChanges ? L["Hay cambios pendientes."] : L["No hay cambios para guardar."])</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">@L["Cancelar"]</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@(saving || !HasChanges)">@L["Guardar cambios"]</button></div></footer>
+        <footer class="gp-modal-footer"><span role="status">@(saving ? L["Guardando cambios…"] : HasChanges ? L["Hay cambios pendientes."] : L["No hay cambios para guardar."])</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">@L["Cancelar"]</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@(saving || !HasChanges)">@L["Guardar cambios"]</button></div></footer>
     </EditForm>
 </ModalDialog>

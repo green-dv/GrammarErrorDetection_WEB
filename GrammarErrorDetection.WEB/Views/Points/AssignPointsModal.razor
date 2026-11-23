@@ -9,11 +9,11 @@
 @inject NavigationManager Navigation
 
 <ModalDialog Title="@L["Asignar puntos"]" Busy="saving" OnClose="OnClose">
-    <p class="ceti-modal-description">@L["Estudiante:"] <strong>@Name</strong><br />@L["Inscripción: {0}", CourseName]</p>
+    <p class="gp-modal-description">@L["Estudiante:"] <strong>@Name</strong><br />@L["Inscripción: {0}", CourseName]</p>
     <EditForm Model="model" OnValidSubmit="SaveAsync" novalidate>
         <LocalizedValidator />
-        <div class="ceti-modal-body points-form">
-            @if (error is not null) { <div class="ceti-modal-errors" role="alert">@error</div> }
+        <div class="gp-modal-body points-form">
+            @if (error is not null) { <div class="gp-modal-errors" role="alert">@error</div> }
             <fieldset disabled="@saving" class="users-edit-fields">
                 <label class="data-table-field" for="points-amount"><span>@L["Cantidad de puntos"]</span><InputNumber id="points-amount" @bind-Value="model.Amount" max="99" step="1" placeholder="@L["Ej. 25"]" aria-describedby="points-amount-help" /></label>
                 <span id="points-amount-help" class="points-field-help">@L["Número entero menor que 100. Admite cero y valores negativos para ajustes."]</span>
@@ -22,7 +22,7 @@
                 <ValidationMessage For="() => model.Reason" />
             </fieldset>
         </div>
-        <footer class="ceti-modal-footer"><span role="status">@(saving ? L["Guardando puntos…"] : L["El movimiento quedará registrado en esta inscripción."])</span><div><button type="button" disabled="@saving" class="data-table-button" @onclick="() => OnClose.InvokeAsync()">@L["Cancelar"]</button><button type="submit" disabled="@(saving || RegistrationId == Guid.Empty)" class="data-table-button data-table-button-primary">@L["Asignar puntos"]</button></div></footer>
+        <footer class="gp-modal-footer"><span role="status">@(saving ? L["Guardando puntos…"] : L["El movimiento quedará registrado en esta inscripción."])</span><div><button type="button" disabled="@saving" class="data-table-button" @onclick="() => OnClose.InvokeAsync()">@L["Cancelar"]</button><button type="submit" disabled="@(saving || RegistrationId == Guid.Empty)" class="data-table-button data-table-button-primary">@L["Asignar puntos"]</button></div></footer>
     </EditForm>
 </ModalDialog>
 @code {

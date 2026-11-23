@@ -10,12 +10,12 @@
 @inject NavigationManager Navigation
 
 <ModalDialog Title="@(I18n.T(Achievement is not null ? "{0} logro" : L["{0} colección"], Action))" Busy="saving" OnClose="OnClose">
-    <div class="ceti-modal-body">
+    <div class="gp-modal-body">
         <p>@L[Active ? "¿Quieres deshabilitar" : "¿Quieres habilitar"] <strong>@Name</strong>?</p>
         <p>@(Active ? L["El registro quedará inactivo. Podrás volver a habilitarlo desde su listado o detalle."] : L["El registro volverá a estar activo."])</p>
-        @if (error is not null) { <p class="ceti-modal-errors" role="alert">@error</p> }
+        @if (error is not null) { <p class="gp-modal-errors" role="alert">@error</p> }
     </div>
-    <footer class="ceti-modal-footer"><span role="status">@(saving ? L["Guardando estado…"] : "")</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">@(uncertain ? L["Cerrar y revisar"] : L["Cancelar"])</button><button type="button" class="data-table-button @(Active ? "gamification-danger-button" : "data-table-button-primary")" disabled="@(saving || uncertain)" @onclick="SaveAsync">@Action</button></div></footer>
+    <footer class="gp-modal-footer"><span role="status">@(saving ? L["Guardando estado…"] : "")</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">@(uncertain ? L["Cerrar y revisar"] : L["Cancelar"])</button><button type="button" class="data-table-button @(Active ? "gamification-danger-button" : "data-table-button-primary")" disabled="@(saving || uncertain)" @onclick="SaveAsync">@Action</button></div></footer>
 </ModalDialog>
 
 @code {
@@ -34,7 +34,7 @@
     {
         if (saving || uncertain || disposed) return;
         if (Session.Current is null) { Navigation.NavigateTo("/auth/login", replace: true); return; }
-        if (!Session.IsInRole("Coordinator")) { error = I18n.T("No tienes permiso para cambiar el estado."); return; }
+        if (!Session.IsStaff) { error = I18n.T("No tienes permiso para cambiar el estado."); return; }
         saving = true; error = null; var success = false;
         try
         {

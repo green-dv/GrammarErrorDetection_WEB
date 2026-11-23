@@ -5,11 +5,11 @@
 @inject NavigationManager Navigation
 @using GrammarErrorDetection.WEB.Views.Profiles
 
-<PageTitle>@L["Perfil de usuario | CETI La Paz"]</PageTitle>
+<PageTitle>@L["Perfil de usuario | Grammar Practice"]</PageTitle>
 
 @if (Session.Current is not null)
 {
-        <header class="portal-heading"><p class="portal-eyebrow">@L["CETI · COMUNIDAD ACADÉMICA"]</p><h1>@L["Perfil de usuario"]</h1>
+        <header class="portal-heading"><p class="portal-eyebrow">@L["COMUNIDAD ACADÉMICA"]</p><h1>@L["Perfil de usuario"]</h1>
             @if (Session.IsInRole("Coordinator")) { <a href="/users" class="data-table-text-button">@L["← Volver a usuarios"]</a> }
             else { <a href="/home" class="data-table-text-button">@L["← Volver al inicio"]</a> }
         </header>

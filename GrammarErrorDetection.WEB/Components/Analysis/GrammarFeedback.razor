@@ -30,7 +30,7 @@ else
                 {
                     <button type="button" class="an-flag an-flag--toggle is-err" aria-expanded="@(open ? "true" : "false")" aria-controls="an-body-@sentence.Id" @onclick="() => OnToggle.InvokeAsync(sentence.Id)">
                         <AnalysisIcon Name="alert" /><span>@count @AnalysisFormat.Plural(count, "error", "errores")@(open ? "" : L[" · Ver corrección"])</span><AnalysisIcon Name="chevron" Class="an-chev" />
-                        <span class="ceti-sr-only"> @L["de la oración {0}", sentence.SentenceIndex]</span>
+                        <span class="gp-sr-only"> @L["de la oración {0}", sentence.SentenceIndex]</span>
                     </button>
                 }
             </div>
@@ -48,15 +48,15 @@ else
                             {
                                 <li class="an-issue" @key="error.Id">
                                     <p class="an-change">
-                                        <del class="an-wrong"><span class="ceti-sr-only">@L["Palabra con error:"] </span>@(error.ErrorToken ?? "—")</del>
+                                        <del class="an-wrong"><span class="gp-sr-only">@L["Palabra con error:"] </span>@(error.ErrorToken ?? "—")</del>
                                         @if (!string.IsNullOrWhiteSpace(error.SuggestedCorrection))
                                         {
                                             <AnalysisIcon Name="arrow" />
-                                            <ins class="an-right"><span class="ceti-sr-only">@L["Se escribe:"] </span>@error.SuggestedCorrection</ins>
+                                            <ins class="an-right"><span class="gp-sr-only">@L["Se escribe:"] </span>@error.SuggestedCorrection</ins>
                                         }
                                     </p>
                                     <p class="an-meta">
-                                        <span class="an-tag"><span class="ceti-sr-only">@L["Categoría:"] </span>@AnalysisFormat.Category(error.ErrorClassificationName)</span>
+                                        <span class="an-tag"><span class="gp-sr-only">@L["Categoría:"] </span>@AnalysisFormat.Category(error.ErrorClassificationName)</span>
                                         @if (error.ConfidenceScore is { } confidence)
                                         {
                                             <span class="an-conf" title="@L["Confianza del modelo en este error"]">@AnalysisFormat.Confidence(confidence) % de confianza</span>

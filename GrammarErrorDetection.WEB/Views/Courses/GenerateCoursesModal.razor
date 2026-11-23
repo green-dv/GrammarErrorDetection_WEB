@@ -3,13 +3,13 @@
 <ModalDialog Title="@L["Generar cursos automáticamente"]" Class="generate-courses-dialog" Busy="@generating" OnClose="OnClose">
     @if (result is null)
     {
-        <p class="ceti-modal-description">@L["Define el periodo de destino y las fechas de los nuevos cursos. Se usarán los cursos e inscripciones del bimestre anterior."]</p>
+        <p class="gp-modal-description">@L["Define el periodo de destino y las fechas de los nuevos cursos. Se usarán los cursos e inscripciones del bimestre anterior."]</p>
         <EditForm EditContext="editContext" OnSubmit="GenerateAsync" novalidate>
             <LocalizedValidator />
-            <div class="ceti-modal-body">
+            <div class="gp-modal-body">
                 @if (error is not null || validationErrors.Count > 0)
                 {
-                    <div class="ceti-modal-errors" role="alert">@if (error is not null) { <p>@error</p> }@foreach (var message in validationErrors) { <p>@message</p> }</div>
+                    <div class="gp-modal-errors" role="alert">@if (error is not null) { <p>@error</p> }@foreach (var message in validationErrors) { <p>@message</p> }</div>
                 }
                 <fieldset disabled="@generating" class="generate-courses-fields">
                     <label class="data-table-field"><span>@L["Año de destino"]</span><InputNumber @bind-Value="model.Year" min="2" max="9999" autofocus /></label>
@@ -23,12 +23,12 @@
                 }
                 <p class="generate-courses-note">@L["Al generar se podrán crear cursos e inscripciones y reutilizar cursos existentes. Al finalizar verás un resumen y los motivos de los casos omitidos."]</p>
             </div>
-            <footer class="ceti-modal-footer"><span role="status">@(generating ? L["Generando cursos e inscripciones…"] : L["Las fechas deben pertenecer al año de destino."])</span><div><button type="button" class="data-table-button" disabled="@generating" @onclick="OnClose">@L["Cancelar"]</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@generating">@(generating ? L["Generando…"] : L["Generar cursos"])</button></div></footer>
+            <footer class="gp-modal-footer"><span role="status">@(generating ? L["Generando cursos e inscripciones…"] : L["Las fechas deben pertenecer al año de destino."])</span><div><button type="button" class="data-table-button" disabled="@generating" @onclick="OnClose">@L["Cancelar"]</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@generating">@(generating ? L["Generando…"] : L["Generar cursos"])</button></div></footer>
         </EditForm>
     }
     else
     {
-        <div class="ceti-modal-body generate-courses-result">
+        <div class="gp-modal-body generate-courses-result">
             <div class="generate-courses-success" role="status"><strong>@L["Generación completada"]</strong><p>@L["Periodo de destino: bimestre {0} · {1}.", model.Bimester, model.Year]</p></div>
             <dl class="generate-courses-counts"><div><dt>@L["Cursos creados"]</dt><dd>@result.CreatedClassIds?.Count</dd></div><div><dt>@L["Cursos reutilizados"]</dt><dd>@result.ReusedClassIds?.Count</dd></div><div><dt>@L["Inscripciones creadas"]</dt><dd>@result.CreatedRegistrationIds?.Count</dd></div><div><dt>@L["Inscripciones omitidas"]</dt><dd>@result.Skipped?.Count</dd></div></dl>
             @if (result.CreatedClassIds?.Count == 0 && result.CreatedRegistrationIds?.Count == 0) { <p class="generate-courses-note">@L["No se crearon cursos ni inscripciones para este periodo."]</p> }
@@ -37,6 +37,6 @@
                 <details class="generate-courses-skipped"><summary>@L["Ver motivos de las omisiones ({0})", skipped.Count]</summary><ul>@foreach (var group in skipped.GroupBy(item => string.IsNullOrWhiteSpace(item.Reason) ? "Sin motivo informado" : item.Reason)) { <li><span>@group.Key</span><strong>@group.Count()</strong></li> }</ul></details>
             }
         </div>
-        <footer class="ceti-modal-footer"><span>@L["Cierra esta ventana para revisar los cursos del periodo."]</span><div><button type="button" class="data-table-button data-table-button-primary" disabled="@generating" @onclick="OnClose">@L["Cerrar"]</button></div></footer>
+        <footer class="gp-modal-footer"><span>@L["Cierra esta ventana para revisar los cursos del periodo."]</span><div><button type="button" class="data-table-button data-table-button-primary" disabled="@generating" @onclick="OnClose">@L["Cerrar"]</button></div></footer>
     }
 </ModalDialog>

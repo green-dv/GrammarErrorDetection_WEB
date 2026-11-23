@@ -44,7 +44,7 @@ public partial class CategoryList : IDisposable
             if (!redirected) { redirected = true; Navigation.NavigateTo("/auth/login", replace: true); }
             return false;
         }
-        if (!Session.IsInRole("Coordinator"))
+        if (!Session.IsStaff)
         {
             error = I18n.T("La gestión de categorías está disponible para coordinadores.");
             return false;

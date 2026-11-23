@@ -1,6 +1,6 @@
-.ceti-modal.create-course-dialog { width: min(1080px, calc(100vw - 32px)); max-width: none; }
-.create-course-dialog .ceti-modal-heading { padding: 22px 26px 10px; }
-.create-course-dialog .ceti-modal-description { padding: 0 26px 22px; border-bottom: 1px solid var(--t-line); }
+.gp-modal.create-course-dialog { width: min(1080px, calc(100vw - 32px)); max-width: none; }
+.create-course-dialog .gp-modal-heading { padding: 22px 26px 10px; }
+.create-course-dialog .gp-modal-description { padding: 0 26px 22px; border-bottom: 1px solid var(--t-line); }
 .create-course-errors { padding: 16px 26px 0; }
 .create-course-body { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.2fr); }
 .create-course-body h3 { display: flex; align-items: center; gap: 9px; margin: 0 0 20px; color: var(--t-text); font-size: calc(15px * var(--ui-scale, 1)); font-weight: 700; }
@@ -50,8 +50,8 @@
     .create-course-student-list { max-height: 300px; }
 }
 @media (max-width: 500px) {
-    .create-course-dialog .ceti-modal-heading, .create-course-fields, .create-course-students, .create-course-footer { padding: 18px; }
-    .create-course-dialog .ceti-modal-description { padding-inline: 18px; }
+    .create-course-dialog .gp-modal-heading, .create-course-fields, .create-course-students, .create-course-footer { padding: 18px; }
+    .create-course-dialog .gp-modal-description { padding-inline: 18px; }
     .create-course-errors { padding-inline: 18px; }
     .create-course-field-grid { grid-template-columns: 1fr; }
     .create-course-search { grid-template-columns: repeat(2, minmax(0, 1fr)); }

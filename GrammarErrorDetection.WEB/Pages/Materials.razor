@@ -5,11 +5,11 @@
 @using GrammarErrorDetection.WEB.Views.Materials
 @using GrammarErrorDetection.WEB.Components.Materials
 
-<PageTitle>@L["Material de apoyo | CETI La Paz"]</PageTitle>
+<PageTitle>@L["Material de apoyo | Grammar Practice"]</PageTitle>
 
 <section class="users-page materials-page" aria-labelledby="materials-title" aria-busy="@(loading ? "true" : "false")">
     <header class="users-heading">
-        <div><p class="users-eyebrow">@L["CETI · RECURSOS DE APRENDIZAJE"]</p><h1 id="materials-title">@L["Material de apoyo"]</h1><p>@L["Encuentra guías, imágenes y enlaces para acompañar tu aprendizaje."]</p></div>
+        <div><p class="users-eyebrow">@L["RECURSOS DE APRENDIZAJE"]</p><h1 id="materials-title">@L["Material de apoyo"]</h1><p>@L["Encuentra guías, imágenes y enlaces para acompañar tu aprendizaje."]</p></div>
         @if (CanManage)
         {
             <button type="button" class="material-upload-button" disabled="@ActionBusy" @onclick="OpenCreate" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V3m-5 5 5-5 5 5M4 15v6h16v-6"/></svg>@L["Agregar material"]</button>
@@ -117,13 +117,13 @@
 @if (dialogMode is not null)
 {
     <ModalDialog Title="@DialogTitle" Subtitle="@DialogSubtitle" Class="@DialogClass" Busy="@(saving || loadingDetail)" OnClose="CloseDialog">
-        @if (loadingDetail) { <p class="ceti-modal-description" role="status">@L["Cargando material…"]</p> }
-        @if (dialogError is not null) { <div class="ceti-modal-body materials-dialog-error" role="alert">@dialogError</div> }
+        @if (loadingDetail) { <p class="gp-modal-description" role="status">@L["Cargando material…"]</p> }
+        @if (dialogError is not null) { <div class="gp-modal-body materials-dialog-error" role="alert">@dialogError</div> }
         @if (!loadingDetail && (dialogMode is "create" or "edit") && CanManage && editForm is { } model)
         {
-            <p class="ceti-modal-description">@L["Sube un archivo o comparte el enlace de un recurso."]</p>
+            <p class="gp-modal-description">@L["Sube un archivo o comparte el enlace de un recurso."]</p>
             <form @onsubmit="SaveAsync" @onsubmit:preventDefault novalidate>
-                <fieldset class="material-upload-fields ceti-modal-body @(!useLink ? "has-preview" : "")" disabled="@saving">
+                <fieldset class="material-upload-fields gp-modal-body @(!useLink ? "has-preview" : "")" disabled="@saving">
                     @if (!useLink)
                     {
                         <aside class="material-form-preview" aria-label="@L["Vista previa del archivo"]">
@@ -160,12 +160,12 @@
                     @if (!loadingFileTypes && fileTypeError is null && fileTypes.Count == 0) { <p class="material-field-help">@L["No hay tipos de archivo activos disponibles para nuevos materiales."]</p> }
                     </div>
                 </fieldset>
-                <footer class="ceti-modal-footer"><span role="status">@(saving ? useLink ? L["Guardando enlace…"] : L["Subiendo archivo y guardando material…"] : loadingCategories || loadingFileTypes ? L["Cargando opciones…"] : "")</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="CloseDialog">@L["Cancelar"]</button><button type="submit" class="material-upload-button" disabled="@(saving || loadingCategories || loadingFileTypes || !HasChanges)">@(dialogMode == "create" ? L["Agregar material"] : L["Guardar cambios"])</button></div></footer>
+                <footer class="gp-modal-footer"><span role="status">@(saving ? useLink ? L["Guardando enlace…"] : L["Subiendo archivo y guardando material…"] : loadingCategories || loadingFileTypes ? L["Cargando opciones…"] : "")</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="CloseDialog">@L["Cancelar"]</button><button type="submit" class="material-upload-button" disabled="@(saving || loadingCategories || loadingFileTypes || !HasChanges)">@(dialogMode == "create" ? L["Agregar material"] : L["Guardar cambios"])</button></div></footer>
             </form>
         }
         else if (!loadingDetail && dialogMode == "preview" && selected is { } detail)
         {
-            <div class="ceti-modal-body">
+            <div class="gp-modal-body">
                 <MaterialViewer Material="ViewOf(detail)">
                     <Feedback>
                         @if (IsStudent)
@@ -186,12 +186,12 @@
         }
         else if (dialogMode == "status" && selected is { } statusMaterial && CanManage)
         {
-            <div class="ceti-modal-body"><p>¿Deseas @(statusMaterial.Active ? "desactivar" : "reactivar") <strong>@statusMaterial.Name</strong>?</p>@if (statusMaterial.Active) { <p>@L["Dejará de aparecer en el listado de materiales activos."]</p> }</div>
-            <footer class="ceti-modal-footer"><span role="status">@(saving ? L["Guardando…"] : "")</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="CloseDialog">@L["Cancelar"]</button><button type="button" class="data-table-button @(statusMaterial.Active ? "data-table-button-danger" : "data-table-button-primary")" disabled="@saving" @onclick="ConfirmStatusAsync">@(statusMaterial.Active ? L["Desactivar"] : L["Reactivar"])</button></div></footer>
+            <div class="gp-modal-body"><p>¿Deseas @(statusMaterial.Active ? "desactivar" : "reactivar") <strong>@statusMaterial.Name</strong>?</p>@if (statusMaterial.Active) { <p>@L["Dejará de aparecer en el listado de materiales activos."]</p> }</div>
+            <footer class="gp-modal-footer"><span role="status">@(saving ? L["Guardando…"] : "")</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="CloseDialog">@L["Cancelar"]</button><button type="button" class="data-table-button @(statusMaterial.Active ? "data-table-button-danger" : "data-table-button-primary")" disabled="@saving" @onclick="ConfirmStatusAsync">@(statusMaterial.Active ? L["Desactivar"] : L["Reactivar"])</button></div></footer>
         }
         else if (!loadingDetail)
         {
-            <footer class="ceti-modal-footer"><div><button type="button" class="data-table-button" @onclick="CloseDialog">@L["Cerrar"]</button></div></footer>
+            <footer class="gp-modal-footer"><div><button type="button" class="data-table-button" @onclick="CloseDialog">@L["Cerrar"]</button></div></footer>
         }
     </ModalDialog>
 }

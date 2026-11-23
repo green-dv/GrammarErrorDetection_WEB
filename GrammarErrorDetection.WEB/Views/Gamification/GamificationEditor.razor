@@ -3,16 +3,16 @@
 @using GrammarErrorDetection.WEB.Views.Gamification.Badges
 
 <ModalDialog Title="@Title" Busy="@(saving || showBadgeDesigner)" OnClose="OnClose" Class="gamification-dialog">
-    <p class="ceti-modal-description">@(IsAchievement ? L["Define qué reconocerás y cuántos puntos recibirá el estudiante."] : L["Prepara el reto, sus instrucciones y el periodo de participación."])</p>
+    <p class="gp-modal-description">@(IsAchievement ? L["Define qué reconocerás y cuántos puntos recibirá el estudiante."] : L["Prepara el reto, sus instrucciones y el periodo de participación."])</p>
     <EditForm EditContext="context" OnSubmit="SaveAsync" id="@formId" novalidate>
         <LocalizedValidator />
-        <div class="ceti-modal-body">
+        <div class="gp-modal-body">
             @if (error is not null || errors.Count > 0)
             {
-                <div class="ceti-modal-errors" role="alert">@if (error is not null) { <p>@error</p> }@foreach (var item in errors) { <p>@item</p> }</div>
+                <div class="gp-modal-errors" role="alert">@if (error is not null) { <p>@error</p> }@foreach (var item in errors) { <p>@item</p> }</div>
             }
             @if (loading) { <p role="status">@L["Cargando opciones del formulario…"]</p> }
-            @if (catalogError is not null) { <div class="ceti-modal-errors" role="alert">@catalogError <button class="data-table-text-button" type="button" @onclick="LoadCatalogsAsync">@L["Reintentar catálogos"]</button></div> }
+            @if (catalogError is not null) { <div class="gp-modal-errors" role="alert">@catalogError <button class="data-table-text-button" type="button" @onclick="LoadCatalogsAsync">@L["Reintentar catálogos"]</button></div> }
             <fieldset class="gamification-fields" disabled="@(saving || uncertain || loading || readingImage)">
                 <div class="gamification-grid">
                     <label class="data-table-field gamification-full"><span>@(IsAchievement ? L["Nombre del logro"] : L["Título del desafío"]) *</span><InputText @bind-Value="model.Name" autofocus /></label>
@@ -53,7 +53,7 @@
                                 @if (imageBytes is not null || fileError is not null) { <p>@imageName <button type="button" class="data-table-text-button" @onclick="ClearImage">@L["Descartar archivo seleccionado"]</button></p> }
                             </div>
                         </div>
-                        @if (fileError is not null) { <p class="ceti-modal-errors gamification-full" role="alert">@fileError</p> }
+                        @if (fileError is not null) { <p class="gp-modal-errors gamification-full" role="alert">@fileError</p> }
                     }
                     else
                     {
@@ -134,7 +134,7 @@
                 </section>
             </fieldset>
         </div>
-        <footer class="ceti-modal-footer"><span role="status">@(saving ? L["Guardando…"] : readingImage ? L["Leyendo imagen…"] : L["* Campos obligatorios"])</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">@(uncertain ? L["Cerrar y revisar listado"] : L["Cancelar"])</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@(saving || readingImage || loading || uncertain || (catalogError is not null && !ConditionLocked))">@(IsEdit ? L["Guardar cambios"] : IsAchievement ? L["Crear logro"] : L["Crear desafío"])</button></div></footer>
+        <footer class="gp-modal-footer"><span role="status">@(saving ? L["Guardando…"] : readingImage ? L["Leyendo imagen…"] : L["* Campos obligatorios"])</span><div><button type="button" class="data-table-button" disabled="@saving" @onclick="OnClose">@(uncertain ? L["Cerrar y revisar listado"] : L["Cancelar"])</button><button type="submit" class="data-table-button data-table-button-primary" disabled="@(saving || readingImage || loading || uncertain || (catalogError is not null && !ConditionLocked))">@(IsEdit ? L["Guardar cambios"] : IsAchievement ? L["Crear logro"] : L["Crear desafío"])</button></div></footer>
     </EditForm>
 </ModalDialog>
 

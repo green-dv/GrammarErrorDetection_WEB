@@ -18,7 +18,7 @@ public partial class AchievementDetail : IDisposable
     private bool loading, disposed, showEdit, showStatus;
     private string? error, message;
     private bool Allowed => Session.Current is not null && (Session.IsInRole("Coordinator") || Session.IsInRole("Teacher") || Session.IsInRole("Student"));
-    private bool CanManage => Session.Current is not null && Session.IsInRole("Coordinator");
+    private bool CanManage => Session.Current is not null && Session.IsStaff;
     protected override async Task OnInitializedAsync() => await LoadAsync();
     private async Task LoadAsync()
     {

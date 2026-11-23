@@ -1,4 +1,4 @@
-.generate-courses-dialog .ceti-modal-heading { padding-top: 22px; }
+.generate-courses-dialog .gp-modal-heading { padding-top: 22px; }
 .generate-courses-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 14px; }
 .generate-courses-period { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 22px; padding: 18px; border: 1px solid var(--t-line); border-radius: 10px; background: var(--t-subtle); }
 .generate-courses-period div > span { display: block; margin-bottom: 6px; color: var(--t-muted); font-size: calc(11px * var(--ui-scale, 1)); }
@@ -22,5 +22,5 @@
     .generate-courses-fields { grid-template-columns: 1fr; }
     .generate-courses-period { padding: 14px; gap: 10px; }
     .generate-courses-period strong { font-size: calc(12px * var(--ui-scale, 1)); }
-    .generate-courses-dialog .ceti-modal-footer > span { flex-basis: 100%; }
+    .generate-courses-dialog .gp-modal-footer > span { flex-basis: 100%; }
 }

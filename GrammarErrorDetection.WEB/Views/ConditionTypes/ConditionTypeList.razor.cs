@@ -44,7 +44,7 @@ public partial class ConditionTypeList : IDisposable
             if (!redirected) { redirected = true; Navigation.NavigateTo("/auth/login", replace: true); }
             return false;
         }
-        if (!Session.IsInRole("Coordinator"))
+        if (!Session.IsStaff)
         {
             error = I18n.T("La gestión de tipos de condición está disponible para coordinadores.");
             return false;

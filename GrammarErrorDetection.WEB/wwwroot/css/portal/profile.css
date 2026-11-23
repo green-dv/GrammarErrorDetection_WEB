@@ -51,7 +51,7 @@
 .member-achievement-summary strong { color: var(--color-brand-navy); font-size: calc(24px * var(--ui-scale, 1)); }
 .member-achievement-summary small { font-size: calc(11px * var(--ui-scale, 1)); }
 .member-profile-content > .points-dashboard { margin-top: 24px; }
-.ceti-content .member-profile-content > .settings-content { padding: 0; }
+.gp-content .member-profile-content > .settings-content { padding: 0; }
 .profile-sentences-table th[scope="row"], .profile-sentences-table td:nth-child(3) { min-width: 220px; max-width: 380px; white-space: normal; overflow-wrap: anywhere; }
 .profile-sentences-table td:nth-child(4) { min-width: 170px; white-space: normal; }
 .profile-sentences-table .data-table-status { display: inline-block; margin: 2px 4px 2px 0; }

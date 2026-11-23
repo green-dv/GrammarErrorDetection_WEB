@@ -12,7 +12,7 @@
     }
     else if (course is not null)
     {
-        <header class="users-heading"><div><p class="users-eyebrow">@L["CETI · DETALLE ACADÉMICO"]</p><h1 id="course-detail-title">Módulo @Text(course.ModuleName, "no informado")</h1><p>Paralelo @Text(course.Parallel, "—") · Bimestre @course.Bimester · @course.Year</p></div><span class="data-table-badge">@(course.Active ? L["Curso activo"] : L["Curso inactivo"])</span></header>
+        <header class="users-heading"><div><p class="users-eyebrow">@L["DETALLE ACADÉMICO"]</p><h1 id="course-detail-title">Módulo @Text(course.ModuleName, "no informado")</h1><p>Paralelo @Text(course.Parallel, "—") · Bimestre @course.Bimester · @course.Year</p></div><span class="data-table-badge">@(course.Active ? L["Curso activo"] : L["Curso inactivo"])</span></header>
         <p><a class="data-table-button" href="@($"/courses/{course.Id:D}/grammar-report?courseName={Uri.EscapeDataString(course.ModuleName ?? L["Curso seleccionado"])}")">@L["Reporte gramatical del curso"]</a></p>
         <article class="course-detail-info" aria-label="@L["Datos del curso"]">
             <div class="course-detail-teacher"><span class="data-table-avatar" aria-hidden="true">@TeacherInitials(course.TeacherName)</span><div><span>@L["Profesor del curso"]</span><strong>@Text(course.TeacherName, "Sin profesor asignado")</strong></div></div>

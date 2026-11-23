@@ -30,11 +30,15 @@ public partial class CourseList : IDisposable
     private readonly CancellationTokenSource lifetime = new();
     private CancellationTokenSource? searchCancellation;
     private bool IsTeacher => Session.IsInRole("Teacher");
-    private bool CanCreate => Session.IsInRole("Coordinator") && !IsTeacher;
+    private bool CanCreate => Session.IsStaff;
+    private bool CanGenerate => Session.IsInRole("Coordinator") && !IsTeacher;
     private bool showCreate;
     private bool showGenerate;
-    private void OpenGenerate() { if (CanCreate && !busy && CheckSession()) showGenerate = true; }
+    private void OpenGenerate() { if (CanGenerate && !busy && CheckSession()) showGenerate = true; }
     private void CloseGenerate() => showGenerate = false;
+    private GrammarErrorDetection.Models.Courses.CourseSearchResponse? invitingCourse;
+    private void OpenInvite(GrammarErrorDetection.Models.Courses.CourseSearchResponse course) { if (CheckSession()) invitingCourse = course; }
+    private void CloseInvite() => invitingCourse = null;
     private async Task CoursesGeneratedAsync(CourseGenerationResponse response)
     {
         filters = new CourseSearchFilter

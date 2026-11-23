@@ -5,7 +5,7 @@
 
 @if (isAuthRoute || allowed)
 {
-    <RouteView RouteData="RouteData" DefaultLayout="@typeof(MainLayout)" />
+    <RouteView RouteData="RouteData" DefaultLayout="@(useAuthLayout ? typeof(AuthLayout) : typeof(MainLayout))" />
 }
 else if (Session.Current is not null)
 {
@@ -20,6 +20,8 @@ else if (Session.Current is not null)
     [Parameter, EditorRequired] public RouteData RouteData { get; set; } = default!;
     private bool isAuthRoute;
     private bool allowed;
+    // /auth/join no declara layout: con sesión se ve dentro del portal; sin sesión, con el diseño de acceso.
+    private bool useAuthLayout;
     protected override void OnInitialized() => Session.Changed += SessionChanged;
     protected override void OnParametersSet() => CheckAccess();
 
@@ -27,6 +29,7 @@ else if (Session.Current is not null)
     {
         var path = Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0].Trim('/');
         isAuthRoute = PortalNavigation.IsAuthPath(path);
+        useAuthLayout = path.StartsWith("auth/join/", StringComparison.OrdinalIgnoreCase) && Session.Current is null;
         allowed = Session.Current is not null && PortalNavigation.CanAccess(path, Session.Roles);
         if (!isAuthRoute && Session.Current is null) Navigation.NavigateTo("/auth/login", replace: true);
     }

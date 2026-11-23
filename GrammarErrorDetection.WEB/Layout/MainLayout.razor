@@ -1,14 +1,14 @@
 @inherits LayoutComponentBase
 @inject NavigationManager Navigation
 
-<div class="ceti-shell">
-    <a class="ceti-skip-link" href="@(Navigation.Uri.Split('#')[0] + "#ceti-content")">@L["Saltar al contenido"]</a>
+<div class="gp-shell">
+    <a class="gp-skip-link" href="@(Navigation.Uri.Split('#')[0] + "#gp-content")">@L["Saltar al contenido"]</a>
     <NavMenu />
-    <div class="ceti-workspace">
-        <header class="ceti-topbar">
-            <span class="ceti-topbar-caption">@L["Portal académico"]</span>
-            <span class="profile-portal-label">@L["CETI · LA PAZ"]</span>
+    <div class="gp-workspace">
+        <header class="gp-topbar">
+            <span class="gp-topbar-caption">@L["Portal académico"]</span>
+            <span class="profile-portal-label">@L["Grammar Practice"]</span>
         </header>
-        <main id="ceti-content" class="ceti-content" tabindex="-1">@Body</main>
+        <main id="gp-content" class="gp-content" tabindex="-1">@Body</main>
     </div>
 </div>
